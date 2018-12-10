@@ -1094,6 +1094,7 @@ export default class CreatePost extends React.Component {
                                 disabled={readOnlyChannel}
                                 characterLimit={this.props.maxPostSize}
                                 badConnection={this.props.badConnection}
+                                listenForMentionKeyClick={true}
                             />
                             <span
                                 ref='createPostControls'
