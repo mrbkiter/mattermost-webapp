@@ -95,32 +95,33 @@ export default class SignupController extends React.Component {
             const userLoggedIn = this.props.loggedIn;
 
             if ((inviteId || token) && userLoggedIn) {
-                const {data: team, error} = this.props.actions.addUserToTeamFromInvite(token, inviteId);
-                if (team) {
-                    browserHistory.push('/' + team.name + `/channels/${Constants.DEFAULT_CHANNEL}`);
-                } else if (error) {
-                    this.handleInvalidInvite(error);
-                }
-            }
-
-            if (inviteId) {
+                this.addUserToTeamFromInvite(token, inviteId);
+            } else if (inviteId) {
                 this.getInviteInfo(inviteId);
-            }
-            if (userLoggedIn) {
+            } else if (userLoggedIn) {
                 GlobalActions.redirectUserToDefaultTeam();
             }
         }
     }
 
+    addUserToTeamFromInvite = async (token, inviteId) => {
+        const {data: team, error} = await this.props.actions.addUserToTeamFromInvite(token, inviteId);
+        if (team) {
+            browserHistory.push('/' + team.name + `/channels/${Constants.DEFAULT_CHANNEL}`);
+        } else if (error) {
+            this.handleInvalidInvite(error);
+        }
+    }
+
     getInviteInfo = async (inviteId) => {
-        const {data} = await this.props.actions.getTeamInviteInfo(inviteId);
+        const {data, error} = await this.props.actions.getTeamInviteInfo(inviteId);
         if (data) {
             this.setState({
                 serverError: '',
                 loading: false,
             });
-        } else {
-            this.handleInvalidInvite();
+        } else if (error) {
+            this.handleInvalidInvite(error);
         }
     }
 
