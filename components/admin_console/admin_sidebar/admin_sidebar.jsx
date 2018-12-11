@@ -795,6 +795,15 @@ export default class AdminSidebar extends React.Component {
                                         />
                                     }
                                 />
+                                <AdminSidebarSection
+                                    name='redis'
+                                    title={
+                                        <FormattedMessage
+                                            id='admin.sidebar.redis'
+                                            defaultMessage='Redis'
+                                        />
+                                    }
+                                />
                                 {elasticSearchSettings}
                                 <AdminSidebarSection
                                     name='developer'
