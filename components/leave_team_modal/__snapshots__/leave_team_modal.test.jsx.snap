@@ -9,6 +9,7 @@ exports[`components/LeaveTeamModal should render the leave team model 1`] = `
   className="modal-confirm"
   dialogComponentClass={[Function]}
   enforceFocus={true}
+  id="leaveTeamModal"
   keyboard={true}
   manager={
     ModalManager {
@@ -58,7 +59,8 @@ exports[`components/LeaveTeamModal should render the leave team model 1`] = `
     componentClass="div"
   >
     <button
-      className="btn btn-default"
+      className="btn btn-link"
+      id="leaveTeamNo"
       onClick={[MockFunction]}
       type="button"
     >

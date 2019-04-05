@@ -2,9 +2,11 @@
 // See LICENSE.txt for license information.
 
 import React from 'react';
+import {FormattedMessage} from 'react-intl';
 
 import {autocompleteUsersInTeam} from 'actions/user_actions.jsx';
 import * as Utils from 'utils/utils.jsx';
+import SelectIcon from 'components/icon/select_icon';
 
 import Provider from './provider.jsx';
 import Suggestion from './suggestion.jsx';
@@ -29,16 +31,25 @@ class SearchUserSuggestion extends Suggestion {
             description = `- ${Utils.getFullName(item)}`;
         }
 
+        let tag = null;
+        if (item.is_bot) {
+            tag = (
+                <div className='bot-indicator bot-indicator__autocomplete'>
+                    <FormattedMessage
+                        id='post_info.bot'
+                        defaultMessage='BOT'
+                    />
+                </div>
+            );
+        }
+
         return (
             <div
                 className={className}
                 onClick={this.handleClick}
                 {...Suggestion.baseProps}
             >
-                <i
-                    className='fa fa fa-plus-square'
-                    title={Utils.localizeMessage('generic_icons.select', 'Select Icon')}
-                />
+                <SelectIcon/>
                 <img
                     className='profile-img rounded'
                     src={Utils.imageURLForUser(item)}
@@ -47,6 +58,7 @@ class SearchUserSuggestion extends Suggestion {
                     <span>
                         {username}
                     </span>
+                    {tag}
                     <span className='mention__fullname'>
                         {' '}
                         {description}

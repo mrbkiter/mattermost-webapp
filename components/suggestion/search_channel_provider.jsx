@@ -5,9 +5,13 @@ import React from 'react';
 
 import {sortChannelsByTypeAndDisplayName} from 'mattermost-redux/utils/channel_utils';
 
+import {FormattedMessage} from 'react-intl';
+
 import {autocompleteChannelsForSearch} from 'actions/channel_actions.jsx';
 import Constants from 'utils/constants.jsx';
-import {localizeMessage} from 'utils/utils.jsx';
+import SelectIcon from 'components/icon/select_icon';
+
+import {getDirectTeammate} from 'utils/utils.jsx';
 
 import Provider from './provider.jsx';
 import Suggestion from './suggestion.jsx';
@@ -33,16 +37,30 @@ class SearchChannelSuggestion extends Suggestion {
 
         const name = itemToName(item);
 
+        let tag = null;
+        if (item.type === Constants.DM_CHANNEL) {
+            const teammate = getDirectTeammate(item.id);
+            if (teammate && teammate.is_bot) {
+                tag = (
+                    <div className='bot-indicator bot-indicator__popoverlist'>
+                        <FormattedMessage
+                            id='post_info.bot'
+                            defaultMessage='BOT'
+                        />
+                    </div>
+                );
+            }
+        }
+
         return (
             <div
                 onClick={this.handleClick}
                 className={className}
                 {...Suggestion.baseProps}
             >
-                <i
-                    className='fa fa fa-plus-square'
-                    title={localizeMessage('generic_icons.select', 'Select Icon')}
-                />{name}
+                <SelectIcon/>
+                {name}
+                {tag}
             </div>
         );
     }

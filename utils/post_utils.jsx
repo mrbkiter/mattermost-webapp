@@ -7,6 +7,7 @@ import {haveIChannelPermission} from 'mattermost-redux/selectors/entities/roles'
 import {getCurrentUserId} from 'mattermost-redux/selectors/entities/users';
 import {getChannel} from 'mattermost-redux/selectors/entities/channels';
 import {Permissions} from 'mattermost-redux/constants';
+import {canEditPost as canEditPostRedux} from 'mattermost-redux/utils/post_utils';
 
 import store from 'stores/redux_store.jsx';
 
@@ -46,9 +47,16 @@ export function isEdited(post) {
 }
 
 export function getImageSrc(src, hasImageProxy) {
-    if (hasImageProxy) {
-        return Client4.getBaseRoute() + '/image?url=' + encodeURIComponent(src);
+    if (!src) {
+        return src;
     }
+
+    const imageAPI = Client4.getBaseRoute() + '/image?url=';
+
+    if (hasImageProxy && !src.startsWith(imageAPI)) {
+        return imageAPI + encodeURIComponent(src);
+    }
+
     return src;
 }
 
@@ -68,38 +76,13 @@ export function canDeletePost(post) {
     return haveIChannelPermission(store.getState(), {channel: post.channel_id, team: channel && channel.team_id, permission: Permissions.DELETE_OTHERS_POSTS});
 }
 
-export function canEditPost(post, editDisableAction) {
-    if (isSystemMessage(post)) {
-        return false;
-    }
-
-    let canEdit = false;
-    const license = getLicense(store.getState());
-    const config = getConfig(store.getState());
-    const channel = getChannel(store.getState(), post.channel_id);
-
-    if (channel && channel.delete_at !== 0) {
-        return false;
-    }
-
-    const isOwner = isPostOwner(post);
-    canEdit = haveIChannelPermission(store.getState(), {channel: post.channel_id, team: channel && channel.team_id, permission: Permissions.EDIT_POST});
-    if (!isOwner) {
-        canEdit = canEdit && haveIChannelPermission(store.getState(), {channel: post.channel_id, team: channel && channel.team_id, permission: Permissions.EDIT_OTHERS_POSTS});
-    }
-
-    if (canEdit && license.IsLicensed === 'true') {
-        if (config.PostEditTimeLimit !== '-1' && config.PostEditTimeLimit !== -1) {
-            const timeLeft = (post.create_at + (config.PostEditTimeLimit * 1000)) - Utils.getTimestamp();
-            if (timeLeft > 0) {
-                editDisableAction.fireAfter(timeLeft + 1000);
-            } else {
-                canEdit = false;
-            }
-        }
-    }
-
-    return canEdit;
+export function canEditPost(post) {
+    const state = store.getState();
+    const license = getLicense(state);
+    const config = getConfig(state);
+    const channel = getChannel(state, post.channel_id);
+    const userId = getCurrentUserId(state);
+    return canEditPostRedux(state, config, license, channel && channel.team_id, channel && channel.id, userId, post);
 }
 
 export function shouldShowDotMenu(post) {
@@ -239,4 +222,19 @@ export function isErrorInvalidSlashCommand(error) {
     }
 
     return false;
+}
+
+export function getClosestValidPostIndex(postIds, index) {
+    let postIndex = index;
+    while (postIndex >= 0) {
+        const postId = postIds[postIndex];
+        if (postId && postId.indexOf(Constants.PostListRowListIds.DATE_LINE) < 0 &&
+            postId.indexOf(Constants.PostListRowListIds.START_OF_NEW_MESSAGES) < 0 &&
+            postId !== 'CHANNEL_INTRO_MESSAGE' &&
+            postId !== 'MORE_MESSAGES_LOADER') {
+            break;
+        }
+        postIndex--;
+    }
+    return postIndex;
 }

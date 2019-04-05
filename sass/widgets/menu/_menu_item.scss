@@ -1,0 +1,48 @@
+.MenuWrapper {
+    .MenuItem {
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+
+        > a {
+            text-decoration: none;
+
+            &:focus,
+            &:hover {
+                color: inherit;
+            }
+        }
+
+        > button,
+        > a {
+            align-items: center;
+            clear: both;
+            color: inherit;
+            cursor: pointer;
+            display: flex;
+            font-weight: normal;
+            padding: 0 24px;
+            text-align: left;
+            white-space: nowrap;
+            width: 100%;
+            height: 28px;
+
+            &:hover {
+                background: alpha-color($black, .08);
+            }
+        }
+
+        span.icon {
+            width: 30px;
+            padding-right: 15px;
+            display: inline-block;
+            text-align: center;
+        }
+
+        span.extra-text {
+            @include opacity(.7);
+            display: block;
+            font-size: 10px;
+        }
+    }
+}

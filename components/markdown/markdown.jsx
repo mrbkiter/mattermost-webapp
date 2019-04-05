@@ -62,19 +62,29 @@ export default class Markdown extends React.PureComponent {
         hasImageProxy: PropTypes.bool.isRequired,
 
         /**
+         * Minimum number of characters in a hashtag.
+         */
+        minimumHashtagLength: PropTypes.number,
+
+        /**
          * Whether or not to proxy image URLs
          */
         proxyImages: PropTypes.bool,
 
         /**
-         * Any extra props that should be passed into the MarkdownImage component
+         * Any extra props that should be passed into the image component
          */
         imageProps: PropTypes.object,
 
         /**
-         * prop for passed down to MarkdownImage component for dimensions
+         * prop for passed down to image component for dimensions
          */
         imagesMetadata: PropTypes.object,
+
+        /**
+         * Whether or not to place the LinkTooltip component inside links
+         */
+        hasPluginTooltips: PropTypes.bool,
     };
 
     static defaultProps = {
@@ -97,12 +107,14 @@ export default class Markdown extends React.PureComponent {
             channelNamesMap: this.props.channelNamesMap,
             proxyImages: this.props.hasImageProxy && this.props.proxyImages,
             team: this.props.team,
+            minimumHashtagLength: this.props.minimumHashtagLength,
         }, this.props.options);
 
         const htmlFormattedText = TextFormatting.formatText(this.props.message, options);
         return messageHtmlToComponent(htmlFormattedText, this.props.isRHS, {
             imageProps: this.props.imageProps,
             imagesMetadata: this.props.imagesMetadata,
+            hasPluginTooltips: this.props.hasPluginTooltips,
         });
     }
 }

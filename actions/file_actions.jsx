@@ -16,7 +16,7 @@ export function uploadFile(file, name, channelId, rootId, clientId) {
 
         return request.
             post(Client4.getFilesRoute()).
-            set(Client4.getOptions().headers).
+            set(Client4.getOptions({method: 'post'}).headers).
             attach('files', file, name).
             field('channel_id', channelId).
             field('client_ids', clientId).
@@ -31,7 +31,7 @@ export function handleFileUploadEnd(file, name, channelId, rootId, clientId, {er
             if (res && res.body && res.body.id) {
                 e = res.body;
             } else if (err.status === 0 || !err.status) {
-                e = {message: Utils.localizeMessage('channel_loader.connection_error', 'There appears to be a problem with your internet connection.')};
+                e = {message: Utils.localizeMessage('file_upload.generic_error', 'There was a problem uploading your files.')};
             } else {
                 e = {message: Utils.localizeMessage('channel_loader.unknown_error', 'We received an unexpected status code from the server.') + ' (' + err.status + ')'};
             }

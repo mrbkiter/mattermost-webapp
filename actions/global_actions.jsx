@@ -1,34 +1,30 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import debounce from 'lodash/debounce';
 import {batchActions} from 'redux-batched-actions';
 
 import {
-    getChannel,
     createDirectChannel,
     getChannelByNameAndTeamName,
     getChannelStats,
     getMyChannelMember,
-    joinChannel,
     markChannelAsRead,
     selectChannel,
 } from 'mattermost-redux/actions/channels';
-import {getPostThread} from 'mattermost-redux/actions/posts';
-import {logout} from 'mattermost-redux/actions/users';
+import {logout, loadMe} from 'mattermost-redux/actions/users';
 import {Client4} from 'mattermost-redux/client';
 import {getConfig} from 'mattermost-redux/selectors/entities/general';
-import {getCurrentTeamId, getTeam, getMyTeams, getMyTeamMember} from 'mattermost-redux/selectors/entities/teams';
+import {getCurrentTeamId, getTeam, getMyTeams, getMyTeamMember, getTeamMemberships} from 'mattermost-redux/selectors/entities/teams';
 import {getCurrentUserId} from 'mattermost-redux/selectors/entities/users';
 import {getCurrentChannelStats, getCurrentChannelId, getChannelByName, getMyChannelMember as selectMyChannelMember} from 'mattermost-redux/selectors/entities/channels';
 import {ChannelTypes} from 'mattermost-redux/action_types';
 
 import {browserHistory} from 'utils/browser_history';
-import {loadChannelsForCurrentUser} from 'actions/channel_actions.jsx';
 import {handleNewPost} from 'actions/post_actions.jsx';
 import {stopPeriodicStatusUpdates} from 'actions/status_actions.jsx';
-import {loadNewDMIfNeeded, loadNewGMIfNeeded, loadProfilesForSidebar} from 'actions/user_actions.jsx';
+import {loadProfilesForSidebar} from 'actions/user_actions.jsx';
 import {closeRightHandSide, closeMenu as closeRhsMenu, updateRhsState} from 'actions/views/rhs';
+import {clearUserCookie} from 'actions/views/root';
 import {close as closeLhs} from 'actions/views/lhs';
 import * as WebsocketActions from 'actions/websocket_actions.jsx';
 import AppDispatcher from 'dispatcher/app_dispatcher.jsx';
@@ -39,8 +35,7 @@ import store from 'stores/redux_store.jsx';
 import LocalStorageStore from 'stores/local_storage_store';
 import WebSocketClient from 'client/web_websocket_client.jsx';
 
-import {ActionTypes, Constants, ErrorPageTypes, PostTypes, RHSStates} from 'utils/constants.jsx';
-import EventTypes from 'utils/event_types.jsx';
+import {ActionTypes, Constants, PostTypes, RHSStates} from 'utils/constants.jsx';
 import {filterAndSortTeamsByDisplayName} from 'utils/team_utils.jsx';
 import * as Utils from 'utils/utils.jsx';
 import {equalServerVersions} from 'utils/server_version';
@@ -99,7 +94,7 @@ export function emitChannelClickEvent(channel) {
             type: ActionTypes.SELECT_CHANNEL_WITH_MEMBER,
             data: chan.id,
             channel: chan,
-            member,
+            member: member || {},
         }]));
     }
 
@@ -118,60 +113,8 @@ export function emitChannelClickEvent(channel) {
     }
 }
 
-export async function doFocusPost(channelId, postId) {
-    dispatch(selectChannel(channelId));
-    dispatch({
-        type: ActionTypes.RECEIVED_FOCUSED_POST,
-        data: postId,
-    });
-
-    const member = getState().entities.channels.myMembers[channelId];
-    if (member == null) {
-        await dispatch(joinChannel(getCurrentUserId(getState()), null, channelId));
-    }
-
-    dispatch(loadChannelsForCurrentUser());
-    dispatch(getChannelStats(channelId));
-}
-
 export function emitCloseRightHandSide() {
     dispatch(closeRightHandSide());
-}
-
-export async function emitPostFocusEvent(postId, returnTo = '') {
-    dispatch(loadChannelsForCurrentUser());
-    const {data} = await dispatch(getPostThread(postId));
-
-    if (!data) {
-        browserHistory.replace(`/error?type=${ErrorPageTypes.PERMALINK_NOT_FOUND}&returnTo=${returnTo}`);
-        return;
-    }
-
-    const channelId = data.posts[data.order[0]].channel_id;
-    let channel = getState().entities.channels.channels[channelId];
-    const teamId = getCurrentTeamId(getState());
-
-    if (!channel) {
-        const {data: channelData} = await dispatch(getChannel(channelId));
-        if (!channelData) {
-            browserHistory.replace(`/error?type=${ErrorPageTypes.PERMALINK_NOT_FOUND}&returnTo=${returnTo}`);
-            return;
-        }
-        channel = channelData;
-    }
-
-    if (channel.team_id && channel.team_id !== teamId) {
-        browserHistory.replace(`/error?type=${ErrorPageTypes.PERMALINK_NOT_FOUND}&returnTo=${returnTo}`);
-        return;
-    }
-
-    if (channel && channel.type === Constants.DM_CHANNEL) {
-        loadNewDMIfNeeded(channel.id);
-    } else if (channel && channel.type === Constants.GM_CHANNEL) {
-        loadNewGMIfNeeded(channel.id);
-    }
-
-    await doFocusPost(channelId, postId, data);
 }
 
 export function toggleShortcutsModal() {
@@ -302,7 +245,9 @@ export function emitUserLoggedOutEvent(redirectTo = '/', shouldSignalLogout = tr
         BrowserStore.clear();
         stopPeriodicStatusUpdates();
         WebsocketActions.close();
-        document.cookie = 'MMUSERID=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/';
+
+        clearUserCookie();
+
         browserHistory.push(redirectTo);
     }).catch(() => {
         browserHistory.push(redirectTo);
@@ -325,7 +270,17 @@ export function emitBrowserFocus(focus) {
 }
 
 export async function redirectUserToDefaultTeam() {
-    const state = getState();
+    let state = getState();
+
+    // Assume we need to load the user if they don't have any team memberships loaded
+    const shouldLoadUser = Utils.isEmptyObject(getTeamMemberships(state));
+
+    if (shouldLoadUser) {
+        await dispatch(loadMe());
+    }
+
+    state = getState();
+
     const userId = getCurrentUserId(state);
     const locale = getCurrentLocale(state);
     const teamId = LocalStorageStore.getPreviousTeamId(userId);
@@ -362,20 +317,6 @@ export async function redirectUserToDefaultTeam() {
     } else {
         browserHistory.push('/select_team');
     }
-}
-
-export const postListScrollChange = debounce(() => {
-    AppDispatcher.handleViewAction({
-        type: EventTypes.POST_LIST_SCROLL_CHANGE,
-        value: false,
-    });
-});
-
-export function postListScrollChangeToBottom() {
-    AppDispatcher.handleViewAction({
-        type: EventTypes.POST_LIST_SCROLL_CHANGE,
-        value: true,
-    });
 }
 
 let serverVersion = '';

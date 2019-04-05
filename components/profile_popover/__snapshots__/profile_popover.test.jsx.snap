@@ -12,7 +12,6 @@ exports[`components/ProfilePopover should match snapshot 1`] = `
       >
         @some_username
       </span>
-       
     </span>
   }
 >
@@ -27,6 +26,7 @@ exports[`components/ProfilePopover should match snapshot 1`] = `
   <Connect(Pluggable)
     key="profilePopoverPluggable2"
     pluggableName="PopoverUserAttributes"
+    status="offline"
     user={
       Object {
         "name": "some name",
@@ -102,6 +102,7 @@ exports[`components/ProfilePopover should match snapshot 1`] = `
   <Connect(Pluggable)
     key="profilePopoverPluggable3"
     pluggableName="PopoverUserActions"
+    status="offline"
     user={
       Object {
         "name": "some name",

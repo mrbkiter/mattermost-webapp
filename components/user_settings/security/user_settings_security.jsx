@@ -6,7 +6,6 @@ import React from 'react';
 import {FormattedDate, FormattedMessage, FormattedTime} from 'react-intl';
 import {Link} from 'react-router-dom';
 
-import {deauthorizeOAuthApp, getAuthorizedApps, updatePassword} from 'actions/user_actions.jsx';
 import Constants from 'utils/constants.jsx';
 import * as Utils from 'utils/utils.jsx';
 import icon50 from 'images/icon50x50.png';
@@ -68,6 +67,9 @@ export default class SecurityTab extends React.Component {
 
         actions: PropTypes.shape({
             getMe: PropTypes.func.isRequired,
+            updateUserPassword: PropTypes.func.isRequired,
+            getAuthorizedApps: PropTypes.func.isRequired,
+            deauthorizeOAuthApp: PropTypes.func.isRequired,
         }).isRequired,
     }
 
@@ -92,12 +94,13 @@ export default class SecurityTab extends React.Component {
 
     componentDidMount() {
         if (this.props.enableOAuthServiceProvider) {
-            getAuthorizedApps(
-                (authorizedApps) => {
-                    this.setState({authorizedApps, serverError: null}); //eslint-disable-line react/no-did-mount-set-state
-                },
-                (err) => {
-                    this.setState({serverError: err.message}); //eslint-disable-line react/no-did-mount-set-state
+            this.props.actions.getAuthorizedApps().then(
+                ({data, error}) => {
+                    if (data) {
+                        this.setState({authorizedApps: data, serverError: null}); //eslint-disable-line react/no-did-mount-set-state
+                    } else if (error) {
+                        this.setState({serverError: error.message}); //eslint-disable-line react/no-did-mount-set-state
+                    }
                 }
             );
         }
@@ -131,26 +134,26 @@ export default class SecurityTab extends React.Component {
 
         this.setState({savingPassword: true});
 
-        updatePassword(
+        this.props.actions.updateUserPassword(
             user.id,
             currentPassword,
-            newPassword,
-            () => {
-                this.props.updateSection('');
-                this.props.actions.getMe();
-                this.setState(this.getDefaultState());
-            },
-            (err) => {
-                var state = this.getDefaultState();
-                if (err.message) {
-                    state.serverError = err.message;
-                } else {
-                    state.serverError = err;
+            newPassword).
+            then(({data, error: err}) => {
+                if (data) {
+                    this.props.updateSection('');
+                    this.props.actions.getMe();
+                    this.setState(this.getDefaultState());
+                } else if (err) {
+                    var state = this.getDefaultState();
+                    if (err.message) {
+                        state.serverError = err.message;
+                    } else {
+                        state.serverError = err;
+                    }
+                    state.passwordError = '';
+                    this.setState(state);
                 }
-                state.passwordError = '';
-                this.setState(state);
-            }
-        );
+            });
     }
 
     updateCurrentPassword = (e) => {
@@ -168,17 +171,17 @@ export default class SecurityTab extends React.Component {
     deauthorizeApp = (e) => {
         e.preventDefault();
         const appId = e.currentTarget.getAttribute('data-app');
-        deauthorizeOAuthApp(
-            appId,
-            () => {
-                const authorizedApps = this.state.authorizedApps.filter((app) => {
-                    return app.id !== appId;
-                });
+        this.props.actions.deauthorizeOAuthApp(appId).then(
+            ({data, error}) => {
+                if (data) {
+                    const authorizedApps = this.state.authorizedApps.filter((app) => {
+                        return app.id !== appId;
+                    });
 
-                this.setState({authorizedApps, serverError: null});
-            },
-            (err) => {
-                this.setState({serverError: err.message});
+                    this.setState({authorizedApps, serverError: null});
+                } else if (error) {
+                    this.setState({serverError: error.message});
+                }
             }
         );
     }
@@ -454,6 +457,7 @@ export default class SecurityTab extends React.Component {
                 describe={describe}
                 section={SECTION_PASSWORD}
                 updateSection={this.handleUpdateSection}
+                focused={true}
             />
         );
     }
@@ -833,25 +837,39 @@ export default class SecurityTab extends React.Component {
         return (
             <div>
                 <div className='modal-header'>
-                    <button
-                        type='button'
-                        className='close'
-                        data-dismiss='modal'
-                        aria-label={Utils.localizeMessage('user.settings.security.close', 'Close')}
-                        onClick={this.props.closeModal}
+                    <FormattedMessage
+                        id='user.settings.security.close'
+                        defaultMessage='Close'
                     >
-                        <span aria-hidden='true'>{'×'}</span>
-                    </button>
+                        {(ariaLabel) => (
+                            <button
+                                type='button'
+                                className='close'
+                                data-dismiss='modal'
+                                aria-label={ariaLabel}
+                                onClick={this.props.closeModal}
+                            >
+                                <span aria-hidden='true'>{'×'}</span>
+                            </button>
+                        )}
+                    </FormattedMessage>
                     <h4
                         className='modal-title'
                         ref='title'
                     >
                         <div className='modal-back'>
-                            <i
-                                className='fa fa-angle-left'
-                                title={Utils.localizeMessage('generic_icons.collapse', 'Collapse Icon')}
-                                onClick={this.props.collapseModal}
-                            />
+                            <FormattedMessage
+                                id='generic_icons.collapse'
+                                defaultMessage='Collapse Icon'
+                            >
+                                {(title) => (
+                                    <i
+                                        className='fa fa-angle-left'
+                                        title={title}
+                                        onClick={this.props.collapseModal}
+                                    />
+                                )}
+                            </FormattedMessage>
                         </div>
                         <FormattedMessage
                             id='user.settings.security.title'
@@ -885,10 +903,17 @@ export default class SecurityTab extends React.Component {
                         className='security-links color--link'
                         dialogType={AccessHistoryModal}
                     >
-                        <i
-                            className='fa fa-clock-o'
-                            title={Utils.localizeMessage('user.settings.security.viewHistory.icon', 'Access History Icon')}
-                        />
+                        <FormattedMessage
+                            id='user.settings.security.viewHistory.icon'
+                            defaultMessage='Access History Icon'
+                        >
+                            {(title) => (
+                                <i
+                                    className='fa fa-clock-o'
+                                    title={title}
+                                />
+                            )}
+                        </FormattedMessage>
                         <FormattedMessage
                             id='user.settings.security.viewHistory'
                             defaultMessage='View Access History'
@@ -898,10 +923,17 @@ export default class SecurityTab extends React.Component {
                         className='security-links color--link margin-top'
                         dialogType={ActivityLogModal}
                     >
-                        <i
-                            className='fa fa-clock-o'
-                            title={Utils.localizeMessage('user.settings.security.logoutActiveSessions.icon', 'Active Sessions Icon')}
-                        />
+                        <FormattedMessage
+                            id='user.settings.security.logoutActiveSessions.icon'
+                            defaultMessage='Active Sessions Icon'
+                        >
+                            {(title) => (
+                                <i
+                                    className='fa fa-clock-o'
+                                    title={title}
+                                />
+                            )}
+                        </FormattedMessage>
                         <FormattedMessage
                             id='user.settings.security.logoutActiveSessions'
                             defaultMessage='View and Logout of Active Sessions'

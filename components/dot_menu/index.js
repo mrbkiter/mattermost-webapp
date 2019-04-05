@@ -3,6 +3,9 @@
 
 import {connect} from 'react-redux';
 import {bindActionCreators} from 'redux';
+import {getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
+
+import {getLicense, getConfig} from 'mattermost-redux/selectors/entities/general';
 
 import {openModal} from 'actions/views/modals';
 import {
@@ -17,6 +20,9 @@ import DotMenu from './dot_menu.jsx';
 
 function mapStateToProps(state) {
     return {
+        postEditTimeLimit: getConfig(state).PostEditTimeLimit,
+        isLicensed: getLicense(state).IsLicensed === 'true',
+        teamId: getCurrentTeamId(state),
         pluginMenuItems: state.plugins.components.PostDropdownMenu,
     };
 }

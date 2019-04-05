@@ -2,10 +2,9 @@
 // See LICENSE.txt for license information.
 
 import React from 'react';
-import {shallow} from 'enzyme';
 
+import {shallowWithIntl} from 'tests/helpers/intl-test-helper.jsx';
 import ChannelHeader from 'components/channel_header/channel_header';
-import {NotificationLevels} from 'utils/constants';
 
 describe('components/ChannelHeader', () => {
     const baseProps = {
@@ -23,6 +22,7 @@ describe('components/ChannelHeader', () => {
             getCustomEmojisInText: jest.fn(),
             updateChannelNotifyProps: jest.fn(),
             goToLastViewedChannel: jest.fn(),
+            loadBot: jest.fn(),
         },
         teamUrl: 'team_url',
         teamId: 'team_id',
@@ -39,6 +39,7 @@ describe('components/ChannelHeader', () => {
             id: 'channel_id',
             team_id: 'team_id',
             name: 'Test',
+            delete_at: 0,
         },
         channelMember: {
             channel_id: 'channel_id',
@@ -50,14 +51,14 @@ describe('components/ChannelHeader', () => {
     };
 
     test('should render properly when empty', () => {
-        const wrapper = shallow(
+        const wrapper = shallowWithIntl(
             <ChannelHeader {...baseProps}/>
         );
         expect(wrapper).toMatchSnapshot();
     });
 
     test('should render properly when populated', () => {
-        const wrapper = shallow(
+        const wrapper = shallowWithIntl(
             <ChannelHeader {...populatedProps}/>
         );
         expect(wrapper).toMatchSnapshot();
@@ -88,7 +89,7 @@ describe('components/ChannelHeader', () => {
             },
         };
 
-        const wrapper = shallow(
+        const wrapper = shallowWithIntl(
             <ChannelHeader {...props}/>
         );
         expect(wrapper).toMatchSnapshot();
@@ -100,7 +101,7 @@ describe('components/ChannelHeader', () => {
             channel: {...populatedProps.channel, delete_at: 1234},
         };
 
-        const wrapper = shallow(
+        const wrapper = shallowWithIntl(
             <ChannelHeader {...props}/>
         );
         expect(wrapper).toMatchSnapshot();
@@ -109,10 +110,10 @@ describe('components/ChannelHeader', () => {
     test('should render correct menu when muted', () => {
         const props = {
             ...populatedProps,
-            channelMember: {...populatedProps.channelMember, notify_props: {mark_unread: NotificationLevels.MENTION}},
+            isMuted: true,
         };
 
-        const wrapper = shallow(
+        const wrapper = shallowWithIntl(
             <ChannelHeader {...props}/>
         );
         expect(wrapper).toMatchSnapshot();

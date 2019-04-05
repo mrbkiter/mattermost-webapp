@@ -54,6 +54,26 @@
 }
 
 @media screen and (max-width: 960px) {
+    .system-users__filter-row {
+        flex-direction: column;
+
+        .system-users__filter {
+            &:first-child {
+                flex: 1 1 auto;
+                padding-bottom: 12px;
+            }
+        }
+
+        > label {
+            margin-bottom: 12px;
+
+            span {
+                flex: 0 0 auto;
+                padding-left: 0;
+            }
+        }
+    }
+
     .app__body {
         .modal {
             .modal-image {
@@ -166,6 +186,11 @@
 
 // Tablet and desktop
 @media screen and (min-width: 768px) {
+    .channel-header__popover {
+        left: 236px !important;
+        top: 44px !important;
+    }
+
     .col-sm-auto {
         float: left;
     }
@@ -474,7 +499,7 @@
 
                     .flag-icon__container {
                         .sidebar--right & {
-                            left: 26px;
+                            left: 30px;
                         }
                     }
 
@@ -490,7 +515,7 @@
                         width: 51px;
 
                         .sidebar--right & {
-                            left: -24px;
+                            left: -20px;
                         }
 
                         &:hover {

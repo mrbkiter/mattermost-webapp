@@ -3,12 +3,10 @@
 
 import PropTypes from 'prop-types';
 import React from 'react';
-import {FormattedMessage} from 'react-intl';
 import Scrollbars from 'react-custom-scrollbars';
 
 import {debounce} from 'mattermost-redux/actions/helpers';
 
-import Constants from 'utils/constants.jsx';
 import * as Utils from 'utils/utils.jsx';
 
 import SearchResultsHeader from 'components/search_results_header';
@@ -17,6 +15,7 @@ import SearchHint from 'components/search_hint/search_hint';
 import FlagPostSearchHint from 'components/search_hint/flag_post_search_hint';
 import NoResultSearchHint from 'components/search_hint/no_result_search_hint';
 import PinPostSearchHint from 'components/search_hint/pin_post_search_hint';
+import LoadingSpinner from 'components/widgets/loading/loading_wrapper.jsx';
 
 const GET_MORE_BUFFER = 30;
 
@@ -136,14 +135,7 @@ export default class SearchResults extends React.PureComponent {
             ctls = (
                 <div className='sidebar--right__subheader'>
                     <div className='sidebar--right__loading'>
-                        <i
-                            className='fa fa-spinner fa-spin'
-                            title={Utils.localizeMessage('generic_icons.searching', 'Searching Icon')}
-                        />
-                        <FormattedMessage
-                            id='search_header.loading'
-                            defaultMessage='Searching...'
-                        />
+                        <LoadingSpinner text={Utils.localizeMessage('search_header.loading', 'Searching')}/>
                     </div>
                 </div>
             );
@@ -189,21 +181,31 @@ export default class SearchResults extends React.PureComponent {
                 sortedResults = results;
             }
 
-            ctls = sortedResults.map((post, idx, arr) => {
-                const reverseCount = arr.length - idx - 1;
-
+            ctls = sortedResults.map((post) => {
                 return (
                     <SearchResultsItem
                         key={post.id}
                         compactDisplay={this.props.compactDisplay}
                         post={post}
                         matches={this.props.matches[post.id]}
-                        lastPostCount={(reverseCount >= 0 && reverseCount < Constants.TEST_ID_COUNT) ? reverseCount : -1}
                         term={(!this.props.isFlaggedPosts && !this.props.isPinnedPosts && !this.props.isMentionSearch) ? searchTerms : ''}
                         isMentionSearch={this.props.isMentionSearch}
                     />
                 );
             }, this);
+        }
+
+        let loadingScreen = null;
+        if (this.props.isSearchGettingMore) {
+            loadingScreen = (
+                <div className='loading-screen'>
+                    <div className='loading__content'>
+                        <div className='round round-1'/>
+                        <div className='round round-2'/>
+                        <div className='round round-3'/>
+                    </div>
+                </div>
+            );
         }
 
         return (
@@ -232,6 +234,7 @@ export default class SearchResults extends React.PureComponent {
                         {ctls}
                     </div>
                 </Scrollbars>
+                {loadingScreen}
             </div>
         );
     }

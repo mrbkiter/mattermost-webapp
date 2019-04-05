@@ -25,8 +25,11 @@ exports[`components/CreateComment should match snapshot read only channel 1`] = 
           id="reply_textbox"
           initialText=""
           isRHS={true}
+          listenForMentionKeyClick={true}
           onBlur={[Function]}
           onChange={[Function]}
+          onComposition={[Function]}
+          onHeightChange={[Function]}
           onKeyDown={[Function]}
           onKeyPress={[Function]}
           popoverMentionKeyClick={true}
@@ -116,8 +119,11 @@ exports[`components/CreateComment should match snapshot, comment with message 1`
           id="reply_textbox"
           initialText=""
           isRHS={true}
+          listenForMentionKeyClick={true}
           onBlur={[Function]}
           onChange={[Function]}
+          onComposition={[Function]}
+          onHeightChange={[Function]}
           onKeyDown={[Function]}
           onKeyPress={[Function]}
           popoverMentionKeyClick={true}
@@ -144,12 +150,11 @@ exports[`components/CreateComment should match snapshot, comment with message 1`
             tabIndex="0"
           >
             <EmojiPickerOverlay
-              container={[MockFunction]}
               enableGifPicker={true}
               onEmojiClick={[Function]}
+              onEmojiClose={[Function]}
               onGifClick={[Function]}
               onHide={[Function]}
-              rightOffset={15}
               show={false}
               spaceRequiredAbove={476}
               spaceRequiredBelow={497}
@@ -243,8 +248,11 @@ exports[`components/CreateComment should match snapshot, emoji picker disabled 1
           id="reply_textbox"
           initialText=""
           isRHS={true}
+          listenForMentionKeyClick={true}
           onBlur={[Function]}
           onChange={[Function]}
+          onComposition={[Function]}
+          onHeightChange={[Function]}
           onKeyDown={[Function]}
           onKeyPress={[Function]}
           popoverMentionKeyClick={true}
@@ -358,8 +366,11 @@ exports[`components/CreateComment should match snapshot, empty comment 1`] = `
           id="reply_textbox"
           initialText=""
           isRHS={true}
+          listenForMentionKeyClick={true}
           onBlur={[Function]}
           onChange={[Function]}
+          onComposition={[Function]}
+          onHeightChange={[Function]}
           onKeyDown={[Function]}
           onKeyPress={[Function]}
           popoverMentionKeyClick={true}
@@ -386,12 +397,11 @@ exports[`components/CreateComment should match snapshot, empty comment 1`] = `
             tabIndex="0"
           >
             <EmojiPickerOverlay
-              container={[MockFunction]}
               enableGifPicker={true}
               onEmojiClick={[Function]}
+              onEmojiClose={[Function]}
               onGifClick={[Function]}
               onHide={[Function]}
-              rightOffset={15}
               show={false}
               spaceRequiredAbove={476}
               spaceRequiredBelow={497}
@@ -485,8 +495,11 @@ exports[`components/CreateComment should match snapshot, non-empty message and u
           id="reply_textbox"
           initialText=""
           isRHS={true}
+          listenForMentionKeyClick={true}
           onBlur={[Function]}
           onChange={[Function]}
+          onComposition={[Function]}
+          onHeightChange={[Function]}
           onKeyDown={[Function]}
           onKeyPress={[Function]}
           popoverMentionKeyClick={true}
@@ -513,12 +526,11 @@ exports[`components/CreateComment should match snapshot, non-empty message and u
             tabIndex="0"
           >
             <EmojiPickerOverlay
-              container={[MockFunction]}
               enableGifPicker={true}
               onEmojiClick={[Function]}
+              onEmojiClose={[Function]}
               onGifClick={[Function]}
               onHide={[Function]}
-              rightOffset={15}
               show={false}
               spaceRequiredAbove={476}
               spaceRequiredBelow={497}

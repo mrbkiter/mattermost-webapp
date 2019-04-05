@@ -34,6 +34,10 @@
         margin-top: .6em;
     }
 
+    blockquote {
+        padding-bottom: 0;
+    }
+
     .popover-title {
         @include border-radius(0);
         background: alpha-color($black, .05);
@@ -41,6 +45,11 @@
         overflow: hidden;
         padding: 8px 10px;
         text-overflow: ellipsis;
+
+        > span {
+            display: flex;
+            justify-content: space-between;
+        }
     }
 
     hr {
@@ -114,8 +123,6 @@
 }
 
 .user-popover__role {
-    display: inline-block;
-    float: right;
     padding: 3px 5px;
     margin-left: 10px;
     background-color: $gray;
@@ -299,7 +306,11 @@
             height: 50px;
             margin: 1px 0;
             overflow: hidden;
-            padding-left: 20px;
+            padding: 0 20px;
+
+            .more-modal__actions {
+                padding-left: 12px;
+            }
 
             &:hover {
                 border-left: 3px solid transparent;
@@ -343,7 +354,7 @@
 
         .more-modal__details {
             line-height: 39px;
-            padding-left: 30px;
+            padding-left: 16px;
         }
 
         .more-modal__actions {

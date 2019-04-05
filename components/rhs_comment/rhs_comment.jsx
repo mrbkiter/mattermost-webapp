@@ -9,35 +9,29 @@ import {
     isPostEphemeral,
     isPostPendingOrFailed,
 } from 'mattermost-redux/utils/post_utils';
-import Permissions from 'mattermost-redux/constants/permissions';
 
-import Constants from 'utils/constants.jsx';
+import Constants, {Locations} from 'utils/constants.jsx';
 import * as PostUtils from 'utils/post_utils.jsx';
 import * as Utils from 'utils/utils.jsx';
 import DotMenu from 'components/dot_menu';
-import EmojiPickerOverlay from 'components/emoji_picker/emoji_picker_overlay.jsx';
 import FileAttachmentListContainer from 'components/file_attachment_list';
 import PostProfilePicture from 'components/post_profile_picture';
 import FailedPostOptions from 'components/post_view/failed_post_options';
 import PostFlagIcon from 'components/post_view/post_flag_icon';
 import PostTime from 'components/post_view/post_time';
-import ReactionListContainer from 'components/post_view/reaction_list';
-import EmojiIcon from 'components/svg/emoji_icon';
-import ChannelPermissionGate from 'components/permissions_gates/channel_permission_gate';
+import PostReaction from 'components/post_view/post_reaction';
+import ReactionList from 'components/post_view/reaction_list';
 import MessageWithAdditionalContent from 'components/message_with_additional_content';
 
-import UserProfile from 'components/user_profile.jsx';
+import UserProfile from 'components/user_profile';
 
 export default class RhsComment extends React.Component {
     static propTypes = {
         post: PropTypes.object,
         teamId: PropTypes.string.isRequired,
-        lastPostCount: PropTypes.number,
-        user: PropTypes.object,
-        currentUser: PropTypes.object.isRequired,
+        currentUserId: PropTypes.string.isRequired,
         compactDisplay: PropTypes.bool,
         isFlagged: PropTypes.bool,
-        status: PropTypes.string,
         isBusy: PropTypes.bool,
         removePost: PropTypes.func.isRequired,
         previewCollapsed: PropTypes.string.isRequired,
@@ -49,9 +43,6 @@ export default class RhsComment extends React.Component {
         pluginPostTypes: PropTypes.object,
         channelIsArchived: PropTypes.bool.isRequired,
         isConsecutivePost: PropTypes.bool,
-        actions: PropTypes.shape({
-            addReaction: PropTypes.func.isRequired,
-        }).isRequired,
     };
 
     constructor(props) {
@@ -64,10 +55,6 @@ export default class RhsComment extends React.Component {
     }
 
     shouldComponentUpdate(nextProps, nextState) {
-        if (nextProps.status !== this.props.status) {
-            return true;
-        }
-
         if (nextProps.isBusy !== this.props.isBusy) {
             return true;
         }
@@ -84,15 +71,7 @@ export default class RhsComment extends React.Component {
             return true;
         }
 
-        if (!Utils.areObjectsEqual(nextProps.currentUser, this.props.currentUser)) {
-            return true;
-        }
-
         if (this.state.showEmojiPicker !== nextState.showEmojiPicker) {
-            return true;
-        }
-
-        if (nextProps.lastPostCount !== this.props.lastPostCount) {
             return true;
         }
 
@@ -105,10 +84,6 @@ export default class RhsComment extends React.Component {
         }
 
         if (this.props.previewEnabled !== nextProps.previewEnabled) {
-            return true;
-        }
-
-        if (!Utils.areObjectsEqual(nextProps.user, this.props.user)) {
             return true;
         }
 
@@ -151,6 +126,7 @@ export default class RhsComment extends React.Component {
                 isPermalink={isPermalink}
                 eventTime={post.create_at}
                 postId={post.id}
+                location={Locations.RHS_COMMENT}
             />
         );
     };
@@ -160,23 +136,13 @@ export default class RhsComment extends React.Component {
 
         this.setState({
             showEmojiPicker,
-            dropdownOpened: showEmojiPicker,
         });
-    };
-
-    reactEmojiClick = (emoji) => {
-        this.setState({
-            dropdownOpened: false,
-            showEmojiPicker: false,
-        });
-        const emojiName = emoji.name || emoji.aliases[0];
-        this.props.actions.addReaction(this.props.post.id, emojiName);
     };
 
     getClassName = (post, isSystemMessage) => {
         let className = 'post post--thread same--root post--comment';
 
-        if (this.props.currentUser.id === post.user_id) {
+        if (this.props.currentUserId === post.user_id) {
             className += ' current--user';
         }
 
@@ -192,7 +158,7 @@ export default class RhsComment extends React.Component {
             className += ' post--pinned';
         }
 
-        if (this.state.dropdownOpened) {
+        if (this.state.dropdownOpened || this.state.showEmojiPicker) {
             className += ' post--hovered';
         }
 
@@ -224,19 +190,9 @@ export default class RhsComment extends React.Component {
     render() {
         const {post, isConsecutivePost, isReadOnly, channelIsArchived} = this.props;
 
-        let idCount = -1;
-        if (this.props.lastPostCount >= 0 && this.props.lastPostCount < Constants.TEST_ID_COUNT) {
-            idCount = this.props.lastPostCount;
-        }
-
         const isEphemeral = isPostEphemeral(post);
         const isSystemMessage = PostUtils.isSystemMessage(post);
         const fromAutoResponder = PostUtils.fromAutoResponder(post);
-
-        let status = this.props.status;
-        if (post.props && post.props.from_webhook === 'true') {
-            status = null;
-        }
 
         let botIndicator;
         let profilePicture;
@@ -244,8 +200,7 @@ export default class RhsComment extends React.Component {
 
         let userProfile = (
             <UserProfile
-                user={this.props.user}
-                status={status}
+                userId={post.user_id}
                 isBusy={this.props.isBusy}
                 isRHS={true}
                 hasMention={true}
@@ -259,8 +214,7 @@ export default class RhsComment extends React.Component {
                     isBusy={this.props.isBusy}
                     isRHS={true}
                     post={post}
-                    status={this.props.status}
-                    user={this.props.user}
+                    userId={post.user_id}
                 />
             );
 
@@ -268,7 +222,8 @@ export default class RhsComment extends React.Component {
                 if (post.props.override_username && this.props.enablePostUsernameOverride) {
                     userProfile = (
                         <UserProfile
-                            user={this.props.user}
+                            userId={post.user_id}
+                            hideStatus={true}
                             overwriteName={post.props.override_username}
                             disablePopover={true}
                         />
@@ -276,7 +231,8 @@ export default class RhsComment extends React.Component {
                 } else {
                     userProfile = (
                         <UserProfile
-                            user={this.props.user}
+                            userId={post.user_id}
+                            hideStatus={true}
                             disablePopover={true}
                         />
                     );
@@ -294,8 +250,8 @@ export default class RhsComment extends React.Component {
                 userProfile = (
                     <span className='auto-responder'>
                         <UserProfile
-                            user={this.props.user}
-                            status={status}
+                            userId={post.user_id}
+                            hideStatus={true}
                             isBusy={this.props.isBusy}
                             isRHS={true}
                             hasMention={true}
@@ -313,7 +269,6 @@ export default class RhsComment extends React.Component {
             } else if (isSystemMessage) {
                 userProfile = (
                     <UserProfile
-                        user={{}}
                         overwriteName={
                             <FormattedMessage
                                 id='post_info.system'
@@ -358,34 +313,18 @@ export default class RhsComment extends React.Component {
             );
         }
 
-        let react;
-
+        let postReaction;
         if (!isReadOnly && !isEphemeral && !post.failed && !isSystemMessage && this.props.enableEmojiPicker && !channelIsArchived) {
-            react = (
-                <ChannelPermissionGate
+            postReaction = (
+                <PostReaction
                     channelId={post.channel_id}
+                    postId={post.id}
                     teamId={this.props.teamId}
-                    permissions={[Permissions.ADD_REACTION]}
-                >
-                    <div>
-                        <EmojiPickerOverlay
-                            show={this.state.showEmojiPicker}
-                            onHide={this.toggleEmojiPicker}
-                            target={this.getDotMenuRef}
-                            onEmojiClick={this.reactEmojiClick}
-                            rightOffset={15}
-                            spaceRequiredAbove={EmojiPickerOverlay.RHS_SPACE_REQUIRED_ABOVE}
-                            spaceRequiredBelow={EmojiPickerOverlay.RHS_SPACE_REQUIRED_BELOW}
-                        />
-                        <button
-                            className='reacticon__container reaction color--link style--none'
-                            onClick={this.toggleEmojiPicker}
-                            ref={'rhs_reacticon_' + post.id}
-                        >
-                            <EmojiIcon className='icon icon--emoji'/>
-                        </button>
-                    </div>
-                </ChannelPermissionGate>
+                    getDotMenuRef={this.getDotMenuRef}
+                    location={Locations.RHS_COMMENT}
+                    showEmojiPicker={this.state.showEmojiPicker}
+                    toggleEmojiPicker={this.toggleEmojiPicker}
+                />
             );
         }
 
@@ -400,10 +339,12 @@ export default class RhsComment extends React.Component {
             const dotMenu = (
                 <DotMenu
                     post={this.props.post}
-                    location={'RHS_COMMENT'}
+                    location={Locations.RHS_COMMENT}
                     isFlagged={this.props.isFlagged}
                     handleDropdownOpened={this.handleDropdownOpened}
+                    handleAddReactionClick={this.toggleEmojiPicker}
                     isReadOnly={isReadOnly || channelIsArchived}
+                    enableEmojiPicker={this.props.enableEmojiPicker}
                 />
             );
 
@@ -413,7 +354,7 @@ export default class RhsComment extends React.Component {
                     className='col col__reply'
                 >
                     {dotMenu}
-                    {react}
+                    {postReaction}
                 </div>
             );
         }
@@ -432,8 +373,7 @@ export default class RhsComment extends React.Component {
 
         const flagIcon = (
             <PostFlagIcon
-                idPrefix={'rhsCommentFlag'}
-                idCount={idCount}
+                location={Locations.RHS_COMMENT}
                 postId={post.id}
                 isFlagged={this.props.isFlagged}
                 isEphemeral={isEphemeral}
@@ -477,7 +417,7 @@ export default class RhsComment extends React.Component {
                                 />
                             </div>
                             {fileAttachment}
-                            <ReactionListContainer
+                            <ReactionList
                                 post={post}
                                 isReadOnly={isReadOnly || channelIsArchived}
                             />

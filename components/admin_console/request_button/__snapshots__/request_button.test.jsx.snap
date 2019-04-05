@@ -13,11 +13,16 @@ exports[`components/admin_console/request_button/request_button.jsx should match
         disabled={false}
         onClick={[Function]}
       >
-        <FormattedMessage
-          defaultMessage="Button Text"
-          id="test"
-          values={Object {}}
-        />
+        <LoadingWrapper
+          loading={false}
+          text=" Loading..."
+        >
+          <FormattedMessage
+            defaultMessage="Button Text"
+            id="test"
+            values={Object {}}
+          />
+        </LoadingWrapper>
       </button>
     </div>
     <div
@@ -94,7 +99,7 @@ exports[`components/admin_console/request_button/request_button.jsx should match
       ],
       "results": Array [
         Object {
-          "isThrow": false,
+          "type": "return",
           "value": undefined,
         },
       ],
@@ -121,24 +126,39 @@ exports[`components/admin_console/request_button/request_button.jsx should match
           disabled={false}
           onClick={[Function]}
         >
-          <FormattedMessage
-            defaultMessage="Button Text"
-            id="test"
-            values={Object {}}
+          <LoadingWrapper
+            loading={false}
+            text=" Loading..."
           >
-            <span>
-              Button Text
-            </span>
-          </FormattedMessage>
+            <FormattedMessage
+              defaultMessage="Button Text"
+              id="test"
+              values={Object {}}
+            >
+              <span>
+                Button Text
+              </span>
+            </FormattedMessage>
+          </LoadingWrapper>
         </button>
         <div>
           <div
             className="alert alert-warning"
           >
-            <i
-              className="fa fa-warning"
-              title="Warning Icon"
-            />
+            <WarningIcon
+              additionalClassName={null}
+            >
+              <FormattedMessage
+                defaultMessage="Warning Icon"
+                id="generic_icons.warning"
+                values={Object {}}
+              >
+                <i
+                  className="fa fa-warning"
+                  title="Warning Icon"
+                />
+              </FormattedMessage>
+            </WarningIcon>
             <FormattedMessage
               defaultMessage="Error Message: {error}"
               id="error.message"
@@ -238,11 +258,11 @@ exports[`components/admin_console/request_button/request_button.jsx should match
       ],
       "results": Array [
         Object {
-          "isThrow": false,
+          "type": "return",
           "value": undefined,
         },
         Object {
-          "isThrow": false,
+          "type": "return",
           "value": undefined,
         },
       ],
@@ -269,24 +289,39 @@ exports[`components/admin_console/request_button/request_button.jsx should match
           disabled={false}
           onClick={[Function]}
         >
-          <FormattedMessage
-            defaultMessage="Button Text"
-            id="test"
-            values={Object {}}
+          <LoadingWrapper
+            loading={false}
+            text=" Loading..."
           >
-            <span>
-              Button Text
-            </span>
-          </FormattedMessage>
+            <FormattedMessage
+              defaultMessage="Button Text"
+              id="test"
+              values={Object {}}
+            >
+              <span>
+                Button Text
+              </span>
+            </FormattedMessage>
+          </LoadingWrapper>
         </button>
         <div>
           <div
             className="alert alert-warning"
           >
-            <i
-              className="fa fa-warning"
-              title="Warning Icon"
-            />
+            <WarningIcon
+              additionalClassName={null}
+            >
+              <FormattedMessage
+                defaultMessage="Warning Icon"
+                id="generic_icons.warning"
+                values={Object {}}
+              >
+                <i
+                  className="fa fa-warning"
+                  title="Warning Icon"
+                />
+              </FormattedMessage>
+            </WarningIcon>
             <FormattedMessage
               defaultMessage="Error Message: {error}"
               id="error.message"
@@ -382,7 +417,7 @@ exports[`components/admin_console/request_button/request_button.jsx should match
       ],
       "results": Array [
         Object {
-          "isThrow": false,
+          "type": "return",
           "value": undefined,
         },
       ],
@@ -409,24 +444,37 @@ exports[`components/admin_console/request_button/request_button.jsx should match
           disabled={false}
           onClick={[Function]}
         >
-          <FormattedMessage
-            defaultMessage="Button Text"
-            id="test"
-            values={Object {}}
+          <LoadingWrapper
+            loading={false}
+            text=" Loading..."
           >
-            <span>
-              Button Text
-            </span>
-          </FormattedMessage>
+            <FormattedMessage
+              defaultMessage="Button Text"
+              id="test"
+              values={Object {}}
+            >
+              <span>
+                Button Text
+              </span>
+            </FormattedMessage>
+          </LoadingWrapper>
         </button>
         <div>
           <div
             className="alert alert-success"
           >
-            <i
-              className="fa fa-success"
-              title="Success Icon"
-            />
+            <SuccessIcon>
+              <FormattedMessage
+                defaultMessage="Success Icon"
+                id="generic_icons.success"
+                values={Object {}}
+              >
+                <i
+                  className="fa fa-check"
+                  title="Success Icon"
+                />
+              </FormattedMessage>
+            </SuccessIcon>
             <FormattedMessage
               defaultMessage="Success Message"
               id="success.message"
@@ -522,11 +570,11 @@ exports[`components/admin_console/request_button/request_button.jsx should match
       ],
       "results": Array [
         Object {
-          "isThrow": false,
+          "type": "return",
           "value": undefined,
         },
         Object {
-          "isThrow": false,
+          "type": "return",
           "value": undefined,
         },
       ],
@@ -553,15 +601,20 @@ exports[`components/admin_console/request_button/request_button.jsx should match
           disabled={false}
           onClick={[Function]}
         >
-          <FormattedMessage
-            defaultMessage="Button Text"
-            id="test"
-            values={Object {}}
+          <LoadingWrapper
+            loading={false}
+            text=" Loading..."
           >
-            <span>
-              Button Text
-            </span>
-          </FormattedMessage>
+            <FormattedMessage
+              defaultMessage="Button Text"
+              id="test"
+              values={Object {}}
+            >
+              <span>
+                Button Text
+              </span>
+            </FormattedMessage>
+          </LoadingWrapper>
         </button>
       </div>
       <div

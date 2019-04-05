@@ -9,7 +9,9 @@ import {FormattedMessage} from 'react-intl';
 
 import QuickInput from 'components/quick_input';
 import UserList from 'components/user_list.jsx';
-import * as Utils from 'utils/utils.jsx';
+import LocalizedInput from 'components/localized_input/localized_input';
+
+import {t} from 'utils/i18n';
 
 const NEXT_BUTTON_TIMEOUT = 500;
 
@@ -27,6 +29,7 @@ export default class SearchableUserList extends React.Component {
         actionUserProps: PropTypes.object,
         focusOnMount: PropTypes.bool,
         renderCount: PropTypes.func,
+        filter: PropTypes.string,
         renderFilterRow: PropTypes.func,
 
         page: PropTypes.number.isRequired,
@@ -115,6 +118,10 @@ export default class SearchableUserList extends React.Component {
             return null;
         }
 
+        if (this.props.filter) {
+            return null;
+        }
+
         const count = users.length;
         const total = this.props.total;
         const isSearch = Boolean(this.props.term);
@@ -179,7 +186,7 @@ export default class SearchableUserList extends React.Component {
             if (pageEnd < this.props.users.length) {
                 nextButton = (
                     <button
-                        className='btn btn-default filter-control filter-control__next'
+                        className='btn btn-link filter-control filter-control__next'
                         onClick={this.nextPage}
                         disabled={this.state.nextDisabled}
                     >
@@ -194,7 +201,7 @@ export default class SearchableUserList extends React.Component {
             if (this.props.page > 0) {
                 previousButton = (
                     <button
-                        className='btn btn-default filter-control filter-control__prev'
+                        className='btn btn-link filter-control filter-control__prev'
                         onClick={this.previousPage}
                     >
                         <FormattedMessage
@@ -213,9 +220,11 @@ export default class SearchableUserList extends React.Component {
             filterRow = (
                 <div className='col-xs-12'>
                     <QuickInput
+                        id='searchUsersInput'
                         ref='filter'
                         className='form-control filter-textbox'
-                        placeholder={Utils.localizeMessage('filtered_user_list.search', 'Search users')}
+                        placeholder={{id: t('filtered_user_list.search'), defaultMessage: 'Search users'}}
+                        inputComponent={LocalizedInput}
                         value={this.props.term}
                         onInput={this.handleInput}
                     />

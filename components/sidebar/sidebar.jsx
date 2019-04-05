@@ -11,8 +11,8 @@ import classNames from 'classnames';
 import Scrollbars from 'react-custom-scrollbars';
 import {SpringSystem, MathUtil} from 'rebound';
 
-import {browserHistory} from 'utils/browser_history';
 import {trackEvent} from 'actions/diagnostics_actions.jsx';
+import {redirectUserToDefaultTeam} from 'actions/global_actions';
 import * as ChannelUtils from 'utils/channel_utils.jsx';
 import {Constants, ModalIdentifiers, SidebarChannelGroups} from 'utils/constants.jsx';
 import * as Utils from 'utils/utils.jsx';
@@ -199,7 +199,7 @@ export default class Sidebar extends React.PureComponent {
             this.channelIdIsDisplayedForProps(prevProps.orderedChannelIds, this.props.currentChannel.id)
         ) {
             this.closedDirectChannel = true;
-            browserHistory.push(`/${this.props.currentTeam.name}/channels/${Constants.DEFAULT_CHANNEL}`);
+            redirectUserToDefaultTeam();
             return;
         }
 
@@ -218,7 +218,10 @@ export default class Sidebar extends React.PureComponent {
         }
 
         this.updateTitle();
-        this.setBadgesActiveAndFavicon();
+
+        // Don't modify favicon for now: https://mattermost.atlassian.net/browse/MM-13643.
+        // this.setBadgesActiveAndFavicon();
+
         this.setFirstAndLastUnreadChannels();
         this.updateUnreadIndicators();
     }
@@ -234,7 +237,7 @@ export default class Sidebar extends React.PureComponent {
 
     setBadgesActiveAndFavicon() {
         this.lastBadgesActive = this.badgesActive;
-        this.badgesActive = this.props.unreads.mentions;
+        this.badgesActive = this.props.unreads.mentionCount;
 
         // update the favicon to show if there are any notifications
         if (this.lastBadgesActive !== this.badgesActive) {
@@ -733,14 +736,7 @@ export default class Sidebar extends React.PureComponent {
                 {moreDirectChannelsModal}
                 {moreChannelsModal}
 
-                <SidebarHeader
-                    teamId={this.props.currentTeam.id}
-                    teamDisplayName={this.props.currentTeam.display_name}
-                    teamDescription={this.props.currentTeam.description}
-                    teamName={this.props.currentTeam.name}
-                    teamType={this.props.currentTeam.type}
-                    currentUser={this.props.currentUser}
-                />
+                <SidebarHeader/>
 
                 <div className='sidebar--left__icons'>
                     <Pluggable pluggableName='LeftSidebarHeader'/>

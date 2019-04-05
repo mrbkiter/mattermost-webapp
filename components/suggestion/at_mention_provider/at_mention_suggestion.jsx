@@ -25,10 +25,17 @@ export default class AtMentionSuggestion extends Suggestion {
                 />
             );
             icon = (
-                <i
-                    className='mention__image fa fa-users fa-2x'
-                    title={Utils.localizeMessage('generic_icons.member', 'Member Icon')}
-                />
+                <FormattedMessage
+                    id='generic_icons.member'
+                    defaultMessage='Member Icon'
+                >
+                    {(title) => (
+                        <i
+                            className='mention__image fa fa-users fa-2x'
+                            title={title}
+                        />
+                    )}
+                </FormattedMessage>
             );
         } else if (user.username === 'channel') {
             username = 'channel';
@@ -39,10 +46,17 @@ export default class AtMentionSuggestion extends Suggestion {
                 />
             );
             icon = (
-                <i
-                    className='mention__image fa fa-users fa-2x'
-                    title={Utils.localizeMessage('generic_icons.member', 'Member Icon')}
-                />
+                <FormattedMessage
+                    id='generic_icons.member'
+                    defaultMessage='Member Icon'
+                >
+                    {(title) => (
+                        <i
+                            className='mention__image fa fa-users fa-2x'
+                            title={title}
+                        />
+                    )}
+                </FormattedMessage>
             );
         } else if (user.username === 'here') {
             username = 'here';
@@ -53,10 +67,17 @@ export default class AtMentionSuggestion extends Suggestion {
                 />
             );
             icon = (
-                <i
-                    className='mention__image fa fa-users fa-2x'
-                    title={Utils.localizeMessage('generic_icons.member', 'Member Icon')}
-                />
+                <FormattedMessage
+                    id='generic_icons.member'
+                    defaultMessage='Member Icon'
+                >
+                    {(title) => (
+                        <i
+                            className='mention__image fa fa-users fa-2x'
+                            title={title}
+                        />
+                    )}
+                </FormattedMessage>
             );
         } else {
             username = user.username;
@@ -82,6 +103,18 @@ export default class AtMentionSuggestion extends Suggestion {
             className += ' suggestion--selected';
         }
 
+        let tag = null;
+        if (user.is_bot) {
+            tag = (
+                <div className='bot-indicator bot-indicator__autocomplete'>
+                    <FormattedMessage
+                        id='post_info.bot'
+                        defaultMessage='BOT'
+                    />
+                </div>
+            );
+        }
+
         return (
             <div
                 className={className}
@@ -92,6 +125,7 @@ export default class AtMentionSuggestion extends Suggestion {
                 <span className='mention--align'>
                     {'@' + username}
                 </span>
+                {tag}
                 <span className='mention__fullname'>
                     {' '}
                     {description}

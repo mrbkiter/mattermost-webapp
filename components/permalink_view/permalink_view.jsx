@@ -3,13 +3,11 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {FormattedMessage} from 'react-intl';
+import {FormattedMessage, intlShape} from 'react-intl';
 import {Link} from 'react-router-dom';
 
 import ChannelHeader from 'components/channel_header';
-import {localizeMessage} from 'utils/utils.jsx';
 import PostView from 'components/post_view';
-import {emitPostFocusEvent} from 'actions/global_actions.jsx';
 import FormattedMarkdownMessage from 'components/formatted_markdown_message';
 
 export default class PermalinkView extends React.PureComponent {
@@ -28,6 +26,13 @@ export default class PermalinkView extends React.PureComponent {
         }).isRequired,
         returnTo: PropTypes.string.isRequired,
         teamName: PropTypes.string,
+        actions: PropTypes.shape({
+            focusPost: PropTypes.func.isRequired,
+        }).isRequired,
+    };
+
+    static contextTypes = {
+        intl: intlShape.isRequired,
     };
 
     constructor(props) {
@@ -53,7 +58,7 @@ export default class PermalinkView extends React.PureComponent {
     doPermalinkEvent = async (props) => {
         this.setState({valid: false});
         const postId = props.match.params.postid;
-        await emitPostFocusEvent(postId, this.props.returnTo);
+        await this.props.actions.focusPost(postId, this.props.returnTo);
         this.setState({valid: true});
     }
 
@@ -69,6 +74,7 @@ export default class PermalinkView extends React.PureComponent {
             match,
             teamName,
         } = this.props;
+        const {formatMessage} = this.context.intl;
 
         if (!this.isStateValid()) {
             return (
@@ -107,7 +113,7 @@ export default class PermalinkView extends React.PureComponent {
                         />
                         <i
                             className='fa fa-arrow-down'
-                            title={localizeMessage('center_panel.recent.icon', 'Jump to recent messages Icon')}
+                            title={formatMessage({id: 'center_panel.recent.icon', defaultMessage: 'Jump to recent messages Icon'})}
                         />
                     </Link>
                 </div>

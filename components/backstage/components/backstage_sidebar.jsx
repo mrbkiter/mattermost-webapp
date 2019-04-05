@@ -23,12 +23,12 @@ export default class BackstageSidebar extends React.Component {
             enableOutgoingWebhooks: PropTypes.bool.isRequired,
             enableCommands: PropTypes.bool.isRequired,
             enableOAuthServiceProvider: PropTypes.bool.isRequired,
-            canCreateCustomEmoji: PropTypes.bool.isRequired,
+            canCreateOrDeleteCustomEmoji: PropTypes.bool.isRequired,
         };
     }
 
     renderCustomEmoji() {
-        if (!this.props.enableCustomEmoji || !this.props.canCreateCustomEmoji) {
+        if (!this.props.enableCustomEmoji || !this.props.canCreateOrDeleteCustomEmoji) {
             return null;
         }
 
@@ -48,18 +48,11 @@ export default class BackstageSidebar extends React.Component {
     }
 
     renderIntegrations() {
-        if (!this.props.enableIncomingWebhooks &&
-            !this.props.enableOutgoingWebhooks &&
-            !this.props.enableCommands &&
-            !this.props.enableOAuthServiceProvider) {
-            return null;
-        }
-
         let incomingWebhooks = null;
         if (this.props.enableIncomingWebhooks) {
             incomingWebhooks = (
                 <TeamPermissionGate
-                    permissions={[Permissions.MANAGE_WEBHOOKS]}
+                    permissions={[Permissions.MANAGE_INCOMING_WEBHOOKS]}
                     teamId={this.props.team.id}
                 >
                     <BackstageSection
@@ -80,7 +73,7 @@ export default class BackstageSidebar extends React.Component {
         if (this.props.enableOutgoingWebhooks) {
             outgoingWebhooks = (
                 <TeamPermissionGate
-                    permissions={[Permissions.MANAGE_WEBHOOKS]}
+                    permissions={[Permissions.MANAGE_OUTGOING_WEBHOOKS]}
                     teamId={this.props.team.id}
                 >
                     <BackstageSection
@@ -136,9 +129,24 @@ export default class BackstageSidebar extends React.Component {
             );
         }
 
+        const botAccounts = (
+            <SystemPermissionGate permissions={['manage_bots']}>
+                <BackstageSection
+                    name='bots'
+                    parentLink={'/' + this.props.team.name + '/integrations'}
+                    title={
+                        <FormattedMessage
+                            id='backstage_sidebar.bots'
+                            defaultMessage='Bot Accounts'
+                        />
+                    }
+                />
+            </SystemPermissionGate>
+        );
+
         return (
             <TeamPermissionGate
-                permissions={[Permissions.MANAGE_WEBHOOKS, Permissions.MANAGE_SLASH_COMMANDS, Permissions.MANAGE_OAUTH]}
+                permissions={[Permissions.MANAGE_INCOMING_WEBHOOKS, Permissions.MANAGE_OUTGOING_WEBHOOKS, Permissions.MANAGE_SLASH_COMMANDS, Permissions.MANAGE_OAUTH]}
                 teamId={this.props.team.id}
             >
                 <BackstageCategory
@@ -156,6 +164,7 @@ export default class BackstageSidebar extends React.Component {
                     {outgoingWebhooks}
                     {commands}
                     {oauthApps}
+                    {botAccounts}
                 </BackstageCategory>
             </TeamPermissionGate>
         );

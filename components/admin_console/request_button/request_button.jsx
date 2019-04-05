@@ -7,6 +7,9 @@ import {FormattedMessage} from 'react-intl';
 
 import * as Utils from 'utils/utils.jsx';
 import {t} from 'utils/i18n';
+import LoadingWrapper from 'components/widgets/loading/loading_wrapper.jsx';
+import SuccessIcon from 'components/icon/success_icon';
+import WarningIcon from 'components/icon/warning_icon';
 
 /**
  * A button which, when clicked, performs an action and displays
@@ -193,10 +196,7 @@ export default class RequestButton extends React.Component {
             message = (
                 <div>
                     <div className='alert alert-warning'>
-                        <i
-                            className='fa fa-warning'
-                            title={Utils.localizeMessage('generic_icons.warning', 'Warning Icon')}
-                        />
+                        <WarningIcon/>
                         <FormattedMessage
                             id={this.props.errorMessage.id}
                             defaultMessage={this.props.errorMessage.defaultMessage}
@@ -211,10 +211,7 @@ export default class RequestButton extends React.Component {
             message = (
                 <div>
                     <div className='alert alert-success'>
-                        <i
-                            className='fa fa-success'
-                            title={Utils.localizeMessage('generic_icons.success', 'Success Icon')}
-                        />
+                        <SuccessIcon/>
                         <FormattedMessage
                             id={this.props.successMessage.id}
                             defaultMessage={this.props.successMessage.defaultMessage}
@@ -222,25 +219,6 @@ export default class RequestButton extends React.Component {
                     </div>
                 </div>
             );
-        }
-
-        let contents = null;
-        if (this.state.busy) {
-            let loadingText = Utils.localizeMessage('admin.requestButton.loading', ' Loading...');
-            if (this.props.loadingText) {
-                loadingText = this.props.loadingText;
-            }
-            contents = (
-                <span>
-                    <span
-                        className='fa fa-refresh icon--rotate'
-                        title={Utils.localizeMessage('generic_icons.loading', 'Loading Icon')}
-                    />
-                    {loadingText}
-                </span>
-            );
-        } else {
-            contents = this.props.buttonText;
         }
 
         let widgetClassNames = 'col-sm-8';
@@ -267,7 +245,12 @@ export default class RequestButton extends React.Component {
                             onClick={this.handleRequest}
                             disabled={this.props.disabled}
                         >
-                            {contents}
+                            <LoadingWrapper
+                                loading={this.state.busy}
+                                text={this.props.loadingText || Utils.localizeMessage('admin.requestButton.loading', ' Loading...')}
+                            >
+                                {this.props.buttonText}
+                            </LoadingWrapper>
                         </button>
                         {this.props.alternativeActionElement}
                         {message}

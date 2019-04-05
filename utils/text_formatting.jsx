@@ -1,24 +1,22 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import twemoji from 'twemoji';
 import XRegExp from 'xregexp';
 import {getEmojiImageUrl} from 'mattermost-redux/utils/emoji_utils';
+import emojiRegex from 'emoji-regex';
 
 import {formatWithRenderer} from 'utils/markdown';
-import RemoveMarkdown from 'utils/markdown/remove_markdown';
 import {getEmojiMap} from 'selectors/emojis';
 import store from 'stores/redux_store.jsx';
 
-import Constants from './constants.jsx';
 import * as Emoticons from './emoticons.jsx';
 import * as Markdown from './markdown';
 
-const removeMarkdown = new RemoveMarkdown();
 const punctuation = XRegExp.cache('[^\\pL\\d]');
 
 const AT_MENTION_PATTERN = /\B@([a-z0-9.\-_]*)/gi;
-const htmlEmojiPattern = /^<p>(?:<img class="emoticon"[^>]*>|<span data-emoticon[^>]*>[^<]*<\/span>\s*)+<\/p>$/;
+const UNICODE_EMOJI_REGEX = emojiRegex();
+const htmlEmojiPattern = /^<p>\s*(?:<img class="emoticon"[^>]*>|<span data-emoticon[^>]*>[^<]*<\/span>\s*|<span class="emoticon emoticon--unicode">[^<]*<\/span>\s*)+<\/p>$/;
 
 // pattern to detect the existence of a Chinese, Japanese, or Korean character in a string
 // http://stackoverflow.com/questions/15033196/using-javascript-to-check-whether-a-string-contains-japanese-characters-includi
@@ -43,6 +41,8 @@ const cjkPattern = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-
 // - team - The current team.
 // - proxyImages - If specified, images are proxied. Defaults to false.
 // - autolinkedUrlSchemes - An array of url schemes that will be allowed for autolinking. Defaults to autolinking with any url scheme.
+// - renderer - a custom renderer object to use in the formatWithRenderer function. Defaults to empty.
+// - minimumHashtagLength - Minimum number of characters in a hashtag. Defaults to 3.
 export function formatText(text, inputOptions) {
     if (!text || typeof text !== 'string') {
         return '';
@@ -58,9 +58,8 @@ export function formatText(text, inputOptions) {
         options.searchPatterns = parseSearchTerms(options.searchTerm).map(convertSearchTermToRegex);
     }
 
-    if (options.removeMarkdown) {
-        output = formatWithRenderer(output, removeMarkdown);
-        output = sanitizeHtml(output);
+    if (options.renderer) {
+        output = formatWithRenderer(output, options.renderer);
         output = doFormatText(output, options);
     } else if (!('markdown' in options) || options.markdown) {
         // the markdown renderer will call doFormatText as necessary
@@ -76,7 +75,7 @@ export function formatText(text, inputOptions) {
     }
 
     if (htmlEmojiPattern.test(output.trim())) {
-        output = '<span class="all-emoji">' + output + '</span>';
+        output = '<span class="all-emoji">' + output.trim() + '</span>';
     }
 
     return output;
@@ -98,7 +97,7 @@ export function doFormatText(text, options) {
     }
 
     output = autolinkEmails(output, tokens);
-    output = autolinkHashtags(output, tokens);
+    output = autolinkHashtags(output, tokens, options.minimumHashtagLength);
 
     if (!('emoticons' in options) || options.emoticon) {
         output = Emoticons.handleEmoticons(output, tokens);
@@ -114,17 +113,7 @@ export function doFormatText(text, options) {
 
     if (!('emoticons' in options) || options.emoticon) {
         const emojiMap = getEmojiMap(store.getState());
-        output = twemoji.parse(output, {
-            className: 'emoticon',
-            callback: (icon) => {
-                if (!emojiMap.hasUnicode(icon)) {
-                    // just leave the unicode characters and hope the browser can handle it
-                    return null;
-                }
-
-                return getEmojiImageUrl(emojiMap.getUnicode(icon));
-            },
-        });
+        output = handleUnicodeEmoji(output, emojiMap, UNICODE_EMOJI_REGEX);
     }
 
     // reinsert tokens with formatted versions of the important words and phrases
@@ -190,6 +179,10 @@ export function autolinkAtMentions(text, tokens) {
 
     let output = text;
 
+    // handle @channel, @all, @here mentions first (purposely excludes trailing punctuation)
+    output = output.replace(/\B@(channel|all|here)/gi, replaceAtMentionWithToken);
+
+    // handle all other mentions (supports trailing punctuation)
     let match = output.match(AT_MENTION_PATTERN);
     while (match && match.length > 0) {
         output = output.replace(AT_MENTION_PATTERN, replaceAtMentionWithToken);
@@ -256,6 +249,9 @@ function autolinkChannelMentions(text, tokens, channelNamesMap, team) {
 }
 
 export function escapeRegex(text) {
+    if (text == null) {
+        return '';
+    }
     return text.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
@@ -328,15 +324,20 @@ function highlightCurrentMentions(text, tokens, mentionKeys = []) {
             flags += 'i';
         }
 
-        const pattern = new RegExp(`(^|\\W)(${escapeRegex(mention.key)})(\\b|_+\\b)`, flags);
-
+        let pattern;
+        if (cjkPattern.test(mention.key)) {
+            // In the case of CJK mention key, even if there's no delimiters (such as spaces) at both ends of a word, it is recognized as a mention key
+            pattern = new RegExp(`()(${escapeRegex(mention.key)})()`, flags);
+        } else {
+            pattern = new RegExp(`(^|\\W)(${escapeRegex(mention.key)})(\\b|_+\\b)`, flags);
+        }
         output = output.replace(pattern, replaceCurrentMentionWithToken);
     }
 
     return output;
 }
 
-function autolinkHashtags(text, tokens) {
+function autolinkHashtags(text, tokens, minimumHashtagLength = 3) {
     let output = text;
 
     var newTokens = new Map();
@@ -365,7 +366,7 @@ function autolinkHashtags(text, tokens) {
         const index = tokens.size;
         const alias = `$MM_HASHTAG${index}$`;
 
-        if (text.length < Constants.MIN_HASHTAG_LINK_LENGTH + 1) {
+        if (originalText.length < minimumHashtagLength + 1) {
             // too short to be a hashtag
             return fullMatch;
         }
@@ -549,4 +550,24 @@ export function replaceTokens(text, tokens) {
 
 function replaceNewlines(text) {
     return text.replace(/\n/g, ' ');
+}
+
+export function handleUnicodeEmoji(text, supportedEmoji, searchPattern) {
+    let output = text;
+
+    // replace all occurances of unicode emoji with additional markup
+    output = output.replace(searchPattern, (emoji) => {
+        // convert unicode character to hex string
+        const emojiCode = emoji.codePointAt(0).toString(16);
+
+        // convert emoji to image if supported, or wrap in span to apply appropriate formatting
+        if (supportedEmoji.hasUnicode(emojiCode)) {
+            // build image tag to replace supported unicode emoji
+            return `<img class="emoticon" draggable="false" alt="${emoji}" src="${getEmojiImageUrl(supportedEmoji.getUnicode(emojiCode))}">`;
+        }
+
+        // wrap unsupported unicode emoji in span to style as needed
+        return `<span class="emoticon emoticon--unicode">${emoji}</span>`;
+    });
+    return output;
 }

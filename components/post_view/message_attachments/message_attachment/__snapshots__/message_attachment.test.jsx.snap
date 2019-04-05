@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`components/post_view/MessageAttachment should call actions.doPostAction on handleAction 1`] = `
+exports[`components/post_view/MessageAttachment should call actions.doPostActionWithCookie on handleAction 1`] = `
 <div
   className="attachment attachment--pretext"
 >
@@ -67,24 +67,34 @@ exports[`components/post_view/MessageAttachment should call actions.doPostAction
             <Connect(Markdown)
               imageProps={
                 Object {
-                  "onHeightReceived": [Function],
+                  "onImageLoaded": [Function],
                 }
               }
               message="short text"
             />
           </Connect(ShowMore)>
-          <img
-            className="attachment__image"
-            height={200}
-            src="image_url"
-            width={200}
-          />
+          <div
+            className="attachment__image-container"
+          >
+            <SizeAwareImage
+              className="attachment__image"
+              dimensions={
+                Object {
+                  "height": 200,
+                  "width": 200,
+                }
+              }
+              onImageLoaded={[Function]}
+              src="image_url"
+            />
+          </div>
           <div
             className="attachment-actions"
           >
             <ActionButton
               action={
                 Object {
+                  "cookie": "cookie-contents",
                   "id": "action_id_1",
                   "name": "action_name_1",
                 }
@@ -97,10 +107,15 @@ exports[`components/post_view/MessageAttachment should call actions.doPostAction
         <div
           className="attachment__thumb-container"
         >
-          <img
-            height={75}
+          <SizeAwareImage
+            dimensions={
+              Object {
+                "height": 200,
+                "width": 200,
+              }
+            }
+            onImageLoaded={[Function]}
             src="thumb_url"
-            width={75}
           />
         </div>
         <div
@@ -183,26 +198,40 @@ exports[`components/post_view/MessageAttachment should match snapshot 1`] = `
             <Connect(Markdown)
               imageProps={
                 Object {
-                  "onHeightReceived": [Function],
+                  "onImageLoaded": [Function],
                 }
               }
               message="short text"
             />
           </Connect(ShowMore)>
-          <img
-            className="attachment__image"
-            height={200}
-            src="image_url"
-            width={200}
-          />
+          <div
+            className="attachment__image-container"
+          >
+            <SizeAwareImage
+              className="attachment__image"
+              dimensions={
+                Object {
+                  "height": 200,
+                  "width": 200,
+                }
+              }
+              onImageLoaded={[Function]}
+              src="image_url"
+            />
+          </div>
         </div>
         <div
           className="attachment__thumb-container"
         >
-          <img
-            height={75}
+          <SizeAwareImage
+            dimensions={
+              Object {
+                "height": 200,
+                "width": 200,
+              }
+            }
+            onImageLoaded={[Function]}
             src="thumb_url"
-            width={75}
           />
         </div>
         <div
@@ -218,41 +247,135 @@ exports[`components/post_view/MessageAttachment should match snapshot 1`] = `
 </div>
 `;
 
-exports[`components/post_view/MessageAttachment should match value on getActionView 1`] = `""`;
-
-exports[`components/post_view/MessageAttachment should match value on getActionView 2`] = `
+exports[`components/post_view/MessageAttachment should match snapshot when the attachment has a link in the title 1`] = `
 <div
-  className="attachment-actions"
+  className="attachment "
 >
-  <ActionButton
-    action={
-      Object {
-        "id": "action_id_1",
-        "name": "action_name_1",
-      }
-    }
-    handleAction={[Function]}
-  />
-  <ActionButton
-    action={
-      Object {
-        "id": "action_id_2",
-        "name": "action_name_2",
-      }
-    }
-    handleAction={[Function]}
-  />
-  <Connect(ActionMenu)
-    action={
-      Object {
-        "data_source": "users",
-        "id": "action_id_3",
-        "name": "action_name_3",
-        "type": "select",
-      }
-    }
-    postId="post_id"
-  />
+  <div
+    className="attachment__content"
+  >
+    <div
+      className="clearfix attachment__container attachment__container--undefined"
+    >
+      <h1
+        className="attachment__title"
+      >
+        <Connect(Markdown)
+          message="Do you like https://mattermost.com?"
+          options={
+            Object {
+              "autolinkedUrlSchemes": Array [],
+              "mentionHighlight": false,
+              "renderer": LinkOnlyRenderer {
+                "options": Object {},
+              },
+            }
+          }
+        />
+      </h1>
+      <div>
+        <div
+          className="attachment__body attachment__body--no_thumb"
+          onClick={[Function]}
+        />
+        <div
+          style={
+            Object {
+              "clear": "both",
+            }
+          }
+        />
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`components/post_view/MessageAttachment should match snapshot when the attachment has an emoji in the title 1`] = `
+<div
+  className="attachment "
+>
+  <div
+    className="attachment__content"
+  >
+    <div
+      className="clearfix attachment__container attachment__container--undefined"
+    >
+      <h1
+        className="attachment__title"
+      >
+        <Connect(Markdown)
+          message="Do you like :pizza:?"
+          options={
+            Object {
+              "autolinkedUrlSchemes": Array [],
+              "mentionHighlight": false,
+              "renderer": LinkOnlyRenderer {
+                "options": Object {},
+              },
+            }
+          }
+        />
+      </h1>
+      <div>
+        <div
+          className="attachment__body attachment__body--no_thumb"
+          onClick={[Function]}
+        />
+        <div
+          style={
+            Object {
+              "clear": "both",
+            }
+          }
+        />
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`components/post_view/MessageAttachment should match snapshot when the attachment hasn't any emojis in the title 1`] = `
+<div
+  className="attachment "
+>
+  <div
+    className="attachment__content"
+  >
+    <div
+      className="clearfix attachment__container attachment__container--undefined"
+    >
+      <h1
+        className="attachment__title"
+      >
+        <Connect(Markdown)
+          message="Don't you like emojis?"
+          options={
+            Object {
+              "autolinkedUrlSchemes": Array [],
+              "mentionHighlight": false,
+              "renderer": LinkOnlyRenderer {
+                "options": Object {},
+              },
+            }
+          }
+        />
+      </h1>
+      <div>
+        <div
+          className="attachment__body attachment__body--no_thumb"
+          onClick={[Function]}
+        />
+        <div
+          style={
+            Object {
+              "clear": "both",
+            }
+          }
+        />
+      </div>
+    </div>
+  </div>
 </div>
 `;
 
@@ -320,5 +443,43 @@ exports[`components/post_view/MessageAttachment should match value on getFieldsT
       </tr>
     </tbody>
   </table>
+</div>
+`;
+
+exports[`components/post_view/MessageAttachment should match value on renderPostActions 1`] = `""`;
+
+exports[`components/post_view/MessageAttachment should match value on renderPostActions 2`] = `
+<div
+  className="attachment-actions"
+>
+  <ActionButton
+    action={
+      Object {
+        "id": "action_id_1",
+        "name": "action_name_1",
+      }
+    }
+    handleAction={[Function]}
+  />
+  <ActionButton
+    action={
+      Object {
+        "id": "action_id_2",
+        "name": "action_name_2",
+      }
+    }
+    handleAction={[Function]}
+  />
+  <Connect(ActionMenu)
+    action={
+      Object {
+        "data_source": "users",
+        "id": "action_id_3",
+        "name": "action_name_3",
+        "type": "select",
+      }
+    }
+    postId="post_id"
+  />
 </div>
 `;

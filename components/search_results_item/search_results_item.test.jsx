@@ -70,7 +70,6 @@ describe('components/SearchResultsItem', () => {
             channel,
             compactDisplay: true,
             post,
-            lastPostCount: -1,
             user,
             currentTeamName: 'test',
             term: 'test',
@@ -79,6 +78,7 @@ describe('components/SearchResultsItem', () => {
             isBusy: false,
             status: 'hello',
             enablePostUsernameOverride: false,
+            isBot: false,
             actions: {
                 closeRightHandSide: mockFunc,
                 selectPost: mockFunc,

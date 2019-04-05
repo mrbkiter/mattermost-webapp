@@ -86,24 +86,28 @@ exports[`components/NewChannelModal should match snapshot, display only private 
             className="col-sm-9"
           >
             <div
-              className="type-container"
+              className="type-container multi-select__radio"
             >
               <div
-                className="flex-parent"
+                className="radio"
               >
-                <LockIcon
-                  className="icon icon__lock icon--body type-icon"
-                />
-                <FormattedMessage
-                  defaultMessage="Private"
-                  id="channel_modal.privateName"
-                  values={Object {}}
-                />
-                <FormattedMessage
-                  defaultMessage=" - Only invited members can join this channel."
-                  id="channel_modal.privateHint"
-                  values={Object {}}
-                />
+                <div
+                  className="flex-parent"
+                >
+                  <LockIcon
+                    className="icon icon__lock icon--body type-icon"
+                  />
+                  <FormattedMessage
+                    defaultMessage="Private"
+                    id="channel_modal.privateName"
+                    values={Object {}}
+                  />
+                  <FormattedMessage
+                    defaultMessage=" - Only invited members can join this channel."
+                    id="channel_modal.privateHint"
+                    values={Object {}}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -123,14 +127,19 @@ exports[`components/NewChannelModal should match snapshot, display only private 
           <div
             className="col-sm-9"
           >
-            <input
+            <LocalizedInput
               autoFocus={true}
               className="form-control"
               id="newPublicChannelName"
               maxLength={22}
               onChange={[Function]}
               onKeyDown={[Function]}
-              placeholder="E.g.: \\"Bugs\\", \\"Marketing\\", \\"客户支持\\""
+              placeholder={
+                Object {
+                  "defaultMessage": "E.g.: \\"Bugs\\", \\"Marketing\\", \\"客户支持\\"",
+                  "id": "channel_modal.nameEx",
+                }
+              }
               tabIndex="1"
               type="text"
               value="testchannel"
@@ -258,7 +267,7 @@ exports[`components/NewChannelModal should match snapshot, display only private 
         componentClass="div"
       >
         <button
-          className="btn btn-default"
+          className="btn btn-link"
           onBlur={[Function]}
           onClick={[MockFunction]}
           tabIndex="8"
@@ -374,24 +383,28 @@ exports[`components/NewChannelModal should match snapshot, display only public c
             className="col-sm-9"
           >
             <div
-              className="type-container"
+              className="type-container multi-select__radio"
             >
               <div
-                className="flex-parent"
+                className="radio"
               >
-                <GlobeIcon
-                  className="icon icon__globe icon--body type-icon"
-                />
-                <FormattedMessage
-                  defaultMessage="Public"
-                  id="channel_modal.publicName"
-                  values={Object {}}
-                />
-                <FormattedMessage
-                  defaultMessage=" - Anyone can join this channel."
-                  id="channel_modal.publicHint"
-                  values={Object {}}
-                />
+                <div
+                  className="flex-parent"
+                >
+                  <GlobeIcon
+                    className="icon icon__globe icon--body type-icon"
+                  />
+                  <FormattedMessage
+                    defaultMessage="Public"
+                    id="channel_modal.publicName"
+                    values={Object {}}
+                  />
+                  <FormattedMessage
+                    defaultMessage=" - Anyone can join this channel."
+                    id="channel_modal.publicHint"
+                    values={Object {}}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -411,14 +424,19 @@ exports[`components/NewChannelModal should match snapshot, display only public c
           <div
             className="col-sm-9"
           >
-            <input
+            <LocalizedInput
               autoFocus={true}
               className="form-control"
               id="newPublicChannelName"
               maxLength={22}
               onChange={[Function]}
               onKeyDown={[Function]}
-              placeholder="E.g.: \\"Bugs\\", \\"Marketing\\", \\"客户支持\\""
+              placeholder={
+                Object {
+                  "defaultMessage": "E.g.: \\"Bugs\\", \\"Marketing\\", \\"客户支持\\"",
+                  "id": "channel_modal.nameEx",
+                }
+              }
               tabIndex="1"
               type="text"
               value="testchannel"
@@ -546,7 +564,7 @@ exports[`components/NewChannelModal should match snapshot, display only public c
         componentClass="div"
       >
         <button
-          className="btn btn-default"
+          className="btn btn-link"
           onBlur={[Function]}
           onClick={[MockFunction]}
           tabIndex="8"
@@ -743,14 +761,19 @@ exports[`components/NewChannelModal should match snapshot, modal not showing 1`]
           <div
             className="col-sm-9"
           >
-            <input
+            <LocalizedInput
               autoFocus={true}
               className="form-control"
               id="newPublicChannelName"
               maxLength={22}
               onChange={[Function]}
               onKeyDown={[Function]}
-              placeholder="E.g.: \\"Bugs\\", \\"Marketing\\", \\"客户支持\\""
+              placeholder={
+                Object {
+                  "defaultMessage": "E.g.: \\"Bugs\\", \\"Marketing\\", \\"客户支持\\"",
+                  "id": "channel_modal.nameEx",
+                }
+              }
               tabIndex="1"
               type="text"
               value="testchannel"
@@ -878,7 +901,7 @@ exports[`components/NewChannelModal should match snapshot, modal not showing 1`]
         componentClass="div"
       >
         <button
-          className="btn btn-default"
+          className="btn btn-link"
           onBlur={[Function]}
           onClick={[MockFunction]}
           tabIndex="8"
@@ -1075,14 +1098,19 @@ exports[`components/NewChannelModal should match snapshot, modal showing 1`] = `
           <div
             className="col-sm-9"
           >
-            <input
+            <LocalizedInput
               autoFocus={true}
               className="form-control"
               id="newPublicChannelName"
               maxLength={22}
               onChange={[Function]}
               onKeyDown={[Function]}
-              placeholder="E.g.: \\"Bugs\\", \\"Marketing\\", \\"客户支持\\""
+              placeholder={
+                Object {
+                  "defaultMessage": "E.g.: \\"Bugs\\", \\"Marketing\\", \\"客户支持\\"",
+                  "id": "channel_modal.nameEx",
+                }
+              }
               tabIndex="1"
               type="text"
               value="testchannel"
@@ -1210,7 +1238,7 @@ exports[`components/NewChannelModal should match snapshot, modal showing 1`] = `
         componentClass="div"
       >
         <button
-          className="btn btn-default"
+          className="btn btn-link"
           onBlur={[Function]}
           onClick={[MockFunction]}
           tabIndex="8"
@@ -1407,14 +1435,19 @@ exports[`components/NewChannelModal should match snapshot, on displayNameError 1
           <div
             className="col-sm-9"
           >
-            <input
+            <LocalizedInput
               autoFocus={true}
               className="form-control"
               id="newPublicChannelName"
               maxLength={22}
               onChange={[Function]}
               onKeyDown={[Function]}
-              placeholder="E.g.: \\"Bugs\\", \\"Marketing\\", \\"客户支持\\""
+              placeholder={
+                Object {
+                  "defaultMessage": "E.g.: \\"Bugs\\", \\"Marketing\\", \\"客户支持\\"",
+                  "id": "channel_modal.nameEx",
+                }
+              }
               tabIndex="1"
               type="text"
               value="testchannel"
@@ -1552,7 +1585,7 @@ exports[`components/NewChannelModal should match snapshot, on displayNameError 1
         componentClass="div"
       >
         <button
-          className="btn btn-default"
+          className="btn btn-link"
           onBlur={[Function]}
           onClick={[MockFunction]}
           tabIndex="8"
@@ -1749,14 +1782,19 @@ exports[`components/NewChannelModal should match snapshot, on serverError 1`] = 
           <div
             className="col-sm-9"
           >
-            <input
+            <LocalizedInput
               autoFocus={true}
               className="form-control"
               id="newPublicChannelName"
               maxLength={22}
               onChange={[Function]}
               onKeyDown={[Function]}
-              placeholder="E.g.: \\"Bugs\\", \\"Marketing\\", \\"客户支持\\""
+              placeholder={
+                Object {
+                  "defaultMessage": "E.g.: \\"Bugs\\", \\"Marketing\\", \\"客户支持\\"",
+                  "id": "channel_modal.nameEx",
+                }
+              }
               tabIndex="1"
               type="text"
               value="testchannel"
@@ -1897,7 +1935,7 @@ exports[`components/NewChannelModal should match snapshot, on serverError 1`] = 
         componentClass="div"
       >
         <button
-          className="btn btn-default"
+          className="btn btn-link"
           onBlur={[Function]}
           onClick={[MockFunction]}
           tabIndex="8"
@@ -2094,14 +2132,19 @@ exports[`components/NewChannelModal should match snapshot, private channel fille
           <div
             className="col-sm-9"
           >
-            <input
+            <LocalizedInput
               autoFocus={true}
               className="form-control"
               id="newPrivateChannelName"
               maxLength={22}
               onChange={[Function]}
               onKeyDown={[Function]}
-              placeholder="E.g.: \\"Bugs\\", \\"Marketing\\", \\"客户支持\\""
+              placeholder={
+                Object {
+                  "defaultMessage": "E.g.: \\"Bugs\\", \\"Marketing\\", \\"客户支持\\"",
+                  "id": "channel_modal.nameEx",
+                }
+              }
               tabIndex="1"
               type="text"
               value="testchannel"
@@ -2229,7 +2272,7 @@ exports[`components/NewChannelModal should match snapshot, private channel fille
         componentClass="div"
       >
         <button
-          className="btn btn-default"
+          className="btn btn-link"
           onBlur={[Function]}
           onClick={[MockFunction]}
           tabIndex="8"

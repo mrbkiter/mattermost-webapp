@@ -33,9 +33,7 @@ describe('components/post_view/PostInfo', () => {
         handleCommentClick: jest.fn(),
         handleDropdownOpened: jest.fn(),
         compactDisplay: false,
-        lastPostCount: 0,
         replyCount: 0,
-        getPostList: jest.fn(),
         useMilitaryTime: false,
         isFlagged: false,
         hover: false,
@@ -43,7 +41,6 @@ describe('components/post_view/PostInfo', () => {
         enableEmojiPicker: false,
         actions: {
             removePost: jest.fn(),
-            addReaction: jest.fn(),
         },
     };
 
@@ -117,22 +114,10 @@ describe('components/post_view/PostInfo', () => {
         expect(handleDropdownOpened).toHaveBeenCalledTimes(1);
     });
 
-    test('hideEmojiPicker, should have called props.handleDropdownOpened(false)', () => {
-        const handleDropdownOpened = jest.fn();
-        const requiredPropsWithHandleDropdownOpened = {...requiredProps, handleDropdownOpened, enableEmojiPicker: true};
-
-        const wrapper = shallow(<PostInfo {...requiredPropsWithHandleDropdownOpened}/>);
-        wrapper.instance().hideEmojiPicker();
-        expect(wrapper).toMatchSnapshot();
-        expect(handleDropdownOpened).toHaveBeenCalledTimes(1);
-        expect(handleDropdownOpened).toBeCalledWith(false);
-    });
-
     test('removePost, should have called props.actions.removePost(post)', () => {
         const removePost = jest.fn();
         const actions = {
             removePost,
-            addReaction: jest.fn(),
         };
         const requiredPropsWithRemovePost = {...requiredProps, actions, enableEmojiPicker: true};
 
@@ -141,26 +126,6 @@ describe('components/post_view/PostInfo', () => {
         expect(wrapper).toMatchSnapshot();
         expect(removePost).toHaveBeenCalledTimes(1);
         expect(removePost).toBeCalledWith(post);
-    });
-
-    test('reactEmojiClick, should have called props.actions.addReaction()', () => {
-        const emoji = {name: 'name'};
-        const addReaction = jest.fn();
-        const actions = {
-            removePost: jest.fn(),
-            addReaction,
-        };
-
-        const handleDropdownOpened = jest.fn();
-        const requiredPropsWithAddReaction = {...requiredProps, actions, handleDropdownOpened, enableEmojiPicker: true};
-
-        const wrapper = shallow(<PostInfo {...requiredPropsWithAddReaction}/>);
-        wrapper.instance().reactEmojiClick(emoji);
-        expect(wrapper).toMatchSnapshot();
-        expect(addReaction).toHaveBeenCalledTimes(1);
-        expect(addReaction).toBeCalledWith(post.id, emoji.name);
-        expect(handleDropdownOpened).toHaveBeenCalledTimes(1);
-        expect(handleDropdownOpened).toBeCalledWith(false);
     });
 
     test('should match snapshot, hover', () => {

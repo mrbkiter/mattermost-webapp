@@ -12,10 +12,11 @@ import {
     getDirectAndGroupChannels,
     getSortedUnreadChannelIds,
     makeGetChannel,
+    getMyChannelMemberships,
 } from 'mattermost-redux/selectors/entities/channels';
-import {getMyChannelMemberships} from 'mattermost-redux/selectors/entities/common';
-import {getBool} from 'mattermost-redux/selectors/entities/preferences';
+import {getBool, getMyPreferences} from 'mattermost-redux/selectors/entities/preferences';
 import {getConfig} from 'mattermost-redux/selectors/entities/general';
+import {getLastPostPerChannel} from 'mattermost-redux/selectors/entities/posts';
 import {getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
 import {
     getCurrentUser,
@@ -27,7 +28,14 @@ import {
 import * as ChannelActions from 'mattermost-redux/actions/channels';
 import {logError} from 'mattermost-redux/actions/errors';
 
-import {sortChannelsByTypeAndDisplayName} from 'mattermost-redux/utils/channel_utils';
+import {
+    sortChannelsByTypeAndDisplayName,
+    isDirectChannelVisible,
+    isGroupChannelVisible,
+    isUnreadChannel,
+} from 'mattermost-redux/utils/channel_utils';
+
+import {FormattedMessage} from 'react-intl';
 
 import DraftIcon from 'components/svg/draft_icon';
 import GlobeIcon from 'components/svg/globe_icon';
@@ -120,14 +128,31 @@ class SwitchChannelSuggestion extends Suggestion {
             );
         }
 
+        let tag = null;
+        if (channel.type === Constants.DM_CHANNEL) {
+            var teammate = Utils.getDirectTeammate(channel.id);
+            if (teammate && teammate.is_bot) {
+                tag = (
+                    <div className='bot-indicator bot-indicator__autocomplete'>
+                        <FormattedMessage
+                            id='post_info.bot'
+                            defaultMessage='BOT'
+                        />
+                    </div>
+                );
+            }
+        }
+
         return (
             <div
                 onClick={this.handleClick}
                 className={className}
+                id={`switchChannel_${channel.name}`}
                 {...Suggestion.baseProps}
             >
                 {icon}
                 {displayName}
+                {tag}
                 {badge}
             </div>
         );
@@ -208,7 +233,7 @@ function makeChannelSearchFilter(channelPrefix) {
             const usersInChannel = usersInChannels[channel.id] || new Set([]);
 
             // In case the channel is a DM and the profilesInChannel is not populated
-            if (!usersInChannel.length && channel.type === Constants.DM_CHANNEL) {
+            if (!usersInChannel.size && channel.type === Constants.DM_CHANNEL) {
                 const userId = Utils.getUserIdFromChannelId(channel.name);
                 const user = getUser(curState, userId);
                 if (user) {
@@ -366,7 +391,7 @@ export default class SwitchChannelProvider extends Provider {
                 } else if (newChannel.type === Constants.GM_CHANNEL) {
                     newChannel.name = getChannelDisplayName(newChannel);
                     wrappedChannel.name = newChannel.name;
-                    const isGMVisible = getBool(getState(), Preferences.CATEGORY_GROUP_CHANNEL_SHOW, newChannel.id, false);
+                    const isGMVisible = isGroupChannelVisible(config, getMyPreferences(state), channel, getLastPostPerChannel(state)[channel.id], isUnreadChannel(getMyChannelMemberships(state), channel));
                     if (isGMVisible) {
                         wrappedChannel.type = Constants.MENTION_CHANNELS;
                     } else {
@@ -385,7 +410,7 @@ export default class SwitchChannelProvider extends Provider {
                             user,
                             newChannel
                         );
-                        const isDMVisible = getBool(getState(), Preferences.CATEGORY_DIRECT_CHANNEL_SHOW, user.id, false);
+                        const isDMVisible = isDirectChannelVisible(user.id, config, getMyPreferences(state), channel, getLastPostPerChannel(state)[channel.id], isUnreadChannel(getMyChannelMemberships(state), channel));
                         if (isDMVisible) {
                             wrappedChannel.type = Constants.MENTION_CHANNELS;
                         } else {

@@ -20,14 +20,13 @@ export default class AnnouncementBarController extends React.PureComponent {
         latestError: PropTypes.object,
         totalUsers: PropTypes.number,
         actions: PropTypes.shape({
-            sendVerificationEmail: PropTypes.func.isRequired,
             dismissError: PropTypes.func.isRequired,
         }).isRequired,
     }
 
     render() {
         let adminConfiguredAnnouncementBar = null;
-        if (this.props.config.EnableBanner === 'true') {
+        if (this.props.config.EnableBanner === 'true' && this.props.config.BannerText.trim()) {
             adminConfiguredAnnouncementBar = (
                 <TextDismissableBar
                     color={this.props.config.BannerColor}
@@ -60,7 +59,6 @@ export default class AnnouncementBarController extends React.PureComponent {
                     canViewSystemErrors={this.props.canViewSystemErrors}
                     totalUsers={this.props.totalUsers}
                     user={this.props.user}
-                    sendVerificationEmail={this.props.actions.sendVerificationEmail}
                 />
             </React.Fragment>
         );

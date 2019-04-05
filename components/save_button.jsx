@@ -3,8 +3,9 @@
 
 import PropTypes from 'prop-types';
 import React from 'react';
+import {intlShape} from 'react-intl';
 
-import {localizeMessage} from 'utils/utils.jsx';
+import LoadingWrapper from 'components/widgets/loading/loading_wrapper.jsx';
 
 export default class SaveButton extends React.PureComponent {
     static propTypes = {
@@ -18,29 +19,25 @@ export default class SaveButton extends React.PureComponent {
 
     static defaultProps = {
         disabled: false,
-        savingMessage: localizeMessage('save_button.saving', 'Saving'),
-        defaultMessage: localizeMessage('save_button.save', 'Save'),
         btnClass: 'btn-primary',
         extraClasses: '',
     }
 
-    render() {
-        const {saving, disabled, savingMessage, defaultMessage, btnClass, extraClasses, ...props} = this.props; // eslint-disable-line no-use-before-define
+    static contextTypes = {
+        intl: intlShape,
+    };
 
-        let contents;
-        if (saving) {
-            contents = (
-                <span>
-                    <span
-                        className='fa fa-spinner icon--rotate'
-                        title={localizeMessage('generic_icons.loading', 'Loading Icon')}
-                    />
-                    {savingMessage}
-                </span>
-            );
-        } else {
-            contents = defaultMessage;
-        }
+    render() {
+        const {formatMessage} = this.context.intl;
+        const {
+            saving,
+            disabled,
+            savingMessage,
+            defaultMessage,
+            btnClass,
+            extraClasses,
+            ...props
+        } = this.props;
 
         let className = 'save-button btn';
         if (!disabled || saving) {
@@ -51,6 +48,9 @@ export default class SaveButton extends React.PureComponent {
             className += ' ' + extraClasses;
         }
 
+        const savingMessageComponent = savingMessage || formatMessage({id: 'save_button.saving', defaultMessage: 'Saving'});
+        const defaultMessageComponent = defaultMessage || formatMessage({id: 'save_button.save', defaultMessage: 'Save'});
+
         return (
             <button
                 type='submit'
@@ -59,7 +59,12 @@ export default class SaveButton extends React.PureComponent {
                 disabled={disabled}
                 {...props}
             >
-                {contents}
+                <LoadingWrapper
+                    loading={saving}
+                    text={savingMessageComponent}
+                >
+                    {defaultMessageComponent}
+                </LoadingWrapper>
             </button>
         );
     }

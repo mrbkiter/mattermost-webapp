@@ -14,7 +14,7 @@ describe('components/LeaveTeamModal', () => {
         show: false,
         isBusy: false,
         actions: {
-            removeUserFromTeam: jest.fn(),
+            leaveTeam: jest.fn(),
             toggleSideBarRightMenu: jest.fn(),
         },
 
@@ -29,22 +29,22 @@ describe('components/LeaveTeamModal', () => {
     it('should call onHide when cancel is clicked', () => {
         const wrapper = shallowWithIntl(<LeaveTeamModal {...requiredProps}/>).
             dive({disableLifecycleMethods: true});
-        const cancel = wrapper.find('.btn-default').first();
+        const cancel = wrapper.find('.btn-link').first();
 
         cancel.simulate('click');
         expect(requiredProps.onHide).toHaveBeenCalledTimes(1);
     });
 
-    it('should call removeUserFromTeam and toggleSideBarRightMenu when ok is clicked', () => {
+    it('should call leaveTeam and toggleSideBarRightMenu when ok is clicked', () => {
         const wrapper = shallowWithIntl(<LeaveTeamModal {...requiredProps}/>).
             dive({disableLifecycleMethods: true});
         const ok = wrapper.find('.btn-danger').first();
 
         ok.simulate('click');
-        expect(requiredProps.actions.removeUserFromTeam).toHaveBeenCalledTimes(1);
+        expect(requiredProps.actions.leaveTeam).toHaveBeenCalledTimes(1);
         expect(requiredProps.actions.toggleSideBarRightMenu).toHaveBeenCalledTimes(1);
         expect(requiredProps.onHide).toHaveBeenCalledTimes(1);
-        expect(requiredProps.actions.removeUserFromTeam).
+        expect(requiredProps.actions.leaveTeam).
             toHaveBeenCalledWith(requiredProps.currentTeamId, requiredProps.currentUserId);
     });
 

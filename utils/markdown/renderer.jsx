@@ -148,7 +148,7 @@ export default class Renderer extends marked.Renderer {
             if (!scheme) {
                 outHref = `http://${outHref}`;
             } else if (isUrl && this.formattingOptions.autolinkedUrlSchemes) {
-                const isValidUrl = this.formattingOptions.autolinkedUrlSchemes.indexOf(scheme) !== -1;
+                const isValidUrl = this.formattingOptions.autolinkedUrlSchemes.indexOf(scheme.toLowerCase()) !== -1;
 
                 if (!isValidUrl) {
                     return text;
@@ -175,14 +175,11 @@ export default class Renderer extends marked.Renderer {
 
         // special case for team invite links, channel links, and permalinks that are inside the app
         let internalLink = false;
-        if (this.formattingOptions.siteURL) {
-            const pattern = new RegExp('^' + TextFormatting.escapeRegex(this.formattingOptions.siteURL) + '\\/(?:signup_user_complete|admin_console|[^\\/]+\\/(?:pl|channels|messages))\\/');
-
-            internalLink = pattern.test(outHref);
-        }
+        const pattern = new RegExp('^(' + TextFormatting.escapeRegex(this.formattingOptions.siteURL) + ')?\\/(?:signup_user_complete|admin_console|[^\\/]+\\/(?:pl|channels|messages))\\/');
+        internalLink = pattern.test(outHref);
 
         if (internalLink) {
-            output += ' data-link="' + outHref.substring(this.formattingOptions.siteURL.length) + '"';
+            output += ' data-link="' + outHref.replace(this.formattingOptions.siteURL, '') + '"';
         } else {
             output += ' target="_blank"';
         }

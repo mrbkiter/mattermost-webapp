@@ -7,6 +7,9 @@ import React from 'react';
 import * as Utils from 'utils/utils.jsx';
 import {UploadStatuses} from 'utils/constants.jsx';
 
+import LoadingWrapper from 'components/widgets/loading/loading_wrapper.jsx';
+import SuccessIcon from 'components/icon/success_icon';
+
 export default class UploadButton extends React.PureComponent {
     static propTypes = {
 
@@ -39,30 +42,15 @@ export default class UploadButton extends React.PureComponent {
             onClick,
         } = this.props;
 
-        let buttonIcon;
-        let buttonText;
-
-        switch (status) {
-        case UploadStatuses.LOADING:
-            buttonIcon = (
-                <i
-                    className='fa fa-refresh icon--rotate'
-                    title={Utils.localizeMessage('generic_icons.loading', 'Loading Icon')}
-                />
-            );
-            buttonText = Utils.localizeMessage('admin.team.uploading', 'Uploading..');
-            break;
-        case UploadStatuses.COMPLETE:
-            buttonIcon = (
-                <i
-                    className='fa fa-check'
-                    title={Utils.localizeMessage('generic_icons.success', 'Success Icon')}
-                />
-            );
-            buttonText = Utils.localizeMessage('admin.team.uploaded', 'Uploaded!');
-            break;
-        default:
-            buttonText = Utils.localizeMessage('admin.team.upload', 'Upload');
+        let buttonContent;
+        if (status === UploadStatuses.COMPLETE) {
+            buttonContent = [
+                <SuccessIcon key='icon'/>,
+                ' ',
+                Utils.localizeMessage('admin.team.uploaded', 'Uploaded!'),
+            ];
+        } else {
+            buttonContent = Utils.localizeMessage('admin.team.upload', 'Upload');
         }
 
         return (
@@ -72,9 +60,12 @@ export default class UploadButton extends React.PureComponent {
                 onClick={onClick}
                 id='upload-button'
             >
-                {buttonIcon}
-                {' '}
-                {buttonText}
+                <LoadingWrapper
+                    loading={status === UploadStatuses.LOADING}
+                    text={Utils.localizeMessage('admin.team.uploading', 'Uploading...')}
+                >
+                    {buttonContent}
+                </LoadingWrapper>
             </button>
         );
     }

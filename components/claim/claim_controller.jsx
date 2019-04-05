@@ -27,7 +27,7 @@ export default class ClaimController extends React.PureComponent {
         }).isRequired,
 
         actions: PropTypes.shape({
-            checkMfa: PropTypes.func.isRequired,
+            switchLdapToEmail: PropTypes.func.isRequired,
         }).isRequired,
     };
 
@@ -65,7 +65,6 @@ export default class ClaimController extends React.PureComponent {
                                             newType={newType}
                                             email={email}
                                             siteName={this.props.siteName}
-                                            checkMfa={this.props.actions.checkMfa}
                                         />
                                     )}
                                 />
@@ -75,7 +74,7 @@ export default class ClaimController extends React.PureComponent {
                                         <LDAPToEmail
                                             email={email}
                                             passwordConfig={this.props.passwordConfig}
-                                            checkMfa={this.props.actions.checkMfa}
+                                            switchLdapToEmail={this.props.actions.switchLdapToEmail}
                                         />
                                     )}
                                 />
@@ -86,7 +85,6 @@ export default class ClaimController extends React.PureComponent {
                                             email={email}
                                             siteName={this.props.siteName}
                                             ldapLoginFieldName={this.props.ldapLoginFieldName}
-                                            checkMfa={this.props.actions.checkMfa}
                                         />
                                     )}
                                 />

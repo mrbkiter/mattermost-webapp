@@ -1,20 +1,16 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {bindActionCreators} from 'redux';
 import {connect} from 'react-redux';
 import {Posts} from 'mattermost-redux/constants';
 import {isChannelReadOnlyById} from 'mattermost-redux/selectors/entities/channels';
 import {getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
-import {getUser, getStatusForUserId} from 'mattermost-redux/selectors/entities/users';
 import {getConfig} from 'mattermost-redux/selectors/entities/general';
 import {getPost} from 'mattermost-redux/selectors/entities/posts';
 import {get} from 'mattermost-redux/selectors/entities/preferences';
 import {isSystemMessage} from 'mattermost-redux/utils/post_utils';
 
-import {addReaction} from 'actions/post_actions.jsx';
-
-import {Preferences, UserStatuses} from 'utils/constants.jsx';
+import {Preferences} from 'utils/constants.jsx';
 import {isEmbedVisible} from 'selectors/posts';
 
 import RhsComment from './rhs_comment.jsx';
@@ -53,8 +49,6 @@ function mapStateToProps(state, ownProps) {
         isEmbedVisible: isEmbedVisible(state, ownProps.post.id),
         isReadOnly: isChannelReadOnlyById(state, ownProps.post.channel_id),
         teamId,
-        user: getUser(state, ownProps.post.user_id),
-        status: getStatusForUserId(state, ownProps.post.user_id) || UserStatuses.OFFLINE,
         pluginPostTypes: state.plugins.postTypes,
         channelIsArchived: channel.delete_at !== 0,
         isConsecutivePost: isConsecutivePost(state, ownProps),
@@ -63,12 +57,4 @@ function mapStateToProps(state, ownProps) {
     };
 }
 
-function mapDispatchToProps(dispatch) {
-    return {
-        actions: bindActionCreators({
-            addReaction,
-        }, dispatch),
-    };
-}
-
-export default connect(mapStateToProps, mapDispatchToProps)(RhsComment);
+export default connect(mapStateToProps)(RhsComment);

@@ -5,14 +5,13 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
 
-import {updateUserNotifyProps} from 'actions/user_actions.jsx';
 import Constants, {NotificationLevels} from 'utils/constants.jsx';
 import * as Utils from 'utils/utils.jsx';
 import SettingItemMax from 'components/setting_item_max.jsx';
 import SettingItemMin from 'components/setting_item_min.jsx';
 
 import DesktopNotificationSettings from './desktop_notification_settings.jsx';
-import EmailNotificationSetting from './email_notification_setting.jsx';
+import EmailNotificationSetting from './email_notification_setting';
 import ManageAutoResponder from './manage_auto_responder.jsx';
 
 function getNotificationsStateFromProps(props) {
@@ -124,11 +123,12 @@ export default class NotificationsTab extends React.Component {
         prevActiveSection: PropTypes.string,
         closeModal: PropTypes.func.isRequired,
         collapseModal: PropTypes.func.isRequired,
-        sendEmailNotifications: PropTypes.bool,
-        enableEmailBatching: PropTypes.bool,
         siteName: PropTypes.string,
         sendPushNotifications: PropTypes.bool,
         enableAutoResponder: PropTypes.bool,
+        actions: PropTypes.shape({
+            updateMe: PropTypes.func.isRequired,
+        }).isRequired,
     }
 
     static defaultProps = {
@@ -144,9 +144,9 @@ export default class NotificationsTab extends React.Component {
         this.state = getNotificationsStateFromProps(props);
     }
 
-    handleSubmit = (enableEmail = this.state.enableEmail) => {
+    handleSubmit = () => {
         const data = {};
-        data.email = enableEmail;
+        data.email = this.state.enableEmail;
         data.desktop_sound = this.state.desktopSound;
         data.desktop = this.state.desktopActivity;
         data.push = this.state.pushActivity;
@@ -178,16 +178,15 @@ export default class NotificationsTab extends React.Component {
 
         this.setState({isSaving: true});
 
-        updateUserNotifyProps(
-            data,
-            () => {
-                this.updateSection('');
-                this.setState(getNotificationsStateFromProps(this.props));
-            },
-            (err) => {
-                this.setState({serverError: err.message, isSaving: false});
-            }
-        );
+        this.props.actions.updateMe({notify_props: data}).
+            then(({data: result, error: err}) => {
+                if (result) {
+                    this.updateSection('');
+                    this.setState(getNotificationsStateFromProps(this.props));
+                } else if (err) {
+                    this.setState({serverError: err.message, isSaving: false});
+                }
+            });
     }
 
     handleCancel = (e) => {
@@ -219,22 +218,18 @@ export default class NotificationsTab extends React.Component {
 
     handleNotifyCommentsRadio(notifyCommentsLevel) {
         this.setState({notifyCommentsLevel});
-        this.refs.wrapper.focus();
     }
 
     handlePushRadio(pushActivity) {
         this.setState({pushActivity});
-        this.refs.wrapper.focus();
     }
 
     handlePushStatusRadio(pushStatus) {
         this.setState({pushStatus});
-        this.refs.wrapper.focus();
     }
 
     handleEmailRadio = (enableEmail) => {
         this.setState({enableEmail});
-        this.refs.wrapper.focus();
     }
 
     updateUsernameKey = (val) => {
@@ -740,7 +735,7 @@ export default class NotificationsTab extends React.Component {
                             />
                             <FormattedMessage
                                 id='user.settings.notifications.commentsAny'
-                                defaultMessage='Mention any comments in a thread you participated in (This will include both mentions to your root post and any comments after you commented on a post)'
+                                defaultMessage='Trigger notifications on messages in reply threads that I start or participate in'
                             />
                         </label>
                         <br/>
@@ -756,7 +751,7 @@ export default class NotificationsTab extends React.Component {
                             />
                             <FormattedMessage
                                 id='user.settings.notifications.commentsRoot'
-                                defaultMessage='Mention any comments on your post'
+                                defaultMessage='Trigger notifications on messages in threads that I start'
                             />
                         </label>
                         <br/>
@@ -772,7 +767,7 @@ export default class NotificationsTab extends React.Component {
                             />
                             <FormattedMessage
                                 id='user.settings.notifications.commentsNever'
-                                defaultMessage='No mentions for comments'
+                                defaultMessage="Do not trigger notifications on messages in reply threads unless I'm mentioned"
                             />
                         </label>
                     </div>
@@ -866,27 +861,24 @@ export default class NotificationsTab extends React.Component {
                 );
 
                 autoResponderSection = (
-                    <div>
-                        <SettingItemMin
-                            title={
-                                <FormattedMessage
-                                    id='user.settings.notifications.autoResponder'
-                                    defaultMessage='Automatic Direct Message Replies'
-                                />
-                            }
-                            width='medium'
-                            describe={describe}
-                            section={'auto-responder'}
-                            updateSection={this.updateSection}
-                        />
-                        <div className='divider-dark'/>
-                    </div>
+
+                    <SettingItemMin
+                        title={
+                            <FormattedMessage
+                                id='user.settings.notifications.autoResponder'
+                                defaultMessage='Automatic Direct Message Replies'
+                            />
+                        }
+                        width='medium'
+                        describe={describe}
+                        section={'auto-responder'}
+                        updateSection={this.updateSection}
+                    />
                 );
             }
         }
 
         const pushNotificationSection = this.createPushNotificationSection();
-        const enableEmail = this.state.enableEmail === 'true';
 
         return (
             <div id='notificationSettings'>
@@ -905,11 +897,18 @@ export default class NotificationsTab extends React.Component {
                         ref='title'
                     >
                         <div className='modal-back'>
-                            <i
-                                className='fa fa-angle-left'
-                                title={Utils.localizeMessage('generic_icons.collapse', 'Collapse Icon')}
-                                onClick={this.props.collapseModal}
-                            />
+                            <FormattedMessage
+                                id='generic_icons.collapse'
+                                defaultMessage='Collapse Icon'
+                            >
+                                {(title) => (
+                                    <i
+                                        className='fa fa-angle-left'
+                                        title={title}
+                                        onClick={this.props.collapseModal}
+                                    />
+                                )}
+                            </FormattedMessage>
                         </div>
                         <FormattedMessage
                             id='user.settings.notifications.title'
@@ -947,15 +946,13 @@ export default class NotificationsTab extends React.Component {
                     <EmailNotificationSetting
                         activeSection={this.props.activeSection}
                         updateSection={this.props.updateSection}
-                        enableEmail={enableEmail}
-                        emailInterval={Utils.getEmailInterval(this.props.enableEmailBatching, enableEmail)}
+                        enableEmail={this.state.enableEmail === 'true'}
                         onSubmit={this.handleSubmit}
                         onCancel={this.handleCancel}
+                        onChange={this.handleEmailRadio}
                         saving={this.state.isSaving}
                         serverError={this.state.serverError}
                         focused={this.props.prevActiveSection === prevSections.email}
-                        sendEmailNotifications={this.props.sendEmailNotifications}
-                        enableEmailBatching={this.props.enableEmailBatching}
                         siteName={this.props.siteName}
                     />
                     <div className='divider-light'/>

@@ -4,17 +4,25 @@
 import $ from 'jquery';
 import PropTypes from 'prop-types';
 import React from 'react';
-import {FormattedMessage} from 'react-intl';
+import {FormattedMessage, intlShape} from 'react-intl';
+import {Tooltip, OverlayTrigger} from 'react-bootstrap';
 
 import * as Utils from 'utils/utils.jsx';
+import Constants from 'utils/constants.jsx';
+import {generateIndex} from 'utils/admin_console_index.jsx';
+
 import AdminSidebarCategory from 'components/admin_console/admin_sidebar_category.jsx';
 import AdminSidebarHeader from 'components/admin_console/admin_sidebar_header';
 import AdminSidebarSection from 'components/admin_console/admin_sidebar_section.jsx';
+import AdminDefinition from 'components/admin_console/admin_definition.jsx';
+import Highlight from 'components/admin_console/highlight.jsx';
+import SearchIcon from 'components/svg/search_icon.jsx';
 
 export default class AdminSidebar extends React.Component {
     static get contextTypes() {
         return {
             router: PropTypes.object.isRequired,
+            intl: intlShape.isRequired,
         };
     }
 
@@ -24,6 +32,8 @@ export default class AdminSidebar extends React.Component {
         plugins: PropTypes.object,
         buildEnterpriseReady: PropTypes.bool,
         siteName: PropTypes.string,
+        onFilterChange: PropTypes.func.isRequired,
+        navigationBlocked: PropTypes.bool.isRequired,
         actions: PropTypes.shape({
 
             /*
@@ -35,6 +45,15 @@ export default class AdminSidebar extends React.Component {
 
     static defaultProps = {
         plugins: {},
+    }
+
+    constructor(props) {
+        super(props);
+        this.state = {
+            sections: null,
+            filter: '',
+        };
+        this.idx = null;
     }
 
     componentDidMount() {
@@ -59,6 +78,45 @@ export default class AdminSidebar extends React.Component {
         }
     }
 
+    onFilterChange = (e) => {
+        const filter = e.target.value;
+        if (filter === '') {
+            this.setState({sections: null, filter});
+            this.props.onFilterChange(filter);
+            return;
+        }
+
+        if (this.idx === null) {
+            this.idx = generateIndex(this.context.intl);
+        }
+        let query = '';
+        for (const term of filter.split(' ')) {
+            term.trim();
+            if (term !== '') {
+                query += term + ' ';
+                query += term + '* ';
+            }
+        }
+        const sections = this.idx.search(query);
+        this.setState({sections, filter});
+        this.props.onFilterChange(filter);
+
+        if (this.props.navigationBlocked) {
+            return;
+        }
+
+        const validSection = sections.indexOf(this.context.router.history.location.pathname.replace('/admin_console/', '')) !== -1;
+        if (!validSection) {
+            const visibleSections = this.visibleSections();
+            for (const section of sections) {
+                if (visibleSections.has(section)) {
+                    this.context.router.history.replace('/admin_console/' + section);
+                    break;
+                }
+            }
+        }
+    }
+
     updateTitle = () => {
         let currentSiteName = '';
         if (this.props.siteName) {
@@ -68,285 +126,179 @@ export default class AdminSidebar extends React.Component {
         document.title = Utils.localizeMessage('sidebar_right_menu.console', 'System Console') + currentSiteName;
     }
 
-    render() {
-        let oauthSettings = null;
-        let ldapSettings = null;
-        let samlSettings = null;
-        let clusterSettings = null;
-        let metricsSettings = null;
-        let complianceSettings = null;
-        let customTermsOfServiceSettings = null;
-        let mfaSettings = null;
-        let messageExportSettings = null;
-        let complianceSection = null;
+    visibleSections = () => {
+        const isVisible = (item) => {
+            if (!item.schema) {
+                return false;
+            }
 
-        let license = null;
-        let audits = null;
-        let announcement = null;
+            if (!item.title) {
+                return false;
+            }
 
-        if (this.props.buildEnterpriseReady) {
-            license = (
+            if (item.isHidden && item.isHidden(this.props.config, {}, this.props.license, this.props.buildEnterpriseReady)) {
+                return false;
+            }
+            return true;
+        };
+        const result = new Set();
+        for (const item of Object.values(AdminDefinition.reporting)) {
+            if (isVisible(item)) {
+                result.add(item.url);
+            }
+        }
+        for (const item of Object.values(AdminDefinition.other)) {
+            if (isVisible(item)) {
+                result.add(item.url);
+            }
+        }
+        for (const section of Object.values(AdminDefinition.settings)) {
+            for (const item of Object.values(section)) {
+                if (isVisible(item)) {
+                    result.add(section.url + '/' + item.url);
+                }
+            }
+        }
+        return result;
+    }
+
+    renderSettingsMenu = (section) => {
+        const menuEntries = [];
+        Object.values(section).forEach((item) => {
+            if (!item.schema) {
+                return;
+            }
+
+            if (!item.title) {
+                return;
+            }
+
+            if (item.isHidden && item.isHidden(this.props.config, {}, this.props.license, this.props.buildEnterpriseReady)) {
+                return;
+            }
+
+            if (this.state.sections !== null) {
+                let active = false;
+                for (const url of this.state.sections) {
+                    if (url.endsWith('/' + item.url)) {
+                        active = true;
+                    }
+                }
+                if (!active) {
+                    return;
+                }
+            }
+
+            menuEntries.push((
                 <AdminSidebarSection
-                    name='license'
+                    key={item.url}
+                    name={item.url}
                     title={
                         <FormattedMessage
-                            id='admin.sidebar.license'
-                            defaultMessage='Edition and License'
+                            id={item.title}
+                            defaultMessage={item.title_default}
                         />
                     }
                 />
-            );
+            ));
+        });
+
+        if (menuEntries.length === 0) {
+            return null;
         }
 
-        if (this.props.license.IsLicensed === 'true') {
-            if (this.props.license.LDAP === 'true') {
-                ldapSettings = (
-                    <AdminSidebarSection
-                        name='ldap'
-                        title={
-                            <FormattedMessage
-                                id='admin.sidebar.ldap'
-                                defaultMessage='AD/LDAP'
-                            />
-                        }
+        // Special case for plugins entries
+        let extraEntries;
+        if (section.url === 'plugins') {
+            extraEntries = this.renderPluginsMenu();
+        }
+
+        return (
+            <AdminSidebarSection
+                key={section.url}
+                name={section.url}
+                type='text'
+                title={
+                    <FormattedMessage
+                        id={section.title}
+                        defaultMessage={section.title_default}
                     />
-                );
+                }
+            >
+                {menuEntries}
+                {extraEntries}
+            </AdminSidebarSection>
+        );
+    }
+
+    renderRootMenu = (section, icon, title, titleDefault) => {
+        const menuEntries = [];
+        Object.values(section).forEach((item) => {
+            if (!item.title) {
+                return;
             }
 
-            if (this.props.license.Cluster === 'true') {
-                clusterSettings = (
-                    <AdminSidebarSection
-                        name='cluster'
-                        title={
-                            <FormattedMessage
-                                id='admin.sidebar.cluster'
-                                defaultMessage='High Availability'
-                            />
-                        }
-                    />
-                );
+            if (item.isHidden && item.isHidden(this.props.config, {}, this.props.license, this.props.buildEnterpriseReady)) {
+                return;
             }
 
-            if (this.props.license.Metrics === 'true') {
-                metricsSettings = (
-                    <AdminSidebarSection
-                        name='metrics'
-                        title={
-                            <FormattedMessage
-                                id='admin.sidebar.metrics'
-                                defaultMessage='Performance Monitoring'
-                            />
-                        }
-                    />
-                );
+            if (this.state.sections !== null) {
+                let active = false;
+                for (const url of this.state.sections) {
+                    if (url === item.url) {
+                        active = true;
+                    }
+                }
+                if (!active) {
+                    return;
+                }
             }
 
-            if (this.props.license.SAML === 'true') {
-                samlSettings = (
-                    <AdminSidebarSection
-                        name='saml'
-                        title={
-                            <FormattedMessage
-                                id='admin.sidebar.saml'
-                                defaultMessage='SAML 2.0'
-                            />
-                        }
-                    />
-                );
-            }
-
-            if (this.props.license.Compliance === 'true') {
-                complianceSettings = (
-                    <AdminSidebarSection
-                        name='compliance'
-                        title={
-                            <FormattedMessage
-                                id='admin.sidebar.compliance'
-                                defaultMessage='Compliance'
-                            />
-                        }
-                    />
-                );
-            }
-
-            if (this.props.license.CustomTermsOfService === 'true') {
-                customTermsOfServiceSettings = (
-                    <AdminSidebarSection
-                        name='custom_terms_of_service'
-                        title={
-                            <FormattedMessage
-                                id='admin.sidebar.customTermsOfService'
-                                defaultMessage='Custom Terms of Service'
-                            />
-                        }
-                    />
-                );
-            }
-
-            if (this.props.license.MFA === 'true') {
-                mfaSettings = (
-                    <AdminSidebarSection
-                        name='mfa'
-                        title={
-                            <FormattedMessage
-                                id='admin.sidebar.mfa'
-                                defaultMessage='MFA'
-                            />
-                        }
-                    />
-                );
-            }
-
-            if (this.props.license.MessageExport === 'true') {
-                messageExportSettings = (
-                    <AdminSidebarSection
-                        name='message_export'
-                        title={
-                            <FormattedMessage
-                                id='admin.sidebar.compliance_export'
-                                defaultMessage='Compliance Export (Beta)'
-                            />
-                        }
-                    />
-                );
-            }
-
-            oauthSettings = (
+            menuEntries.push((
                 <AdminSidebarSection
-                    name='oauth'
+                    key={item.url}
+                    name={item.url}
                     title={
                         <FormattedMessage
-                            id='admin.sidebar.oauth'
-                            defaultMessage='OAuth 2.0'
+                            id={item.title}
+                            defaultMessage={item.title_default}
                         />
                     }
                 />
-            );
-            announcement = (
-                <AdminSidebarSection
-                    name='announcement'
-                    title={
-                        <FormattedMessage
-                            id='admin.sidebar.announcement'
-                            defaultMessage='Announcement Banner'
-                        />
-                    }
-                />
-            );
-        } else {
-            oauthSettings = (
-                <AdminSidebarSection
-                    name='gitlab'
-                    title={
-                        <FormattedMessage
-                            id='admin.sidebar.gitlab'
-                            defaultMessage='GitLab'
-                        />
-                    }
-                />
-            );
+            ));
+        });
+
+        if (menuEntries.length === 0) {
+            return null;
         }
 
-        if (this.props.license.IsLicensed === 'true') {
-            audits = (
-                <AdminSidebarSection
-                    name='audits'
-                    title={
-                        <FormattedMessage
-                            id='admin.sidebar.audits'
-                            defaultMessage='Complaince and Auditing'
-                        />
-                    }
-                />
-            );
-        }
+        return (
+            <AdminSidebarCategory
+                parentLink='/admin_console'
+                icon={icon}
+                title={
+                    <FormattedMessage
+                        id={title}
+                        defaultMessage={titleDefault}
+                    />
+                }
+            >
+                {menuEntries}
+            </AdminSidebarCategory>
+        );
+    }
 
-        let otherCategory = null;
-        if (license || audits) {
-            otherCategory = (
-                <AdminSidebarCategory
-                    parentLink='/admin_console'
-                    icon='fa-wrench'
-                    title={
-                        <FormattedMessage
-                            id='admin.sidebar.other'
-                            defaultMessage='OTHER'
-                        />
-                    }
-                >
-                    {license}
-                    {audits}
-                </AdminSidebarCategory>
-            );
-        }
-
-        let elasticSearchSettings = null;
-        if (this.props.license.IsLicensed === 'true' && this.props.license.Elasticsearch === 'true') {
-            elasticSearchSettings = (
-                <AdminSidebarSection
-                    name='elasticsearch'
-                    title={
-                        <FormattedMessage
-                            id='admin.sidebar.elasticsearch'
-                            defaultMessage='Elasticsearch'
-                        />
-                    }
-                />
-            );
-        }
-
-        let dataRetentionSettings = null;
-        if (this.props.license.IsLicensed === 'true' && this.props.license.DataRetention === 'true') {
-            dataRetentionSettings = (
-                <AdminSidebarSection
-                    name='data_retention'
-                    title={
-                        <FormattedMessage
-                            id='admin.sidebar.data_retention'
-                            defaultMessage='Data Retention Policy'
-                        />
-                    }
-                />
-            );
-        }
-
-        const SHOW_CLIENT_VERSIONS = false;
-        let clientVersions = null;
-        if (SHOW_CLIENT_VERSIONS) {
-            clientVersions = (
-                <AdminSidebarSection
-                    name='client_versions'
-                    title={
-                        <FormattedMessage
-                            id='admin.sidebar.client_versions'
-                            defaultMessage='Client Versions'
-                        />
-                    }
-                />
-            );
-        }
-
-        if (dataRetentionSettings || messageExportSettings) {
-            complianceSection = (
-                <AdminSidebarSection
-                    name='compliance'
-                    type='text'
-                    title={
-                        <FormattedMessage
-                            id='admin.sidebar.compliance'
-                            defaultMessage='Compliance'
-                        />
-                    }
-                >
-                    {dataRetentionSettings}
-                    {messageExportSettings}
-                </AdminSidebarSection>
-            );
-        }
-
+    renderPluginsMenu = () => {
         const customPlugins = [];
         if (this.props.config.PluginSettings.Enable) {
-            Object.values(this.props.plugins).forEach((p) => {
+            Object.values(this.props.plugins).sort((a, b) => {
+                const nameCompare = a.name.localeCompare(b.name);
+                if (nameCompare !== 0) {
+                    return nameCompare;
+                }
+
+                return a.id.localeCompare(b.id);
+            }).forEach((p) => {
                 const hasSettings = p.settings_schema && (p.settings_schema.header || p.settings_schema.footer || p.settings_schema.settings.length > 0);
                 if (!hasSettings) {
                     return;
@@ -361,465 +313,80 @@ export default class AdminSidebar extends React.Component {
                 );
             });
         }
+        return customPlugins;
+    }
 
+    handleClearFilter = () => {
+        this.setState({sections: null, filter: ''});
+        this.props.onFilterChange('');
+    }
+
+    render() {
+        const filterClearTooltip = (
+            <Tooltip id='admin-sidebar-fitler-clear'>
+                <FormattedMessage
+                    id='admin.sidebar.filter-clear'
+                    defaultMessage='Clear search'
+                />
+            </Tooltip>
+        );
         return (
             <div className='admin-sidebar'>
                 <AdminSidebarHeader/>
                 <div className='nav-pills__container'>
-                    <ul className='nav nav-pills nav-stacked'>
-                        <AdminSidebarCategory
-                            parentLink='/admin_console'
-                            icon='fa-bar-chart'
-                            title={
-                                <FormattedMessage
-                                    id='admin.sidebar.reports'
-                                    defaultMessage='REPORTING'
+                    <Highlight filter={this.state.filter}>
+                        <ul className='nav nav-pills nav-stacked'>
+                            <li className='filter-container'>
+                                <SearchIcon
+                                    id='searchIcon'
+                                    className='search__icon'
+                                    aria-hidden='true'
                                 />
-                            }
-                        >
-                            <AdminSidebarSection
-                                name='system_analytics'
-                                title={
-                                    <FormattedMessage
-                                        id='admin.sidebar.view_statistics'
-                                        defaultMessage='Site Statistics'
-                                    />
-                                }
-                            />
-                            <AdminSidebarSection
-                                name='team_analytics'
-                                title={
-                                    <FormattedMessage
-                                        id='admin.sidebar.statistics'
-                                        defaultMessage='Team Statistics'
-                                    />
-                                }
-                            />
-                            <AdminSidebarSection
-                                name='users'
-                                title={
-                                    <FormattedMessage
-                                        id='admin.sidebar.users'
-                                        defaultMessage='Users'
-                                    />
-                                }
-                            />
-                            <AdminSidebarSection
-                                name='logs'
-                                title={
-                                    <FormattedMessage
-                                        id='admin.sidebar.logs'
-                                        defaultMessage='Logs'
-                                    />
-                                }
-                            />
-                        </AdminSidebarCategory>
-                        <AdminSidebarCategory
-                            sectionClass='sections--settings'
-                            parentLink='/admin_console'
-                            icon='fa-gear'
-                            title={
-                                <FormattedMessage
-                                    id='admin.sidebar.settings'
-                                    defaultMessage='SETTINGS'
-                                />
-                            }
-                        >
-                            <AdminSidebarSection
-                                name='general'
-                                type='text'
-                                title={
-                                    <FormattedMessage
-                                        id='admin.sidebar.general'
-                                        defaultMessage='General'
-                                    />
-                                }
-                            >
-                                <AdminSidebarSection
-                                    name='configuration'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.configuration'
-                                            defaultMessage='Configuration'
-                                        />
-                                    }
-                                />
-                                <AdminSidebarSection
-                                    name='localization'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.localization'
-                                            defaultMessage='Localization'
-                                        />
-                                    }
-                                />
-                                <AdminSidebarSection
-                                    name='users_and_teams'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.usersAndTeams'
-                                            defaultMessage='Users and Teams'
-                                        />
-                                    }
-                                />
-                                <AdminSidebarSection
-                                    name='privacy'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.privacy'
-                                            defaultMessage='Privacy'
-                                        />
-                                    }
-                                />
-                                {complianceSettings}
-                                <AdminSidebarSection
-                                    name='logging'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.logging'
-                                            defaultMessage='Logging'
-                                        />
-                                    }
-                                />
-                            </AdminSidebarSection>
-                            {this.props.license.IsLicensed === 'true' &&
-                                <AdminSidebarSection
-                                    name='permissions'
+                                <input
+                                    className={'filter ' + (this.state.filter ? 'active' : '')}
                                     type='text'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.permissions'
-                                            defaultMessage='Advanced Permissions'
-                                        />
-                                    }
-                                >
-                                    {this.props.license.CustomPermissionsSchemes !== 'true' &&
-                                        <AdminSidebarSection
-                                            name='system-scheme'
-                                            title={
-                                                <FormattedMessage
-                                                    id='admin.sidebar.system-scheme'
-                                                    defaultMessage='System scheme'
-                                                />
-                                            }
-                                        />}
-                                    {this.props.license.CustomPermissionsSchemes === 'true' &&
-                                        <AdminSidebarSection
-                                            name='schemes'
-                                            title={
-                                                <FormattedMessage
-                                                    id='admin.sidebar.schemes'
-                                                    defaultMessage='Permission Schemes'
-                                                />
-                                            }
-                                        />}
-                                </AdminSidebarSection>}
-                            <AdminSidebarSection
-                                name='authentication'
-                                type='text'
-                                title={
-                                    <FormattedMessage
-                                        id='admin.sidebar.authentication'
-                                        defaultMessage='Authentication'
-                                    />
-                                }
-                            >
-                                <AdminSidebarSection
-                                    name='authentication_email'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.email'
-                                            defaultMessage='Email'
-                                        />
-                                    }
+                                    onChange={this.onFilterChange}
+                                    value={this.state.filter}
+                                    placeholder={Utils.localizeMessage('admin.sidebar.filter', 'Find settings')}
                                 />
-                                {oauthSettings}
-                                {ldapSettings}
-                                {samlSettings}
-                                {mfaSettings}
-                            </AdminSidebarSection>
-                            <AdminSidebarSection
-                                name='security'
-                                type='text'
-                                title={
-                                    <FormattedMessage
-                                        id='admin.sidebar.security'
-                                        defaultMessage='Security'
-                                    />
-                                }
-                            >
-                                <AdminSidebarSection
-                                    name='sign_up'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.signUp'
-                                            defaultMessage='Sign Up'
-                                        />
-                                    }
-                                />
-                                <AdminSidebarSection
-                                    name='password'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.password'
-                                            defaultMessage='Password'
-                                        />
-                                    }
-                                />
-                                <AdminSidebarSection
-                                    name='public_links'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.publicLinks'
-                                            defaultMessage='Public Links'
-                                        />
-                                    }
-                                />
-                                <AdminSidebarSection
-                                    name='sessions'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.sessions'
-                                            defaultMessage='Sessions'
-                                        />
-                                    }
-                                />
-                                <AdminSidebarSection
-                                    name='connections'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.connections'
-                                            defaultMessage='Connections'
-                                        />
-                                    }
-                                />
-                                {clientVersions}
-                            </AdminSidebarSection>
-                            <AdminSidebarSection
-                                name='notifications'
-                                type='text'
-                                title={
-                                    <FormattedMessage
-                                        id='admin.sidebar.notifications'
-                                        defaultMessage='Notifications'
-                                    />
-                                }
-                            >
-                                <AdminSidebarSection
-                                    name='notifications_email'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.email'
-                                            defaultMessage='Email'
-                                        />
-                                    }
-                                />
-                                <AdminSidebarSection
-                                    name='push'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.push'
-                                            defaultMessage='Mobile Push'
-                                        />
-                                    }
-                                />
-                            </AdminSidebarSection>
-                            <AdminSidebarSection
-                                name='integrations'
-                                type='text'
-                                title={
-                                    <FormattedMessage
-                                        id='admin.sidebar.integrations'
-                                        defaultMessage='Integrations'
-                                    />
-                                }
-                            >
-                                <AdminSidebarSection
-                                    name='custom'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.customIntegrations'
-                                            defaultMessage='Custom Integrations'
-                                        />
-                                    }
-                                />
-                                <AdminSidebarSection
-                                    name='external'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.external'
-                                            defaultMessage='External Services'
-                                        />
-                                    }
-                                />
-                            </AdminSidebarSection>
-                            <AdminSidebarSection
-                                name='plugins'
-                                type='text'
-                                title={
-                                    <FormattedMessage
-                                        id='admin.sidebar.plugins'
-                                        defaultMessage='Plugins (Beta)'
-                                    />
-                                }
-                            >
-                                <AdminSidebarSection
-                                    name='management'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.plugins.management'
-                                            defaultMessage='Management'
-                                        />
-                                    }
-                                />
-                                {customPlugins}
-                            </AdminSidebarSection>
-                            <AdminSidebarSection
-                                name='files'
-                                type='text'
-                                title={
-                                    <FormattedMessage
-                                        id='admin.sidebar.files'
-                                        defaultMessage='Files'
-                                    />
-                                }
-                            >
-                                <AdminSidebarSection
-                                    key='storage'
-                                    name='storage'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.storage'
-                                            defaultMessage='Storage'
-                                        />
-                                    }
-                                />
-                            </AdminSidebarSection>
-                            <AdminSidebarSection
-                                name='customization'
-                                type='text'
-                                title={
-                                    <FormattedMessage
-                                        id='admin.sidebar.customization'
-                                        defaultMessage='Customization'
-                                    />
-                                }
-                            >
-                                <AdminSidebarSection
-                                    name='custom_brand'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.customBrand'
-                                            defaultMessage='Custom Branding'
-                                        />
-                                    }
-                                />
-                                {announcement}
-                                <AdminSidebarSection
-                                    name='emoji'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.emoji'
-                                            defaultMessage='Emoji'
-                                        />
+                                {this.state.filter &&
+                                    <div
+                                        className='sidebar__search-clear visible'
+                                        onClick={this.handleClearFilter}
+                                    >
+                                        <OverlayTrigger
+                                            trigger={['hover', 'focus']}
+                                            delayShow={Constants.OVERLAY_TIME_DELAY}
+                                            placement='bottom'
+                                            overlay={filterClearTooltip}
+                                        >
+                                            <span
+                                                className='sidebar__search-clear-x'
+                                                aria-hidden='true'
+                                            >
+                                                {'×'}
+                                            </span>
+                                        </OverlayTrigger>
+                                    </div>}
+                            </li>
 
-                                    }
-                                />
-                                <AdminSidebarSection
-                                    name='gif'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.gif'
-                                            defaultMessage='GIF (Beta)'
-                                        />
-
-                                    }
-                                />
-                                <AdminSidebarSection
-                                    name='posts'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.posts'
-                                            defaultMessage='Posts'
-                                        />
-
-                                    }
-                                />
-                                <AdminSidebarSection
-                                    name='legal_and_support'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.legalAndSupport'
-                                            defaultMessage='Legal and Support'
-                                        />
-                                    }
-                                />
-                                {customTermsOfServiceSettings}
-                                <AdminSidebarSection
-                                    name='native_app_links'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.nativeAppLinks'
-                                            defaultMessage='Mattermost App Links'
-                                        />
-
-                                    }
-                                />
-                            </AdminSidebarSection>
-                            {complianceSection}
-                            <AdminSidebarSection
-                                name='advanced'
-                                type='text'
+                            {this.renderRootMenu(AdminDefinition.reporting, 'fa-bar-chart', 'admin.sidebar.reports', 'REPORTING')}
+                            <AdminSidebarCategory
+                                sectionClass='sections--settings'
+                                parentLink='/admin_console'
+                                icon='fa-gear'
                                 title={
                                     <FormattedMessage
-                                        id='admin.sidebar.advanced'
-                                        defaultMessage='Advanced'
+                                        id='admin.sidebar.settings'
+                                        defaultMessage='SETTINGS'
                                     />
                                 }
                             >
-                                <AdminSidebarSection
-                                    name='rate'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.rateLimiting'
-                                            defaultMessage='Rate Limiting'
-                                        />
-                                    }
-                                />
-                                <AdminSidebarSection
-                                    name='database'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.database'
-                                            defaultMessage='Database'
-                                        />
-                                    }
-                                />
-                                <AdminSidebarSection
-                                    name='redis'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.redis'
-                                            defaultMessage='Redis'
-                                        />
-                                    }
-                                />
-                                {elasticSearchSettings}
-                                <AdminSidebarSection
-                                    name='developer'
-                                    title={
-                                        <FormattedMessage
-                                            id='admin.sidebar.developer'
-                                            defaultMessage='Developer'
-                                        />
-                                    }
-                                />
-                                {clusterSettings}
-                                {metricsSettings}
-                            </AdminSidebarSection>
-                        </AdminSidebarCategory>
-                        {otherCategory}
-                    </ul>
+                                {Object.values(AdminDefinition.settings).map(this.renderSettingsMenu)}
+                            </AdminSidebarCategory>
+                            {this.renderRootMenu(AdminDefinition.other, 'fa-wrench', 'admin.sidebar.other', 'OTHER')}
+                        </ul>
+                    </Highlight>
                 </div>
             </div>
         );

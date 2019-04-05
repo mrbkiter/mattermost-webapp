@@ -9,7 +9,7 @@ import {getUser} from 'mattermost-redux/actions/users';
 
 import {browserHistory} from 'utils/browser_history';
 
-export function removeUserFromTeam(teamId, userId) {
+export function removeUserFromTeamAndGetStats(teamId, userId) {
     return async (dispatch, getState) => {
         const response = await dispatch(TeamActions.removeUserFromTeam(teamId, userId));
         dispatch(getUser(userId));
@@ -22,6 +22,28 @@ export function removeUserFromTeam(teamId, userId) {
 export function addUserToTeamFromInvite(token, inviteId) {
     return async (dispatch) => {
         const {data: member, error} = await dispatch(TeamActions.addUserToTeamFromInvite(token, inviteId));
+        if (member) {
+            const {data} = await dispatch(TeamActions.getTeam(member.team_id));
+
+            dispatch({
+                type: TeamTypes.RECEIVED_MY_TEAM_MEMBER,
+                data: {
+                    ...member,
+                    delete_at: 0,
+                    msg_count: 0,
+                    mention_count: 0,
+                },
+            });
+
+            return {data};
+        }
+        return {error};
+    };
+}
+
+export function addUserToTeam(teamId, userId) {
+    return async (dispatch) => {
+        const {data: member, error} = await dispatch(TeamActions.addUserToTeam(teamId, userId));
         if (member) {
             const {data} = await dispatch(TeamActions.getTeam(member.team_id));
 

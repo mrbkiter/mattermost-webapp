@@ -75,7 +75,7 @@ export default class DeletePostModal extends React.PureComponent {
 
     render() {
         var commentWarning = '';
-        if (this.props.commentCount > 0) {
+        if (this.props.commentCount > 0 && this.props.post.root_id === '') {
             commentWarning = (
                 <FormattedMessage
                     id='delete_post.warning'
@@ -106,6 +106,7 @@ export default class DeletePostModal extends React.PureComponent {
                 onHide={this.onHide}
                 onExited={this.props.onHide}
                 enforceFocus={false}
+                id='deletePostModal'
             >
                 <Modal.Header closeButton={true}>
                     <Modal.Title>
@@ -133,7 +134,7 @@ export default class DeletePostModal extends React.PureComponent {
                 <Modal.Footer>
                     <button
                         type='button'
-                        className='btn btn-default'
+                        className='btn btn-link'
                         onClick={this.onHide}
                     >
                         <FormattedMessage
@@ -149,6 +150,7 @@ export default class DeletePostModal extends React.PureComponent {
                         autoFocus={true}
                         className='btn btn-danger'
                         onClick={this.handleDelete}
+                        id='deletePostModalButton'
                     >
                         <FormattedMessage
                             id='delete_post.del'

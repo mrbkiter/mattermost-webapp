@@ -7,6 +7,7 @@ import {Link} from 'react-router-dom';
 
 import * as GlobalActions from 'actions/global_actions.jsx';
 import {isMobile} from 'utils/user_agent.jsx';
+import {Locations} from 'utils/constants.jsx';
 import {isMobile as isMobileView} from 'utils/utils.jsx';
 import LocalDateTime from 'components/local_date_time';
 
@@ -23,6 +24,8 @@ export default class PostTime extends React.PureComponent {
          */
         eventTime: PropTypes.number.isRequired,
 
+        location: PropTypes.oneOf([Locations.CENTER, Locations.RHS_ROOT, Locations.RHS_COMMENT, Locations.SEARCH]).isRequired,
+
         /*
          * The post id of posting being rendered
          */
@@ -32,6 +35,7 @@ export default class PostTime extends React.PureComponent {
 
     static defaultProps = {
         eventTime: 0,
+        location: Locations.CENTER,
     };
 
     handleClick = () => {
@@ -50,9 +54,16 @@ export default class PostTime extends React.PureComponent {
             return localDateTime;
         }
 
+        const {
+            location,
+            postId,
+            teamUrl,
+        } = this.props;
+
         return (
             <Link
-                to={`${this.props.teamUrl}/pl/${this.props.postId}`}
+                id={`${location}_time_${postId}`}
+                to={`${teamUrl}/pl/${postId}`}
                 className='post__permalink'
                 onClick={this.handleClick}
             >

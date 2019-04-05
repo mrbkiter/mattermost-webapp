@@ -12,6 +12,7 @@ import {filterProfilesMatchingTerm} from 'mattermost-redux/utils/user_utils';
 import {displayEntireNameForUser, localizeMessage} from 'utils/utils.jsx';
 import ProfilePicture from 'components/profile_picture.jsx';
 import MultiSelect from 'components/multiselect/multiselect.jsx';
+import AddIcon from 'components/icon/add_icon';
 
 import {searchUsers} from 'actions/user_actions.jsx';
 import Constants from 'utils/constants.jsx';
@@ -141,6 +142,17 @@ export default class ChannelInviteModal extends React.Component {
         if (isSelected) {
             rowSelected = 'more-modal__row--selected';
         }
+        let tag = null;
+        if (option.is_bot) {
+            tag = (
+                <div className='bot-indicator bot-indicator__popoverlist'>
+                    <FormattedMessage
+                        id='post_info.bot'
+                        defaultMessage='BOT'
+                    />
+                </div>
+            );
+        }
 
         return (
             <div
@@ -157,14 +169,12 @@ export default class ChannelInviteModal extends React.Component {
                 <div className='more-modal__details'>
                     <div className='more-modal__name'>
                         {displayEntireNameForUser(option)}
+                        {tag}
                     </div>
                 </div>
                 <div className='more-modal__actions'>
                     <div className='more-modal__actions--round'>
-                        <i
-                            className='fa fa-plus'
-                            title={localizeMessage('generic_icons.add', 'Add Icon')}
-                        />
+                        <AddIcon/>
                     </div>
                 </div>
             </div>
@@ -192,6 +202,7 @@ export default class ChannelInviteModal extends React.Component {
         );
 
         const buttonSubmitText = localizeMessage('multiselect.add', 'Add');
+        const buttonSubmitLoadingText = localizeMessage('multiselect.adding', 'Adding...');
 
         let users = filterProfilesMatchingTerm(this.props.profilesNotInCurrentChannel, this.state.term);
         users = users.filter((user) => user.delete_at === 0);
@@ -202,7 +213,6 @@ export default class ChannelInviteModal extends React.Component {
                 options={users}
                 optionRenderer={this.renderOption}
                 values={this.state.values}
-                valueKey='id'
                 valueRenderer={this.renderValue}
                 perPage={USERS_PER_PAGE}
                 handlePageChange={this.handlePageChange}
@@ -213,6 +223,7 @@ export default class ChannelInviteModal extends React.Component {
                 maxValues={MAX_SELECTABLE_VALUES}
                 numRemainingText={numRemainingText}
                 buttonSubmitText={buttonSubmitText}
+                buttonSubmitLoadingText={buttonSubmitLoadingText}
                 saving={this.state.saving}
                 loading={this.state.loadingUsers}
             />

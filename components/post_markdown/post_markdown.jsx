@@ -12,7 +12,7 @@ export default class PostMarkdown extends React.PureComponent {
     static propTypes = {
 
         /*
-         * Any extra props that should be passed into the MarkdownImage component
+         * Any extra props that should be passed into the image component
          */
         imageProps: PropTypes.object,
 
@@ -35,6 +35,11 @@ export default class PostMarkdown extends React.PureComponent {
         options: PropTypes.object,
 
         pluginHooks: PropTypes.arrayOf(PropTypes.object),
+
+        /**
+         * Whether or not to place the LinkTooltip component inside links
+         */
+        hasPluginTooltips: PropTypes.bool,
     };
 
     static defaultProps = {
@@ -58,7 +63,7 @@ export default class PostMarkdown extends React.PureComponent {
         const {post} = this.props;
 
         this.props.pluginHooks.forEach((o) => {
-            if (o && o.hook) {
+            if (o && o.hook && post) {
                 message = o.hook(post, message);
             }
         });
@@ -71,6 +76,7 @@ export default class PostMarkdown extends React.PureComponent {
                 proxyImages={proxyImages}
                 options={this.props.options}
                 channelNamesMap={channelNamesMap}
+                hasPluginTooltips={this.props.hasPluginTooltips}
                 imagesMetadata={this.props.post && this.props.post.metadata && this.props.post.metadata.images}
             />
         );

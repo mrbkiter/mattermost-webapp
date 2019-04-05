@@ -5,7 +5,11 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
 
+import LoadingWrapper from 'components/widgets/loading/loading_wrapper.jsx';
+
 import * as Utils from 'utils/utils.jsx';
+import SuccessIcon from 'components/icon/success_icon';
+import WarningIcon from 'components/icon/warning_icon';
 
 export default class EmailConnectionTestButton extends React.Component {
     static get propTypes() {
@@ -67,10 +71,7 @@ export default class EmailConnectionTestButton extends React.Component {
         if (this.state.success) {
             testMessage = (
                 <div className='alert alert-success'>
-                    <i
-                        className='fa fa-check'
-                        title={Utils.localizeMessage('generic_icons.success', 'Success Icon')}
-                    />
+                    <SuccessIcon/>
                     <FormattedMessage
                         id='admin.email.emailSuccess'
                         defaultMessage='No errors were reported while sending an email.  Please check your inbox to make sure.'
@@ -80,32 +81,9 @@ export default class EmailConnectionTestButton extends React.Component {
         } else if (this.state.fail) {
             testMessage = (
                 <div className='alert alert-warning'>
-                    <i
-                        className='fa fa-warning'
-                        title={Utils.localizeMessage('generic_icons.warning', 'Warning Icon')}
-                    />
+                    <WarningIcon/>
                     {this.state.fail}
                 </div>
-            );
-        }
-
-        let contents = null;
-        if (this.state.testing) {
-            contents = (
-                <span>
-                    <span
-                        className='fa fa-refresh icon--rotate'
-                        title={Utils.localizeMessage('generic_icons.testing', 'Testing Icon')}
-                    />
-                    {Utils.localizeMessage('admin.email.testing', 'Testing...')}
-                </span>
-            );
-        } else {
-            contents = (
-                <FormattedMessage
-                    id='admin.email.connectionSecurityTest'
-                    defaultMessage='Test Connection'
-                />
             );
         }
 
@@ -118,7 +96,15 @@ export default class EmailConnectionTestButton extends React.Component {
                             onClick={this.handleTestConnection}
                             disabled={this.props.disabled}
                         >
-                            {contents}
+                            <LoadingWrapper
+                                loading={this.state.testing}
+                                text={Utils.localizeMessage('admin.email.testing', 'Testing...')}
+                            >
+                                <FormattedMessage
+                                    id='admin.email.connectionSecurityTest'
+                                    defaultMessage='Test Connection'
+                                />
+                            </LoadingWrapper>
                         </button>
                         <div>
                             {testMessage}

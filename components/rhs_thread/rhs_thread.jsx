@@ -13,7 +13,7 @@ import DelayedAction from 'utils/delayed_action.jsx';
 import * as Utils from 'utils/utils.jsx';
 import * as UserAgent from 'utils/user_agent.jsx';
 import CreateComment from 'components/create_comment';
-import DateSeparator from 'components/post_view/date_separator.jsx';
+import DateSeparator from 'components/post_view/date_separator';
 import FloatingTimestamp from 'components/post_view/floating_timestamp.jsx';
 import RhsComment from 'components/rhs_comment';
 import RhsHeaderPost from 'components/rhs_header_post';
@@ -50,7 +50,7 @@ export default class RhsThread extends React.Component {
         channel: PropTypes.object.isRequired,
         selected: PropTypes.object.isRequired,
         previousRhsState: PropTypes.string,
-        currentUser: PropTypes.object.isRequired,
+        currentUserId: PropTypes.string.isRequired,
         previewCollapsed: PropTypes.string.isRequired,
         previewEnabled: PropTypes.bool.isRequired,
         actions: PropTypes.shape({
@@ -105,7 +105,7 @@ export default class RhsThread extends React.Component {
 
         const curLastPost = curPostsArray[curPostsArray.length - 1];
 
-        if (curLastPost.user_id === this.props.currentUser.id) {
+        if (curLastPost.user_id === this.props.currentUserId) {
             this.scrollToBottom();
         }
     }
@@ -120,10 +120,6 @@ export default class RhsThread extends React.Component {
         }
 
         if (nextProps.previewEnabled !== this.props.previewEnabled) {
-            return true;
-        }
-
-        if (!Utils.areObjectsEqual(nextProps.currentUser, this.props.currentUser)) {
             return true;
         }
 
@@ -238,7 +234,7 @@ export default class RhsThread extends React.Component {
         }
 
         const postsArray = this.filterPosts(this.props.posts, this.props.selected, this.state.openTime);
-        const {selected, currentUser} = this.props;
+        const {selected, currentUserId} = this.props;
 
         let createAt = selected.create_at;
         if (!createAt && this.props.posts.length > 0) {
@@ -264,7 +260,6 @@ export default class RhsThread extends React.Component {
             }
 
             const keyPrefix = comPost.id ? comPost.id : comPost.pending_post_id;
-            const reverseCount = postsLength - i - 1;
 
             commentsLists.push(
                 <RhsComment
@@ -273,8 +268,7 @@ export default class RhsThread extends React.Component {
                     post={comPost}
                     previousPostId={previousPostId}
                     teamId={this.props.channel.team_id}
-                    lastPostCount={(reverseCount >= 0 && reverseCount < Constants.TEST_ID_COUNT) ? reverseCount : -1}
-                    currentUser={currentUser}
+                    currentUserId={currentUserId}
                     isBusy={this.state.isBusy}
                     removePost={this.props.actions.removePost}
                     previewCollapsed={this.props.previewCollapsed}
@@ -329,6 +323,7 @@ export default class RhsThread extends React.Component {
 
         return (
             <div
+                id='rhsContainer'
                 className='sidebar-right__body'
                 ref='sidebarbody'
             >
@@ -357,7 +352,7 @@ export default class RhsThread extends React.Component {
                             post={selected}
                             commentCount={postsLength}
                             teamId={this.props.channel.team_id}
-                            currentUser={this.props.currentUser}
+                            currentUserId={this.props.currentUserId}
                             previewCollapsed={this.props.previewCollapsed}
                             previewEnabled={this.props.previewEnabled}
                             isBusy={this.state.isBusy}

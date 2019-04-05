@@ -6,26 +6,25 @@ import React from 'react';
 import {OverlayTrigger, Tooltip} from 'react-bootstrap';
 import {FormattedMessage} from 'react-intl';
 
+import {Locations} from 'utils/constants.jsx';
+
 import ReplyIcon from 'components/svg/reply_icon';
-import * as Utils from 'utils/utils.jsx';
 
 export default class CommentIcon extends React.PureComponent {
     static propTypes = {
-        idPrefix: PropTypes.string.isRequired,
-        idCount: PropTypes.number,
+        location: PropTypes.oneOf([Locations.CENTER, Locations.SEARCH]).isRequired,
         handleCommentClick: PropTypes.func.isRequired,
         searchStyle: PropTypes.string,
         commentCount: PropTypes.number,
-        id: PropTypes.string,
+        postId: PropTypes.string,
         extraClass: PropTypes.string,
     };
 
     static defaultProps = {
-        idCount: -1,
         searchStyle: '',
         commentCount: 0,
-        id: '',
         extraClass: '',
+        location: Locations.CENTER,
     };
 
     render() {
@@ -41,13 +40,6 @@ export default class CommentIcon extends React.PureComponent {
         } else if (this.props.searchStyle !== '') {
             iconStyle = iconStyle + ' ' + this.props.searchStyle;
         }
-
-        let selectorId = this.props.idPrefix;
-        if (this.props.idCount > -1) {
-            selectorId += this.props.idCount;
-        }
-
-        const id = Utils.createSafeId(this.props.idPrefix + '_' + this.props.id);
 
         const tooltip = (
             <Tooltip
@@ -69,8 +61,8 @@ export default class CommentIcon extends React.PureComponent {
                 overlay={tooltip}
             >
                 <button
-                    id={id}
-                    className={iconStyle + ' color--link style--none ' + selectorId + ' ' + this.props.extraClass}
+                    id={`${this.props.location}_commentIcon_${this.props.postId}`}
+                    className={iconStyle + ' color--link style--none ' + this.props.extraClass}
                     onClick={this.props.handleCommentClick}
                 >
                     <ReplyIcon className='comment-icon'/>

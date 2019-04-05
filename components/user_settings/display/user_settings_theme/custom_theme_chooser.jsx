@@ -5,9 +5,8 @@ import $ from 'jquery';
 import PropTypes from 'prop-types';
 import React from 'react';
 import {OverlayTrigger, Popover} from 'react-bootstrap';
-import {defineMessages, FormattedMessage, injectIntl, intlShape} from 'react-intl';
+import {defineMessages, FormattedMessage, intlShape} from 'react-intl';
 
-import {localizeMessage} from 'utils/utils.jsx';
 import {t} from 'utils/i18n';
 import 'bootstrap-colorpicker';
 
@@ -111,7 +110,16 @@ const messages = defineMessages({
     },
 });
 
-class CustomThemeChooser extends React.Component {
+export default class CustomThemeChooser extends React.Component {
+    static propTypes = {
+        theme: PropTypes.object.isRequired,
+        updateTheme: PropTypes.func.isRequired,
+    };
+
+    static contextTypes = {
+        intl: intlShape.isRequired,
+    };
+
     constructor(props) {
         super(props);
         const copyTheme = this.setCopyTheme(this.props.theme);
@@ -230,13 +238,17 @@ class CustomThemeChooser extends React.Component {
     }
 
     onCodeThemeChange = (e) => {
-        const theme = this.props.theme;
-        theme.codeTheme = e.target.value;
+        const theme = {
+            ...this.props.theme,
+            type: 'custom',
+            codeTheme: e.target.value,
+        };
+
         this.props.updateTheme(theme);
     }
 
     render() {
-        const {formatMessage} = this.props.intl;
+        const {formatMessage} = this.context.intl;
         const theme = this.props.theme;
 
         const sidebarElements = [];
@@ -285,6 +297,7 @@ class CustomThemeChooser extends React.Component {
                             id={element.id}
                         >
                             <select
+                                id='codeThemeSelect'
                                 className='form-control'
                                 type='text'
                                 defaultValue={theme[element.id]}
@@ -368,6 +381,7 @@ class CustomThemeChooser extends React.Component {
                 <textarea
                     ref='textarea'
                     className='form-control'
+                    id='pasteBox'
                     value={this.state.copyTheme}
                     onPaste={this.pasteBoxChange}
                     onChange={this.onChangeHandle}
@@ -391,11 +405,11 @@ class CustomThemeChooser extends React.Component {
                         <div className='header__icon'>
                             <i
                                 className='fa fa-plus'
-                                title={localizeMessage('generic_icons.expand', 'Expand Icon')}
+                                title={formatMessage({id: 'generic_icons.expand', defaultMessage: 'Expand Icon'})}
                             />
                             <i
                                 className='fa fa-minus'
-                                title={localizeMessage('generic_icons.collapse', 'Collapse Icon')}
+                                title={formatMessage({id: 'generic_icons.collapse', defaultMessage: 'Collapse Icon'})}
                             />
                         </div>
                     </div>
@@ -406,7 +420,10 @@ class CustomThemeChooser extends React.Component {
                         {sidebarElements}
                     </div>
                 </div>
-                <div className='theme-elements row'>
+                <div
+                    id='centerChannelStyles'
+                    className='theme-elements row'
+                >
                     <div
                         ref='centerChannelStylesHeader'
                         className='theme-elements__header'
@@ -419,11 +436,11 @@ class CustomThemeChooser extends React.Component {
                         <div className='header__icon'>
                             <i
                                 className='fa fa-plus'
-                                title={localizeMessage('generic_icons.expand', 'Expand Icon')}
+                                title={formatMessage({id: 'generic_icons.expand', defaultMessage: 'Expand Icon'})}
                             />
                             <i
                                 className='fa fa-minus'
-                                title={localizeMessage('generic_icons.collapse', 'Collapse Icon')}
+                                title={formatMessage({id: 'generic_icons.collapse', defaultMessage: 'Collapse Icon'})}
                             />
                         </div>
                     </div>
@@ -447,11 +464,11 @@ class CustomThemeChooser extends React.Component {
                         <div className='header__icon'>
                             <i
                                 className='fa fa-plus'
-                                title={localizeMessage('generic_icons.expand', 'Expand Icon')}
+                                title={formatMessage({id: 'generic_icons.expand', defaultMessage: 'Expand Icon'})}
                             />
                             <i
                                 className='fa fa-minus'
-                                title={localizeMessage('generic_icons.collapse', 'Collapse Icon')}
+                                title={formatMessage({id: 'generic_icons.collapse', defaultMessage: 'Collapse Icon'})}
                             />
                         </div>
                     </div>
@@ -469,11 +486,3 @@ class CustomThemeChooser extends React.Component {
         );
     }
 }
-
-CustomThemeChooser.propTypes = {
-    intl: intlShape.isRequired,
-    theme: PropTypes.object.isRequired,
-    updateTheme: PropTypes.func.isRequired,
-};
-
-export default injectIntl(CustomThemeChooser);

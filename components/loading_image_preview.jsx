@@ -4,10 +4,13 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 
-import loadingGif from 'images/load.gif';
+import LoadingSpinner from 'components/widgets/loading/loading_spinner.jsx';
 
 export default function LoadingImagePreview({loading, progress, containerClass}) {
-    let progressView = null;
+    let progressView = (
+        <span className='loader-percent'/>
+    );
+
     if (progress) {
         progressView = (
             <span className='loader-percent'>
@@ -18,10 +21,7 @@ export default function LoadingImagePreview({loading, progress, containerClass})
 
     return (
         <div className={containerClass}>
-            <img
-                className='loader-image'
-                src={loadingGif}
-            />
+            <LoadingSpinner/>
             {progressView}
         </div>
     );

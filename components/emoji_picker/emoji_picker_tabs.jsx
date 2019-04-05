@@ -9,6 +9,8 @@ import GifPicker from 'components/gif_picker/gif_picker.jsx';
 import EmojiIcon from 'components/svg/emoji_icon';
 import GfycatIcon from 'components/svg/gfycat_icon';
 
+import EmojiPickerHeader from './components/emoji_picker_header';
+
 import EmojiPicker from './';
 
 export default class EmojiPickerTabs extends PureComponent {
@@ -18,6 +20,7 @@ export default class EmojiPickerTabs extends PureComponent {
         topOffset: PropTypes.number,
         placement: PropTypes.oneOf(['top', 'bottom', 'left']),
         customEmojis: PropTypes.object,
+        onEmojiClose: PropTypes.func.isRequired,
         onEmojiClick: PropTypes.func.isRequired,
         onGifClick: PropTypes.func,
         enableGifPicker: PropTypes.bool,
@@ -47,6 +50,10 @@ export default class EmojiPickerTabs extends PureComponent {
             emojiTabVisible: false,
         });
     };
+
+    handleEmojiPickerClose = () => {
+        this.props.onEmojiClose();
+    }
 
     render() {
         let pickerStyle;
@@ -81,6 +88,7 @@ export default class EmojiPickerTabs extends PureComponent {
                     className={pickerClass}
                     justified={true}
                 >
+                    <EmojiPickerHeader handleEmojiPickerClose={this.handleEmojiPickerClose}/>
                     <Tab
                         eventKey={1}
                         onEnter={this.handleEnterEmojiTab}
@@ -89,6 +97,7 @@ export default class EmojiPickerTabs extends PureComponent {
                     >
                         <EmojiPicker
                             style={this.props.style}
+                            onEmojiClose={this.props.onEmojiClose}
                             onEmojiClick={this.props.onEmojiClick}
                             customEmojis={this.props.customEmojis}
                             visible={this.state.emojiTabVisible}
@@ -109,11 +118,13 @@ export default class EmojiPickerTabs extends PureComponent {
         }
         return (
             <div
+                id='emojiPicker'
                 style={pickerStyle}
                 className={pickerClass}
             >
                 <EmojiPicker
                     style={this.props.style}
+                    onEmojiClose={this.props.onEmojiClose}
                     onEmojiClick={this.props.onEmojiClick}
                     customEmojis={this.props.customEmojis}
                 />

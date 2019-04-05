@@ -8,6 +8,7 @@ import {Client4} from 'mattermost-redux/client';
 import * as Utils from 'utils/utils.jsx';
 
 import FormattedMarkdownMessage from 'components/formatted_markdown_message.jsx';
+import WarningIcon from 'components/icon/warning_icon';
 
 import AdminSettings from './admin_settings.jsx';
 import BooleanSetting from './boolean_setting.jsx';
@@ -30,7 +31,6 @@ export default class ClusterSettings extends AdminSettings {
         config.ClusterSettings.OverrideHostname = this.state.OverrideHostname;
         config.ClusterSettings.UseIpAddress = this.state.UseIpAddress;
         config.ClusterSettings.UseExperimentalGossip = this.state.UseExperimentalGossip;
-        config.ClusterSettings.ReadOnlyConfig = this.state.ReadOnlyConfig;
         config.ClusterSettings.GossipPort = this.parseIntNonZero(this.state.GossipPort, 8074);
         config.ClusterSettings.StreamingPort = this.parseIntNonZero(this.state.StreamingPort, 8075);
         return config;
@@ -45,7 +45,6 @@ export default class ClusterSettings extends AdminSettings {
             OverrideHostname: settings.OverrideHostname,
             UseIpAddress: settings.UseIpAddress,
             UseExperimentalGossip: settings.UseExperimentalGossip,
-            ReadOnlyConfig: settings.ReadOnlyConfig,
             GossipPort: settings.GossipPort,
             StreamingPort: settings.StreamingPort,
             showWarning: false,
@@ -83,10 +82,7 @@ export default class ClusterSettings extends AdminSettings {
                     style={style.configLoadedFromCluster}
                     className='alert alert-warning'
                 >
-                    <i
-                        className='fa fa-warning'
-                        title={Utils.localizeMessage('generic_icons.warning', 'Warning Icon')}
-                    />
+                    <WarningIcon/>
                     <FormattedMarkdownMessage
                         id='admin.cluster.loadedFrom'
                         defaultMessage='This configuration file was loaded from Node ID {clusterId}. Please see the Troubleshooting Guide in our [documentation](!http://docs.mattermost.com/deployment/cluster.html) if you are accessing the System Console through a load balancer and experiencing issues.'
@@ -99,16 +95,14 @@ export default class ClusterSettings extends AdminSettings {
         }
 
         var warning = null;
+
         if (this.state.showWarning) {
             warning = (
                 <div
                     style={style.warning}
                     className='alert alert-warning'
                 >
-                    <i
-                        className='fa fa-warning'
-                        title={Utils.localizeMessage('generic_icons.warning', 'Warning Icon')}
-                    />
+                    <WarningIcon/>
                     <FormattedMarkdownMessage
                         id='admin.cluster.should_not_change'
                         defaultMessage='WARNING: These settings may not sync with the other servers in the cluster. High Availability inter-node communication will not start until you modify the config.json to be identical on all servers and restart Mattermost. Please see the [documentation](!http://docs.mattermost.com/deployment/cluster.html) on how to add or remove a server from the cluster. If you are accessing the System Console through a load balancer and experiencing issues, please see the Troubleshooting Guide in our [documentation](!http://docs.mattermost.com/deployment/cluster.html).'
@@ -129,7 +123,7 @@ export default class ClusterSettings extends AdminSettings {
                 <div className='banner'>
                     <FormattedMessage
                         id='admin.cluster.noteDescription'
-                        defaultMessage='Changing properties in this section will require a server restart before taking effect. When High Availability mode is enabled, the System Console is set to read-only and can only be changed from the configuration file unless ReadOnlyConfig is disabled in the configuration file.'
+                        defaultMessage='Changing properties in this section will require a server restart before taking effect.'
                     />
                 </div>
                 {warning}
@@ -224,24 +218,6 @@ export default class ClusterSettings extends AdminSettings {
                     value={this.state.UseExperimentalGossip}
                     onChange={this.overrideHandleChange}
                     setByEnv={this.isSetByEnv('ClusterSettings.UseExperimentalGossip')}
-                />
-                <BooleanSetting
-                    id='ReadOnlyConfig'
-                    label={
-                        <FormattedMessage
-                            id='admin.cluster.ReadOnlyConfig'
-                            defaultMessage='Read Only Config:'
-                        />
-                    }
-                    helpText={
-                        <FormattedHTMLMessage
-                            id='admin.cluster.ReadOnlyConfigDesc'
-                            defaultMessage='When true, the server will reject changes made to the configuration file from the system console. When running in production it is recommened to set this to true.'
-                        />
-                    }
-                    value={this.state.ReadOnlyConfig}
-                    onChange={this.overrideHandleChange}
-                    setByEnv={this.isSetByEnv('ClusterSettings.ReadOnlyConfig')}
                 />
                 <TextSetting
                     id='GossipPort'

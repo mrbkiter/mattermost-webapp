@@ -264,10 +264,14 @@ export default class QuickSwitchModal extends React.PureComponent {
                 <Modal.Header closeButton={true}/>
                 <Modal.Body>
                     {header}
-                    <div className='modal__hint'>
+                    <div
+                        id='quickSwitchHint'
+                        className='modal__hint'
+                    >
                         {help}
                     </div>
                     <SuggestionBox
+                        id='quickSwitchInput'
                         ref={this.setSwitchBoxRef}
                         className='form-control focused'
                         onChange={this.onChange}
@@ -279,6 +283,7 @@ export default class QuickSwitchModal extends React.PureComponent {
                         providers={providers}
                         listStyle='bottom'
                         completeOnTab={false}
+                        spellCheck='false'
                         renderDividers={renderDividers}
                         delayInputUpdate={true}
                         openWhenEmpty={true}

@@ -11,6 +11,7 @@ import Constants from 'utils/constants.jsx';
 import * as Utils from 'utils/utils.jsx';
 import FormError from 'components/form_error.jsx';
 import SpinnerButton from 'components/spinner_button.jsx';
+import LocalizedInput from 'components/localized_input/localized_input';
 
 const REQUEST_POST = 'P';
 const REQUEST_GET = 'G';
@@ -32,6 +33,11 @@ export default class AbstractCommand extends React.PureComponent {
         * The footer text to render, has id and defaultMessage
         */
         footer: PropTypes.object.isRequired,
+
+        /**
+        * The spinner loading text to render, has id and defaultMessage
+        */
+        loading: PropTypes.object.isRequired,
 
         /**
          * Any extra component/node to render
@@ -265,14 +271,14 @@ export default class AbstractCommand extends React.PureComponent {
                         />
                     </label>
                     <div className='col-md-5 col-sm-8'>
-                        <input
+                        <LocalizedInput
                             id='autocompleteHint'
                             type='text'
                             maxLength='1024'
                             className='form-control'
                             value={this.state.autocompleteHint}
                             onChange={this.updateAutocompleteHint}
-                            placeholder={Utils.localizeMessage('add_command.autocompleteHint.placeholder', 'Example: [Patient Name]')}
+                            placeholder={{id: 'add_command.autocompleteHint.placeholder', defaultMessage: 'Example: [Patient Name]'}}
                         />
                         <div className='form__help'>
                             <FormattedMessage
@@ -296,14 +302,14 @@ export default class AbstractCommand extends React.PureComponent {
                         />
                     </label>
                     <div className='col-md-5 col-sm-8'>
-                        <input
+                        <LocalizedInput
                             id='description'
                             type='text'
                             maxLength='128'
                             className='form-control'
                             value={this.state.autocompleteDescription}
                             onChange={this.updateAutocompleteDescription}
-                            placeholder={Utils.localizeMessage('add_command.autocompleteDescription.placeholder', 'Example: "Returns search results for patient records"')}
+                            placeholder={{id: 'add_command.autocompleteDescription.placeholder', defaultMessage: 'Example: "Returns search results for patient records"'}}
                         />
                         <div className='form__help'>
                             <FormattedMessage
@@ -400,14 +406,14 @@ export default class AbstractCommand extends React.PureComponent {
                                 />
                             </label>
                             <div className='col-md-5 col-sm-8'>
-                                <input
+                                <LocalizedInput
                                     id='trigger'
                                     type='text'
                                     maxLength={Constants.MAX_TRIGGER_LENGTH}
                                     className='form-control'
                                     value={this.state.trigger}
                                     onChange={this.updateTrigger}
-                                    placeholder={Utils.localizeMessage('add_command.trigger.placeholder', 'Command trigger e.g. "hello" not including the slash')}
+                                    placeholder={{id: 'add_command.trigger.placeholder', defaultMessage: 'Command trigger e.g. "hello" not including the slash'}}
                                 />
                                 <div className='form__help'>
                                     <FormattedMessage
@@ -454,14 +460,14 @@ export default class AbstractCommand extends React.PureComponent {
                                 />
                             </label>
                             <div className='col-md-5 col-sm-8'>
-                                <input
+                                <LocalizedInput
                                     id='url'
                                     type='text'
                                     maxLength='1024'
                                     className='form-control'
                                     value={this.state.url}
                                     onChange={this.updateUrl}
-                                    placeholder={Utils.localizeMessage('add_command.url.placeholder', 'Must start with http:// or https://')}
+                                    placeholder={{id: 'add_command.url.placeholder', defaultMessage: 'Must start with http:// or https://'}}
                                 />
                                 <div className='form__help'>
                                     <FormattedMessage
@@ -514,14 +520,14 @@ export default class AbstractCommand extends React.PureComponent {
                                 />
                             </label>
                             <div className='col-md-5 col-sm-8'>
-                                <input
+                                <LocalizedInput
                                     id='username'
                                     type='text'
                                     maxLength='64'
                                     className='form-control'
                                     value={this.state.username}
                                     onChange={this.updateUsername}
-                                    placeholder={Utils.localizeMessage('add_command.username.placeholder', 'Username')}
+                                    placeholder={{id: 'add_command.username.placeholder', defaultMessage: 'Username'}}
                                 />
                                 <div className='form__help'>
                                     <FormattedMessage
@@ -542,14 +548,14 @@ export default class AbstractCommand extends React.PureComponent {
                                 />
                             </label>
                             <div className='col-md-5 col-sm-8'>
-                                <input
+                                <LocalizedInput
                                     id='iconUrl'
                                     type='text'
                                     maxLength='1024'
                                     className='form-control'
                                     value={this.state.iconUrl}
                                     onChange={this.updateIconUrl}
-                                    placeholder={Utils.localizeMessage('add_command.iconUrl.placeholder', 'https://www.example.com/myicon.png')}
+                                    placeholder={{id: 'add_command.iconUrl.placeholder', defaultMessage: 'https://www.example.com/myicon.png'}}
                                 />
                                 <div className='form__help'>
                                     <FormattedMessage
@@ -592,7 +598,7 @@ export default class AbstractCommand extends React.PureComponent {
                                 errors={[this.props.serverError, this.state.clientError]}
                             />
                             <Link
-                                className='btn btn-sm'
+                                className='btn btn-link btn-sm'
                                 to={'/' + this.props.team.name + '/integrations/commands'}
                             >
                                 <FormattedMessage
@@ -604,6 +610,7 @@ export default class AbstractCommand extends React.PureComponent {
                                 className='btn btn-primary'
                                 type='submit'
                                 spinning={this.state.saving}
+                                spinningText={Utils.localizeMessage(this.props.loading.id, this.props.loading.defaultMessage)}
                                 onClick={this.handleSubmit}
                             >
                                 <FormattedMessage

@@ -3,19 +3,20 @@
 
 import PropTypes from 'prop-types';
 import React from 'react';
-import {defineMessages, FormattedDate, FormattedMessage, FormattedHTMLMessage, injectIntl, intlShape} from 'react-intl';
+import {defineMessages, FormattedDate, FormattedMessage, injectIntl, intlShape} from 'react-intl';
 
 import {isEmail} from 'mattermost-redux/utils/helpers';
 
 import {trackEvent} from 'actions/diagnostics_actions.jsx';
-import {updateUser, uploadProfileImage} from 'actions/user_actions.jsx';
-import Constants from 'utils/constants.jsx';
+import {AcceptedProfileImageTypes, Constants} from 'utils/constants.jsx';
 import * as Utils from 'utils/utils.jsx';
 import {t} from 'utils/i18n';
+
 import SettingItemMax from 'components/setting_item_max.jsx';
 import SettingItemMin from 'components/setting_item_min.jsx';
 import SettingPicture from 'components/setting_picture.jsx';
-import FormattedMarkdownMessage from 'components/formatted_markdown_message';
+import LoadingWrapper from 'components/widgets/loading/loading_wrapper.jsx';
+import {AnnouncementBarMessages, AnnouncementBarTypes} from 'utils/constants';
 
 const holders = defineMessages({
     usernameReserved: {
@@ -33,6 +34,14 @@ const holders = defineMessages({
     emailMatch: {
         id: t('user.settings.general.emailMatch'),
         defaultMessage: 'The new emails you entered do not match.',
+    },
+    incorrectPassword: {
+        id: t('user.settings.general.incorrectPassword'),
+        defaultMessage: 'Your password is incorrect.',
+    },
+    emptyPassword: {
+        id: t('user.settings.general.emptyPassword'),
+        defaultMessage: 'Please enter your current password.',
     },
     validImage: {
         id: t('user.settings.general.validImage'),
@@ -85,8 +94,6 @@ const prevSections = {
     picture: 'email',
 };
 
-const ACCEPTED_PROFILE_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/bmp'];
-
 class UserSettingsGeneralTab extends React.Component {
     static propTypes = {
         intl: intlShape.isRequired,
@@ -98,9 +105,13 @@ class UserSettingsGeneralTab extends React.Component {
         closeModal: PropTypes.func.isRequired,
         collapseModal: PropTypes.func.isRequired,
         actions: PropTypes.shape({
+            logError: PropTypes.func.isRequired,
+            clearErrors: PropTypes.func.isRequired,
             getMe: PropTypes.func.isRequired,
-            sendVerificationEmail: PropTypes.func.isRequred,
-            setDefaultProfileImage: PropTypes.func.isRequred,
+            updateMe: PropTypes.func.isRequired,
+            sendVerificationEmail: PropTypes.func.isRequired,
+            setDefaultProfileImage: PropTypes.func.isRequired,
+            uploadProfileImage: PropTypes.func.isRequired,
         }).isRequired,
         sendEmailNotifications: PropTypes.bool,
         requireEmailVerification: PropTypes.bool,
@@ -133,25 +144,12 @@ class UserSettingsGeneralTab extends React.Component {
     }
 
     createEmailResendLink = (email) => {
-        let resendHTML;
-        if (this.state.showSpinner) {
-            resendHTML = (
-                <React.Fragment>
-                    <span className='fa-wrapper'>
-                        <span
-                            className='fa fa-spinner icon--rotate'
-                            title={Utils.localizeMessage('generic_icons.loading', 'Loading Icon')}
-                        />
-                    </span>
-                    <FormattedMessage
-                        id='user.settings.general.sending'
-                        defaultMessage='Sending'
-                    />
-                </React.Fragment>
-            );
-        } else {
-            resendHTML = (
-                <span className='resend-verification-wrapper'>
+        return (
+            <span className='resend-verification-wrapper'>
+                <LoadingWrapper
+                    loading={this.state.showSpinner}
+                    text={Utils.localizeMessage('user.settings.general.sending', 'Sending')}
+                >
                     <a
                         onClick={() => {
                             this.handleEmailResend(email);
@@ -167,10 +165,9 @@ class UserSettingsGeneralTab extends React.Component {
                             defaultMessage='Send again'
                         />
                     </a>
-                </span>
-            );
-        }
-        return resendHTML;
+                </LoadingWrapper>
+            </span>
+        );
     }
 
     submitUsername = () => {
@@ -237,6 +234,7 @@ class UserSettingsGeneralTab extends React.Component {
         const user = Object.assign({}, this.props.user);
         const email = this.state.email.trim().toLowerCase();
         const confirmEmail = this.state.confirmEmail.trim().toLowerCase();
+        const currentPassword = this.state.currentPassword;
 
         const {formatMessage} = this.props.intl;
 
@@ -255,33 +253,47 @@ class UserSettingsGeneralTab extends React.Component {
             return;
         }
 
+        if (currentPassword === '') {
+            this.setState({emailError: formatMessage(holders.emptyPassword), clientError: '', serverError: ''});
+            return;
+        }
+
         user.email = email;
+        user.password = currentPassword;
         trackEvent('settings', 'user_settings_update', {field: 'email'});
         this.submitUser(user, true);
     }
 
     submitUser = (user, emailUpdated) => {
+        const {formatMessage} = this.props.intl;
         this.setState({sectionIsSaving: true});
-        updateUser(
-            user,
-            () => {
-                this.updateSection('');
-                this.props.actions.getMe();
-                const verificationEnabled = this.props.sendEmailNotifications && this.props.requireEmailVerification && emailUpdated;
-                if (verificationEnabled) {
-                    this.setState({emailChangeInProgress: true});
+
+        this.props.actions.updateMe(user).
+            then(({data, error: err}) => {
+                if (data) {
+                    this.updateSection('');
+                    this.props.actions.getMe();
+                    const verificationEnabled = this.props.sendEmailNotifications && this.props.requireEmailVerification && emailUpdated;
+                    if (verificationEnabled) {
+                        this.props.actions.clearErrors();
+                        this.props.actions.logError({
+                            message: AnnouncementBarMessages.EMAIL_VERIFICATION_REQUIRED,
+                            type: AnnouncementBarTypes.SUCCESS,
+                        }, true);
+                    }
+                } else if (err) {
+                    let serverError;
+                    if (err.server_error_id &&
+                        err.server_error_id === 'api.user.check_user_password.invalid.app_error') {
+                        serverError = formatMessage(holders.incorrectPassword);
+                    } else if (err.message) {
+                        serverError = err.message;
+                    } else {
+                        serverError = err;
+                    }
+                    this.setState({serverError, emailError: '', clientError: '', sectionIsSaving: false});
                 }
-            },
-            (err) => {
-                let serverError;
-                if (err.message) {
-                    serverError = err.message;
-                } else {
-                    serverError = err;
-                }
-                this.setState({serverError, emailError: '', clientError: '', sectionIsSaving: false});
-            }
-        );
+            });
     }
 
     setDefaultProfilePicture = async () => {
@@ -314,7 +326,7 @@ class UserSettingsGeneralTab extends React.Component {
         const {formatMessage} = this.props.intl;
         const file = this.state.pictureFile;
 
-        if (!ACCEPTED_PROFILE_IMAGE_TYPES.includes(file.type)) {
+        if (!AcceptedProfileImageTypes.includes(file.type)) {
             this.setState({clientError: formatMessage(holders.validImage), serverError: ''});
             return;
         } else if (file.size > this.props.maxFileSize) {
@@ -324,18 +336,17 @@ class UserSettingsGeneralTab extends React.Component {
 
         this.setState({loadingPicture: true});
 
-        uploadProfileImage(
-            file,
-            () => {
-                this.updateSection('');
-                this.submitActive = false;
-            },
-            (err) => {
-                var state = this.setupInitialState(this.props);
-                state.serverError = err.message;
-                this.setState(state);
-            }
-        );
+        this.props.actions.uploadProfileImage(this.props.user.id, file).
+            then(({data, error: err}) => {
+                if (data) {
+                    this.updateSection('');
+                    this.submitActive = false;
+                } else if (err) {
+                    var state = this.setupInitialState(this.props);
+                    state.serverError = err.message;
+                    this.setState(state);
+                }
+            });
     }
 
     submitPosition = () => {
@@ -382,6 +393,10 @@ class UserSettingsGeneralTab extends React.Component {
         this.setState({confirmEmail: e.target.value});
     }
 
+    updateCurrentPassword = (e) => {
+        this.setState({currentPassword: e.target.value});
+    }
+
     updatePicture = (e) => {
         if (e.target.files && e.target.files[0]) {
             this.setState({pictureFile: e.target.files[0]});
@@ -394,8 +409,7 @@ class UserSettingsGeneralTab extends React.Component {
     }
 
     updateSection = (section) => {
-        const emailChangeInProgress = this.state.emailChangeInProgress;
-        this.setState(Object.assign({}, this.setupInitialState(this.props), {emailChangeInProgress, clientError: '', serverError: '', emailError: '', sectionIsSaving: false}));
+        this.setState(Object.assign({}, this.setupInitialState(this.props), {clientError: '', serverError: '', emailError: '', sectionIsSaving: false}));
         this.submitActive = false;
         this.props.updateSection(section);
     }
@@ -412,10 +426,11 @@ class UserSettingsGeneralTab extends React.Component {
             originalEmail: user.email,
             email: '',
             confirmEmail: '',
+            currentPassword: '',
             pictureFile: null,
             loadingPicture: false,
-            emailChangeInProgress: props.sendEmailNotifications && props.requireEmailVerification && !user.email_verified,
             sectionIsSaving: false,
+            showSpinner: false,
         };
     }
 
@@ -449,22 +464,6 @@ class UserSettingsGeneralTab extends React.Component {
                         defaultMessage='Email is used for sign-in, notifications, and password reset.'
                     />
                 );
-            } else if (this.state.emailChangeInProgress) {
-                const newEmail = this.props.user.email;
-                if (newEmail) {
-                    helpText = (
-                        <React.Fragment>
-                            <FormattedMarkdownMessage
-                                id='user.settings.general.emailHelp4'
-                                defaultMessage='A verification email was sent to {email}. \nCannot find the email?'
-                                values={{
-                                    email: newEmail,
-                                }}
-                            />
-                            {this.createEmailResendLink(newEmail)}
-                        </React.Fragment>
-                    );
-                }
             }
 
             let submit = null;
@@ -528,6 +527,28 @@ class UserSettingsGeneralTab extends React.Component {
                                 />
                             </div>
                         </div>
+                    </div>
+                );
+
+                inputs.push(
+                    <div key='currentPassword'>
+                        <div className='form-group'>
+                            <label className='col-sm-5 control-label'>
+                                <FormattedMessage
+                                    id='user.settings.general.currentPassword'
+                                    defaultMessage='Current Password'
+                                />
+                            </label>
+                            <div className='col-sm-7'>
+                                <input
+                                    id='currentPassword'
+                                    className='form-control'
+                                    type='password'
+                                    onChange={this.updateCurrentPassword}
+                                    value={this.state.currentPassword}
+                                />
+                            </div>
+                        </div>
                         {helpText}
                     </div>
                 );
@@ -539,7 +560,7 @@ class UserSettingsGeneralTab extends React.Component {
                         key='oauthEmailInfo'
                         className='form-group'
                     >
-                        <div className='setting-list__hint col-sm-12'>
+                        <div className='setting-list__hint padding-bottom x2'>
                             <FormattedMessage
                                 id='user.settings.general.emailGitlabCantUpdate'
                                 defaultMessage='Login occurs through GitLab. Email cannot be updated. Email address used for notifications is {email}.'
@@ -557,7 +578,7 @@ class UserSettingsGeneralTab extends React.Component {
                         key='oauthEmailInfo'
                         className='form-group'
                     >
-                        <div className='setting-list__hint col-sm-12'>
+                        <div className='setting-list__hint padding-bottom x2'>
                             <FormattedMessage
                                 id='user.settings.general.emailGoogleCantUpdate'
                                 defaultMessage='Login occurs through Google Apps. Email cannot be updated. Email address used for notifications is {email}.'
@@ -575,7 +596,7 @@ class UserSettingsGeneralTab extends React.Component {
                         key='oauthEmailInfo'
                         className='form-group'
                     >
-                        <div className='setting-list__hint col-sm-12'>
+                        <div className='setting-list__hint padding-bottom x2'>
                             <FormattedMessage
                                 id='user.settings.general.emailOffice365CantUpdate'
                                 defaultMessage='Login occurs through Office 365. Email cannot be updated. Email address used for notifications is {email}.'
@@ -593,7 +614,7 @@ class UserSettingsGeneralTab extends React.Component {
                         key='oauthEmailInfo'
                         className='padding-bottom'
                     >
-                        <div className='setting-list__hint col-sm-12'>
+                        <div className='setting-list__hint padding-bottom x2'>
                             <FormattedMessage
                                 id='user.settings.general.emailLdapCantUpdate'
                                 defaultMessage='Login occurs through AD/LDAP. Email cannot be updated. Email address used for notifications is {email}.'
@@ -610,7 +631,7 @@ class UserSettingsGeneralTab extends React.Component {
                         key='oauthEmailInfo'
                         className='padding-bottom'
                     >
-                        <div className='setting-list__hint col-sm-12'>
+                        <div className='setting-list__hint padding-bottom x2'>
                             <FormattedMessage
                                 id='user.settings.general.emailSamlCantUpdate'
                                 defaultMessage='Login occurs through SAML. Email cannot be updated. Email address used for notifications is {email}.'
@@ -643,31 +664,7 @@ class UserSettingsGeneralTab extends React.Component {
         } else {
             let describe = '';
             if (this.props.user.auth_service === '') {
-                if (this.state.emailChangeInProgress) {
-                    const newEmail = this.props.user.email;
-                    if (newEmail) {
-                        describe = (
-                            <React.Fragment>
-                                <FormattedHTMLMessage
-                                    id='user.settings.general.newAddress'
-                                    defaultMessage='Check your email to verify {email}'
-                                    values={{
-                                        email: newEmail,
-                                    }}
-                                />
-                            </React.Fragment>
-                        );
-                    } else {
-                        describe = (
-                            <FormattedMessage
-                                id='user.settings.general.checkEmailNoAddress'
-                                defaultMessage='Check your email to verify your new address'
-                            />
-                        );
-                    }
-                } else {
-                    describe = this.props.user.email;
-                }
+                describe = this.props.user.email;
             } else if (this.props.user.auth_service === Constants.GITLAB_SERVICE) {
                 describe = (
                     <FormattedMessage
@@ -1264,11 +1261,18 @@ class UserSettingsGeneralTab extends React.Component {
                         ref='title'
                     >
                         <div className='modal-back'>
-                            <i
-                                className='fa fa-angle-left'
-                                title={Utils.localizeMessage('generic_icons.collapse', 'Collapse Icon')}
-                                onClick={this.props.collapseModal}
-                            />
+                            <FormattedMessage
+                                id='generic_icons.collapse'
+                                defaultMessage='Collapse Icon'
+                            >
+                                {(title) => (
+                                    <i
+                                        className='fa fa-angle-left'
+                                        title={title}
+                                        onClick={this.props.collapseModal}
+                                    />
+                                )}
+                            </FormattedMessage>
                         </div>
                         <FormattedMessage
                             id='user.settings.general.title'

@@ -3,9 +3,10 @@
 
 import {getChannelAndMyMember, getChannelMembersByIds} from 'mattermost-redux/actions/channels';
 import {deletePreferences as deletePreferencesRedux, savePreferences as savePreferencesRedux} from 'mattermost-redux/actions/preferences';
-import {getMyTeamMembers, getMyTeamUnreads, getTeamMembersByIds} from 'mattermost-redux/actions/teams';
+import {getTeamMembersByIds} from 'mattermost-redux/actions/teams';
 import * as UserActions from 'mattermost-redux/actions/users';
 import {Client4} from 'mattermost-redux/client';
+import {bindClientFunc} from 'mattermost-redux/actions/helpers';
 import {Preferences as PreferencesRedux} from 'mattermost-redux/constants';
 import {
     getChannel,
@@ -26,18 +27,6 @@ import {Constants, Preferences, UserStatuses} from 'utils/constants.jsx';
 
 const dispatch = store.dispatch;
 const getState = store.getState;
-
-export async function switchFromLdapToEmail(email, password, token, ldapPassword, success, error) {
-    const {data, error: err} = await UserActions.switchLdapToEmail(ldapPassword, email, password, token)(dispatch, getState);
-
-    if (data) {
-        if (success) {
-            success(data);
-        }
-    } else if (err && error) {
-        error({id: err.server_error_id, ...err});
-    }
-}
 
 export function loadProfilesAndTeamMembers(page, perPage, teamId) {
     return async (doDispatch, doGetState) => {
@@ -94,13 +83,14 @@ export function loadTeamMembersForProfilesList(profiles, teamId) {
     };
 }
 
-export async function loadProfilesWithoutTeam(page, perPage, success) {
-    const {data} = await UserActions.getProfilesWithoutTeam(page, perPage)(dispatch, getState);
-    dispatch(loadStatusesForProfilesMap(data));
+export function loadProfilesWithoutTeam(page, perPage) {
+    return async (doDispatch) => {
+        const {data} = await doDispatch(UserActions.getProfilesWithoutTeam(page, perPage));
 
-    if (success) {
-        success(data);
-    }
+        doDispatch(loadStatusesForProfilesMap(data));
+
+        return data;
+    };
 }
 
 export function loadTeamMembersAndChannelMembersForProfilesList(profiles, teamId, channelId) {
@@ -207,8 +197,8 @@ export async function loadProfilesForGM() {
             continue;
         }
 
-        const userIds = userIdsInChannels[channel.id] || [];
-        if (userIds.length >= Constants.MIN_USERS_IN_GM) {
+        const userIds = userIdsInChannels[channel.id] || new Set();
+        if (userIds.size >= Constants.MIN_USERS_IN_GM) {
             continue;
         }
 
@@ -282,51 +272,53 @@ export async function loadProfilesForDM() {
     }
 }
 
-export async function saveTheme(teamId, theme, cb) {
-    const currentUserId = Selectors.getCurrentUserId(getState());
-    const preference = [{
-        user_id: currentUserId,
-        category: Preferences.CATEGORY_THEME,
-        name: teamId,
-        value: JSON.stringify(theme),
-    }];
-
-    await savePreferencesRedux(currentUserId, preference)(dispatch, getState);
-    onThemeSaved(teamId, cb);
-}
-
-function onThemeSaved(teamId, onSuccess) {
-    const getCategory = makeGetCategory();
-    const themePreferences = getCategory(getState(), Preferences.CATEGORY_THEME);
-
-    if (teamId !== '' && themePreferences.size > 1) {
-        // no extra handling to be done to delete team-specific themes
-        onSuccess();
-        return;
-    }
-
-    const currentUserId = Selectors.getCurrentUserId(getState());
-    const toDelete = [];
-
-    for (const themePreference of themePreferences) {
-        const name = themePreference.name;
-        if (name === '' || name === teamId) {
-            continue;
-        }
-
-        toDelete.push({
+export function saveTheme(teamId, theme) {
+    return async (doDispatch, doGetState) => {
+        const currentUserId = Selectors.getCurrentUserId(doGetState());
+        const preference = [{
             user_id: currentUserId,
             category: Preferences.CATEGORY_THEME,
-            name,
-        });
-    }
+            name: teamId,
+            value: JSON.stringify(theme),
+        }];
 
-    if (toDelete.length > 0) {
-        // we're saving a new global theme so delete any team-specific ones
-        deletePreferencesRedux(currentUserId, toDelete)(dispatch, getState);
-    }
+        await doDispatch(savePreferencesRedux(currentUserId, preference));
+        return doDispatch(onThemeSaved(teamId));
+    };
+}
 
-    onSuccess();
+function onThemeSaved(teamId) {
+    return async (doDispatch, doGetState) => {
+        const getCategory = makeGetCategory();
+        const state = doGetState();
+        const themePreferences = getCategory(state, Preferences.CATEGORY_THEME);
+
+        if (teamId !== '' && themePreferences.length > 1) {
+            // no extra handling to be done to delete team-specific themes
+            return;
+        }
+
+        const currentUserId = Selectors.getCurrentUserId(state);
+        const toDelete = [];
+
+        for (const themePreference of themePreferences) {
+            const name = themePreference.name;
+            if (name === '' || name === teamId) {
+                continue;
+            }
+
+            toDelete.push({
+                user_id: currentUserId,
+                category: Preferences.CATEGORY_THEME,
+                name,
+            });
+        }
+
+        if (toDelete.length > 0) {
+            // we're saving a new global theme so delete any team-specific ones
+            doDispatch(deletePreferencesRedux(currentUserId, toDelete));
+        }
+    };
 }
 
 export async function searchUsers(term, teamId = getCurrentTeamId(getState()), options = {}, success) {
@@ -352,62 +344,15 @@ export async function autocompleteUsers(username, success) {
     }
 }
 
-export async function updateUser(user, success, error) {
-    const {data, error: err} = await UserActions.updateMe(user)(dispatch, getState);
-    if (data && success) {
-        success(data);
-    } else if (err && error) {
-        error({id: err.server_error_id, ...err});
-    }
-}
-
-export async function updateUserNotifyProps(props, success, error) {
-    const {data, error: err} = await UserActions.updateMe({notify_props: props})(dispatch, getState);
-    if (data && success) {
-        success(data);
-    } else if (err && error) {
-        error({id: err.server_error_id, ...err});
-    }
-}
-
-export async function updateUserRoles(userId, newRoles, success, error) {
-    const {data, error: err} = await UserActions.updateUserRoles(userId, newRoles)(dispatch, getState);
-    if (data && success) {
-        success(data);
-    } else if (err && error) {
-        error({id: err.server_error_id, ...err});
-    }
-}
-
-export async function updateActive(userId, active, success, error) {
-    const {data, error: err} = await UserActions.updateUserActive(userId, active)(dispatch, getState);
-    if (data && success) {
-        success(data);
-    } else if (err && error) {
-        error({id: err.server_error_id, ...err});
-    }
-}
-
-export async function updatePassword(userId, currentPassword, newPassword, success, error) {
-    const {data, error: err} = await UserActions.updateUserPassword(userId, currentPassword, newPassword)(dispatch, getState);
-    if (data && success) {
-        success(data);
-    } else if (err && error) {
-        error({id: err.server_error_id, ...err});
-    }
-}
-
-export function revokeAllSessions(userId, success, error) {
-    UserActions.revokeAllSessionsForUser(userId)(dispatch, getState).then(
-        (data) => {
-            if (data && success) {
-                success(data);
-            } else if (data == null && error) {
-                const serverError = getState().requests.users.updateUser.error;
-                error({id: serverError.server_error_id, ...serverError});
-            }
+export function revokeAllSessions(userId) {
+    return async (doDispatch, doGetState) => {
+        const {data, error} = await doDispatch(UserActions.revokeAllSessionsForUser(userId));
+        if (error) {
+            const serverError = doGetState().requests.users.updateUser.error;
+            return {error: {id: serverError.server_error_id, ...serverError}};
         }
-    );
+        return {data};
+    };
 }
 
 export async function verifyEmail(token, success, error) {
@@ -440,84 +385,23 @@ export async function resendVerification(email, success, error) {
     }
 }
 
-export function getAuthorizedApps(success, error) {
-    Client4.getAuthorizedOAuthApps(getState().entities.users.currentUserId).then(
-        (authorizedApps) => {
-            if (success) {
-                success(authorizedApps);
-            }
-        }
-    ).catch(
-        (err) => {
-            if (error) {
-                error(err);
-            }
-        }
-    );
+export function getAuthorizedApps() {
+    return (doDispatch, doGetState) => {
+        const currentUserId = Selectors.getCurrentUserId(doGetState());
+        const getAuthAppsAction = bindClientFunc({
+            clientFunc: Client4.getAuthorizedOAuthApps,
+            params: [currentUserId],
+        });
+
+        return doDispatch(getAuthAppsAction);
+    };
 }
 
-export function deauthorizeOAuthApp(appId, success, error) {
-    Client4.deauthorizeOAuthApp(appId).then(
-        () => {
-            if (success) {
-                success();
-            }
-        }
-    ).catch(
-        (err) => {
-            if (error) {
-                error(err);
-            }
-        }
-    );
-}
-
-export async function uploadProfileImage(userPicture, success, error) {
-    const {data, error: err} = await UserActions.uploadProfileImage(Selectors.getCurrentUserId(getState()), userPicture)(dispatch, getState);
-    if (data && success) {
-        success(data);
-    } else if (err && error) {
-        error({id: err.server_error_id, ...err});
-    }
-}
-
-export async function loadProfiles(page, perPage, success) {
-    const {data} = await UserActions.getProfiles(page, perPage)(dispatch, getState);
-    if (success) {
-        success(data);
-    }
-}
-
-export function getMissingProfiles(ids) {
-    const state = getState();
-    const missingIds = ids.filter((id) => !Selectors.getUser(state, id));
-
-    if (missingIds.length === 0) {
-        return;
-    }
-
-    UserActions.getProfilesByIds(missingIds)(dispatch, getState);
-}
-
-export async function loadMyTeamMembers() {
-    await getMyTeamMembers()(dispatch, getState);
-    getMyTeamUnreads()(dispatch, getState);
-}
-
-export async function savePreferences(prefs, callback) {
-    const currentUserId = Selectors.getCurrentUserId(getState());
-    await savePreferencesRedux(currentUserId, prefs)(dispatch, getState);
-    callback();
-}
-
-export async function savePreference(category, name, value) {
-    const currentUserId = Selectors.getCurrentUserId(getState());
-    return savePreferencesRedux(currentUserId, [{user_id: currentUserId, category, name, value}])(dispatch, getState);
-}
-
-export function deletePreferences(prefs) {
-    const currentUserId = Selectors.getCurrentUserId(getState());
-    return deletePreferencesRedux(currentUserId, prefs)(dispatch, getState);
+export function deauthorizeOAuthApp(appId) {
+    return bindClientFunc({
+        clientFunc: Client4.deauthorizeOAuthApp,
+        params: [appId],
+    });
 }
 
 export function autoResetStatus() {

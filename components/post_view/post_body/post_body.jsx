@@ -14,9 +14,8 @@ import FileAttachmentListContainer from 'components/file_attachment_list';
 import FailedPostOptions from 'components/post_view/failed_post_options';
 import PostBodyAdditionalContent from 'components/post_view/post_body_additional_content';
 import PostMessageView from 'components/post_view/post_message_view';
-import ReactionListContainer from 'components/post_view/reaction_list';
-
-import loadingGif from 'images/load.gif';
+import ReactionList from 'components/post_view/reaction_list';
+import LoadingBars from 'components/widgets/loading/loading_bars.jsx';
 
 const SENDING_ANIMATION_DELAY = 3000;
 
@@ -62,11 +61,6 @@ export default class PostBody extends React.PureComponent {
          * User's preference to link previews
          */
         previewEnabled: PropTypes.bool,
-
-        /**
-         * Post identifiers for selenium tests
-         */
-        lastPostCount: PropTypes.number,
 
         /*
          * Post type components from plugins
@@ -163,24 +157,15 @@ export default class PostBody extends React.PureComponent {
             );
         }
 
-        let sending;
         if (this.state.sending) {
-            sending = (
-                <img
-                    className='post-loading-gif pull-right'
-                    src={loadingGif}
-                />
-            );
-
             postClass += ' post-waiting';
         }
 
         const messageWrapper = (
             <React.Fragment>
                 {failedOptions}
-                {sending}
+                {this.state.sending && <LoadingBars/>}
                 <PostMessageView
-                    lastPostCount={this.props.lastPostCount}
                     post={this.props.post}
                     compactDisplay={this.props.compactDisplay}
                     hasMention={true}
@@ -224,7 +209,7 @@ export default class PostBody extends React.PureComponent {
                 >
                     {messageWithAdditionalContent}
                     {fileAttachmentHolder}
-                    <ReactionListContainer
+                    <ReactionList
                         post={post}
                         isReadOnly={this.props.isReadOnly}
                     />

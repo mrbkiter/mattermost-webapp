@@ -9,6 +9,8 @@
 
 describe('Login page', () => {
     before(() => {
+        cy.apiLogout();
+
         // 1. Go to login page
         cy.visit('/login');
     });
@@ -59,11 +61,11 @@ describe('Login page', () => {
         cy.get('#loginPassword').should('be.visible').type('user-1');
 
         // 4. Click "Sign in" button
-        cy.get('#loginButton').click();
+        cy.get('#loginButton').should('be.visible').click();
 
         // * Check that the Signin button change with rotating icon and "Signing in..." text
-        cy.get('#login_button_signing').should('be.visible');
-        cy.get('#login_button_signing').should('contain', 'Signing in...');
+        cy.get('#loadingSpinner').should('be.visible');
+        cy.get('#loadingSpinner').should('contain', 'Signing in...');
 
         // * Check that it login successfully and it redirects into the main channel page
         cy.get('#channel_view').should('be.visible');

@@ -4,28 +4,19 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 
-import {postListScrollChange} from 'actions/global_actions';
-
-import {isUrlSafe} from 'utils/url.jsx';
+import {getImageSrc} from 'utils/post_utils';
+import {isUrlSafe} from 'utils/url';
 import {handleFormattedTextClick} from 'utils/utils';
-import {getFileDimensionsForDisplay} from 'utils/file_utils';
 
 import Markdown from 'components/markdown';
 import ShowMore from 'components/post_view/show_more';
+import SizeAwareImage from 'components/size_aware_image';
 
 import ActionButton from '../action_button';
 import ActionMenu from '../action_menu';
+import LinkOnlyRenderer from 'utils/markdown/link_only_renderer';
 
 const MAX_ATTACHMENT_TEXT_HEIGHT = 200;
-
-const MAX_DIMENSIONS_IMAGE_URL = {
-    maxHeight: 300,
-    maxWidth: 500,
-};
-const MAX_DIMENSIONS_THUMB_URL = {
-    maxHeight: 75,
-    maxWidth: 80,
-};
 
 export default class MessageAttachment extends React.PureComponent {
     static propTypes = {
@@ -46,12 +37,17 @@ export default class MessageAttachment extends React.PureComponent {
         options: PropTypes.object,
 
         /**
+         * Whether or not the server has an image proxy enabled
+         */
+        hasImageProxy: PropTypes.bool.isRequired,
+
+        /**
          * images object for dimensions
          */
         imagesMetadata: PropTypes.object,
 
         actions: PropTypes.shape({
-            doPostAction: PropTypes.func.isRequired,
+            doPostActionWithCookie: PropTypes.func.isRequired,
         }).isRequired,
     }
 
@@ -63,11 +59,37 @@ export default class MessageAttachment extends React.PureComponent {
         };
 
         this.imageProps = {
-            onHeightReceived: this.handleHeightReceived,
+            onImageLoaded: this.handleHeightReceived,
         };
     }
 
+    componentDidMount() {
+        this.mounted = true;
+    }
+
+    componentWillUnmount() {
+        this.mounted = false;
+    }
+
+    handleHeightReceivedForThumbUrl = ({height}) => {
+        const {attachment} = this.props;
+        if (!this.props.imagesMetadata || (this.props.imagesMetadata && !this.props.imagesMetadata[attachment.thumb_url])) {
+            this.handleHeightReceived(height);
+        }
+    }
+
+    handleHeightReceivedForImageUrl = ({height}) => {
+        const {attachment} = this.props;
+        if (!this.props.imagesMetadata || (this.props.imagesMetadata && !this.props.imagesMetadata[attachment.image_url])) {
+            this.handleHeightReceived(height);
+        }
+    }
+
     handleHeightReceived = (height) => {
+        if (!this.mounted) {
+            return;
+        }
+
         if (height > 0) {
             // Increment checkOverflow to indicate change in height
             // and recompute textContainer height at ShowMore component
@@ -75,12 +97,10 @@ export default class MessageAttachment extends React.PureComponent {
             this.setState((prevState) => {
                 return {checkOverflow: prevState.checkOverflow + 1};
             });
-
-            postListScrollChange();
         }
     };
 
-    getActionView = () => {
+    renderPostActions = () => {
         const actions = this.props.attachment.actions;
         if (!actions || !actions.length) {
             return '';
@@ -128,7 +148,9 @@ export default class MessageAttachment extends React.PureComponent {
     handleAction = (e) => {
         e.preventDefault();
         const actionId = e.currentTarget.getAttribute('data-action-id');
-        this.props.actions.doPostAction(this.props.postId, actionId);
+        const actionCookie = e.currentTarget.getAttribute('data-action-cookie');
+
+        this.props.actions.doPostActionWithCookie(this.props.postId, actionId, actionCookie);
     };
 
     getFieldsTable = () => {
@@ -237,7 +259,7 @@ export default class MessageAttachment extends React.PureComponent {
                 author.push(
                     <img
                         className='attachment__author-icon'
-                        src={attachment.author_icon}
+                        src={getImageSrc(attachment.author_icon, this.props.hasImageProxy)}
                         key={'attachment__author-icon'}
                         height='14'
                         width='14'
@@ -285,7 +307,14 @@ export default class MessageAttachment extends React.PureComponent {
             } else {
                 title = (
                     <h1 className='attachment__title'>
-                        {attachment.title}
+                        <Markdown
+                            message={attachment.title}
+                            options={{
+                                mentionHighlight: false,
+                                renderer: new LinkOnlyRenderer(),
+                                autolinkedUrlSchemes: [],
+                            }}
+                        />
                     </h1>
                 );
             }
@@ -311,33 +340,33 @@ export default class MessageAttachment extends React.PureComponent {
 
         let image;
         if (attachment.image_url) {
-            const imageDimensions = getFileDimensionsForDisplay(this.props.imagesMetadata[attachment.image_url], MAX_DIMENSIONS_IMAGE_URL);
             image = (
-                <img
-                    className='attachment__image'
-                    src={attachment.image_url}
-                    {...imageDimensions}
-                />
+                <div className='attachment__image-container'>
+                    <SizeAwareImage
+                        className='attachment__image'
+                        onImageLoaded={this.handleHeightReceivedForImageUrl}
+                        src={getImageSrc(attachment.image_url, this.props.hasImageProxy)}
+                        dimensions={this.props.imagesMetadata[attachment.image_url]}
+                    />
+                </div>
             );
         }
 
         let thumb;
         if (attachment.thumb_url) {
-            const imageDimensions = getFileDimensionsForDisplay(this.props.imagesMetadata[attachment.thumb_url], MAX_DIMENSIONS_THUMB_URL);
             thumb = (
-                <div
-                    className='attachment__thumb-container'
-                >
-                    <img
-                        src={attachment.thumb_url}
-                        {...imageDimensions}
+                <div className='attachment__thumb-container'>
+                    <SizeAwareImage
+                        onImageLoaded={this.handleHeightReceivedForThumbUrl}
+                        src={getImageSrc(attachment.thumb_url, this.props.hasImageProxy)}
+                        dimensions={this.props.imagesMetadata[attachment.thumb_url]}
                     />
                 </div>
             );
         }
 
         const fields = this.getFieldsTable();
-        const actions = this.getActionView();
+        const actions = this.renderPostActions();
 
         let useBorderStyle;
         if (attachment.color && attachment.color[0] === '#') {

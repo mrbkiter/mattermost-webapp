@@ -21,7 +21,6 @@ export default class MultiSelect extends React.Component {
         options: PropTypes.arrayOf(PropTypes.object),
         optionRenderer: PropTypes.func,
         values: PropTypes.arrayOf(PropTypes.object),
-        valueKey: PropTypes.string,
         valueRenderer: PropTypes.func,
         handleInput: PropTypes.func,
         handleDelete: PropTypes.func,
@@ -120,6 +119,10 @@ export default class MultiSelect extends React.Component {
             return;
         }
 
+        if (this.state.input === input) {
+            return;
+        }
+
         this.setState({input});
 
         if (input === '') {
@@ -162,10 +165,9 @@ export default class MultiSelect extends React.Component {
             return;
         }
 
-        const valueKey = this.props.valueKey;
         const values = [...this.props.values];
         for (let i = 0; i < values.length; i++) {
-            if (values[i][valueKey] === change.removedValue[valueKey]) {
+            if (values[i].id === change.removedValue.id) {
                 values.splice(i, 1);
                 break;
             }
@@ -214,10 +216,17 @@ export default class MultiSelect extends React.Component {
             noteTextContainer = (
                 <div className='multi-select__note'>
                     <div className='note__icon'>
-                        <span
-                            className='fa fa-info'
-                            title={localizeMessage('generic_icons.info', 'Info Icon')}
-                        />
+                        <FormattedMessage
+                            id='generic_icons.info'
+                            defaultMessage='Info Icon'
+                        >
+                            {(title) => (
+                                <span
+                                    className='fa fa-info'
+                                    title={title}
+                                />
+                            )}
+                        </FormattedMessage>
                     </div>
                     <div>{this.props.noteText}</div>
                 </div>
@@ -243,7 +252,7 @@ export default class MultiSelect extends React.Component {
                 if (options.length > pageEnd) {
                     nextButton = (
                         <button
-                            className='btn btn-default filter-control filter-control__next'
+                            className='btn btn-link filter-control filter-control__next'
                             onClick={this.nextPage}
                         >
                             <FormattedMessage
@@ -257,7 +266,7 @@ export default class MultiSelect extends React.Component {
                 if (this.state.page > 0) {
                     previousButton = (
                         <button
-                            className='btn btn-default filter-control filter-control__prev'
+                            className='btn btn-link filter-control filter-control__prev'
                             onClick={this.prevPage}
                         >
                             <FormattedMessage
@@ -309,6 +318,7 @@ export default class MultiSelect extends React.Component {
                             value={this.props.values}
                             placeholder={localizeMessage('multiselect.placeholder', 'Search and add members')}
                             inputValue={this.state.input}
+                            getOptionValue={(option) => option.id}
                         />
                         <SaveButton
                             id='saveItems'

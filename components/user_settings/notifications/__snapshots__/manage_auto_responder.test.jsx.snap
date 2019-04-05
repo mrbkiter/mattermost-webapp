@@ -158,12 +158,10 @@ exports[`components/user_settings/notifications/ManageAutoResponder should match
             <hr />
             <SaveButton
               btnClass="btn-primary"
-              defaultMessage="Save"
               disabled={false}
               extraClasses=""
               onClick={[Function]}
               saving={false}
-              savingMessage="Saving"
             >
               <button
                 className="save-button btn btn-primary"
@@ -172,7 +170,12 @@ exports[`components/user_settings/notifications/ManageAutoResponder should match
                 onClick={[Function]}
                 type="submit"
               >
-                Save
+                <LoadingWrapper
+                  loading={false}
+                  text="Saving"
+                >
+                  Save
+                </LoadingWrapper>
               </button>
             </SaveButton>
             <button
@@ -380,7 +383,6 @@ exports[`components/user_settings/notifications/ManageAutoResponder should match
                       id="autoResponderMessageInput"
                       maxLength={200}
                       onChange={[Function]}
-                      placeholder="Message"
                       rows="5"
                       style={
                         Object {
@@ -403,7 +405,6 @@ exports[`components/user_settings/notifications/ManageAutoResponder should match
                         id="autoResponderMessageInput-reference"
                         maxLength={200}
                         onChange={[Function]}
-                        placeholder="Message"
                         rows="5"
                         style={
                           Object {
@@ -442,12 +443,10 @@ exports[`components/user_settings/notifications/ManageAutoResponder should match
             <hr />
             <SaveButton
               btnClass="btn-primary"
-              defaultMessage="Save"
               disabled={false}
               extraClasses=""
               onClick={[Function]}
               saving={false}
-              savingMessage="Saving"
             >
               <button
                 className="save-button btn btn-primary"
@@ -456,7 +455,12 @@ exports[`components/user_settings/notifications/ManageAutoResponder should match
                 onClick={[Function]}
                 type="submit"
               >
-                Save
+                <LoadingWrapper
+                  loading={false}
+                  text="Saving"
+                >
+                  Save
+                </LoadingWrapper>
               </button>
             </SaveButton>
             <button

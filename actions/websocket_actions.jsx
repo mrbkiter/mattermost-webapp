@@ -33,8 +33,11 @@ import {getMyTeams, getCurrentRelativeTeamUrl, getCurrentTeamId, getCurrentTeamU
 import {getConfig} from 'mattermost-redux/selectors/entities/general';
 import {getChannel, getCurrentChannel, getCurrentChannelId} from 'mattermost-redux/selectors/entities/channels';
 
+import {getSelectedChannelId} from 'selectors/rhs';
+
 import {openModal} from 'actions/views/modals';
 import {incrementWsErrorCount, resetWsErrorCount} from 'actions/views/system';
+import {closeRightHandSide} from 'actions/views/rhs';
 
 import {browserHistory} from 'utils/browser_history';
 import {loadChannelsForCurrentUser} from 'actions/channel_actions.jsx';
@@ -414,6 +417,7 @@ export function debouncePostEvent(func, wait) {
                     type: PostTypes.RECEIVED_POSTS,
                     data: {posts: posts[channelId]},
                     channelId,
+                    receivedNewPosts: true,
                 });
                 getProfilesAndStatusesForPosts(posts[channelId], dispatch, getState);
             }
@@ -458,18 +462,12 @@ function handleNewPostEventWrapped(msg) {
     }
 }
 
-function handlePostEditEvent(msg) {
+export function handlePostEditEvent(msg) {
     // Store post
     const post = JSON.parse(msg.data.post);
     dispatch({
-        type: PostTypes.RECEIVED_POSTS,
-        data: {
-            order: [],
-            posts: {
-                [post.id]: post,
-            },
-        },
-        channelId: post.channel_id,
+        type: PostTypes.RECEIVED_POST,
+        data: post,
     });
 
     getProfilesAndStatusesForPosts([post], dispatch, getState);
@@ -606,7 +604,7 @@ function handleUserAddedEvent(msg) {
     }
 }
 
-function handleUserRemovedEvent(msg) {
+export function handleUserRemovedEvent(msg) {
     const state = getState();
     const currentChannel = getCurrentChannel(state) || {};
     const currentUserId = getCurrentUserId(state);
@@ -614,9 +612,12 @@ function handleUserRemovedEvent(msg) {
     if (msg.broadcast.user_id === currentUserId) {
         dispatch(loadChannelsForCurrentUser());
 
-        if (msg.data.channel_id === currentChannel.id) {
-            GlobalActions.emitCloseRightHandSide();
+        const rhsChannelId = getSelectedChannelId(state);
+        if (msg.data.channel_id === rhsChannelId) {
+            dispatch(closeRightHandSide());
+        }
 
+        if (msg.data.channel_id === currentChannel.id) {
             if (msg.data.remover_id === msg.broadcast.user_id) {
                 browserHistory.push(getCurrentRelativeTeamUrl(state));
             } else {

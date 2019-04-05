@@ -29,6 +29,7 @@ export default class SystemUsersList extends React.Component {
         renderFilterRow: PropTypes.func,
 
         teamId: PropTypes.string.isRequired,
+        filter: PropTypes.string.isRequired,
         term: PropTypes.string.isRequired,
         onTermChange: PropTypes.func.isRequired,
 
@@ -181,6 +182,10 @@ export default class SystemUsersList extends React.Component {
 
     getInfoForUser(user) {
         const info = [];
+
+        if (user.is_bot) {
+            return null;
+        }
 
         if (user.auth_service) {
             let service;

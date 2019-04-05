@@ -6,11 +6,8 @@ import {mount, shallow} from 'enzyme';
 import configureStore from 'redux-mock-store';
 import {Provider} from 'react-redux';
 
-import {getMembershipForCurrentEntities} from 'actions/views/profile_popover';
-
 import Pluggable from 'plugins/pluggable/pluggable.jsx';
 import {mountWithIntl} from 'tests/helpers/intl-test-helper';
-import ProfilePopover from 'components/profile_popover';
 
 class ProfilePopoverPlugin extends React.PureComponent {
     render() {
@@ -66,9 +63,15 @@ describe('plugins/Pluggable', () => {
                 currentUserId: 'someUserId',
                 users: {someUserId: {id: 'someUserId', name: 'some_user_name'}},
                 profiles: {},
+                statuses: {
+                    someUserId: 'online',
+                },
             },
             roles: {
                 roles: {},
+            },
+            bots: {
+                accounts: {},
             },
         },
         plugins: {
@@ -144,45 +147,5 @@ describe('plugins/Pluggable', () => {
         );
 
         expect(wrapper.type()).toBe(null);
-    });
-
-    test('should match snapshot with no overridden component', () => {
-        getMembershipForCurrentEntities.mockImplementation((...args) => {
-            return {type: 'MOCK_GET_MEMBERSHIP_FOR_CURRENT_ENTITIES', args};
-        });
-
-        const wrapper = mountWithIntl(
-            <Provider store={store}>
-                <Pluggable
-                    components={{}}
-                    theme={{}}
-                >
-                    <ProfilePopover
-                        user={{id: 'someUserId', name: 'some_user_name'}}
-                        src='src'
-                    />
-                </Pluggable>
-            </Provider>
-        );
-        expect(wrapper).toMatchSnapshot();
-    });
-
-    test('should match snapshot with overridden component', () => {
-        const wrapper = mount(
-            <Provider store={store}>
-                <Pluggable
-                    components={{ProfilePopover: [{component: ProfilePopoverPlugin}]}}
-                    theme={{id: 'theme_id'}}
-                >
-                    <ProfilePopover
-                        user={{id: 'someUserId', name: 'some_user_name'}}
-                        src='src'
-                    />
-                </Pluggable>
-            </Provider>
-        );
-
-        expect(wrapper).toMatchSnapshot();
-        expect(wrapper.find('#pluginId').text()).toBe('ProfilePopoverPlugin');
     });
 });

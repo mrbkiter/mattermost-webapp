@@ -12,6 +12,7 @@ import Constants from 'utils/constants.jsx';
 import {displayEntireNameForUser, localizeMessage} from 'utils/utils.jsx';
 import MultiSelect from 'components/multiselect/multiselect.jsx';
 import ProfilePicture from 'components/profile_picture.jsx';
+import AddIcon from 'components/icon/add_icon';
 
 import GroupMessageOption from './group_message_option';
 
@@ -199,6 +200,8 @@ export default class MoreDirectChannels extends React.Component {
     addValue = (value) => {
         if (Array.isArray(value)) {
             this.addUsers(value);
+        } else if ('profiles' in value) {
+            this.addUsers(value.profiles);
         } else {
             const values = Object.assign([], this.state.values);
 
@@ -299,7 +302,19 @@ export default class MoreDirectChannels extends React.Component {
             rowSelected = 'more-modal__row--selected';
         }
 
-        const status = option.delete_at ? null : this.props.statuses[option.id];
+        const status = option.delete_at || option.is_bot ? null : this.props.statuses[option.id];
+
+        let tag = null;
+        if (option.is_bot) {
+            tag = (
+                <div className='bot-indicator bot-indicator__popoverlist'>
+                    <FormattedMessage
+                        id='post_info.bot'
+                        defaultMessage='BOT'
+                    />
+                </div>
+            );
+        }
 
         return (
             <div
@@ -319,6 +334,7 @@ export default class MoreDirectChannels extends React.Component {
                 >
                     <div className='more-modal__name'>
                         {modalName}
+                        {tag}
                     </div>
                     <div className='more-modal__description'>
                         {option.email}
@@ -326,10 +342,7 @@ export default class MoreDirectChannels extends React.Component {
                 </div>
                 <div className='more-modal__actions'>
                     <div className='more-modal__actions--round'>
-                        <i
-                            className='fa fa-plus'
-                            title={localizeMessage('generic_icons.add', 'Add Icon')}
-                        />
+                        <AddIcon/>
                     </div>
                 </div>
             </div>
@@ -400,7 +413,6 @@ export default class MoreDirectChannels extends React.Component {
                 options={options}
                 optionRenderer={this.renderOption}
                 values={this.state.values}
-                valueKey='id'
                 valueRenderer={this.renderValue}
                 perPage={USERS_PER_PAGE}
                 handlePageChange={this.handlePageChange}

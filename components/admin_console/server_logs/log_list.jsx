@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
 
-import {localizeMessage} from 'utils/utils.jsx';
+import NextIcon from 'components/icon/next_icon';
 
 const NEXT_BUTTON_TIMEOUT = 500;
 
@@ -36,14 +36,12 @@ export default class Logs extends React.PureComponent {
         // Scroll Down to get the latest logs
         var node = this.refs.logPanel;
         node.scrollTop = node.scrollHeight;
-        node.focus();
     }
 
     componentDidUpdate() {
         // Scroll Down to get the latest logs
         var node = this.refs.logPanel;
         node.scrollTop = node.scrollHeight;
-        node.focus();
     }
 
     nextPage(e) {
@@ -77,10 +75,7 @@ export default class Logs extends React.PureComponent {
                         id='admin.logs.next'
                         defaultMessage='Next'
                     />
-                    <i
-                        className='fa fa-chevron-right margin-left'
-                        title={localizeMessage('generic_icons.next', 'Next Icon')}
-                    />
+                    <NextIcon additionalClassName='margin-left'/>
                 </button>
             );
         }
@@ -91,10 +86,17 @@ export default class Logs extends React.PureComponent {
                     className='btn btn-default filter-control filter-control__prev'
                     onClick={this.previousPage}
                 >
-                    <i
-                        className='fa fa-angle-left'
-                        title={localizeMessage('generic_icons.previous', 'Previous Icon')}
-                    />
+                    <FormattedMessage
+                        id='generic_icons.previous'
+                        defaultMessage='Previous Icon'
+                    >
+                        {(title) => (
+                            <i
+                                className='fa fa-angle-left'
+                                title={title}
+                            />
+                        )}
+                    </FormattedMessage>
                     <FormattedMessage
                         id='admin.logs.prev'
                         defaultMessage='Previous'

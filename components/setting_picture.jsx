@@ -4,13 +4,13 @@
 import PropTypes from 'prop-types';
 import React, {Component} from 'react';
 import {FormattedMessage} from 'react-intl';
-import exif2css from 'exif2css';
 import {OverlayTrigger, Tooltip} from 'react-bootstrap';
 
 import {Constants} from 'utils/constants.jsx';
-import {localizeMessage, fileSizeToString} from 'utils/utils.jsx';
+import {fileSizeToString, localizeMessage} from 'utils/utils.jsx';
+import * as FileUtils from 'utils/file_utils.jsx';
 
-import loadingGif from 'images/load.gif';
+import LoadingWrapper from 'components/widgets/loading/loading_wrapper.jsx';
 import FormError from 'components/form_error.jsx';
 
 import FormattedMarkdownMessage from 'components/formatted_markdown_message.jsx';
@@ -89,7 +89,7 @@ export default class SettingPicture extends Component {
     }
 
     handleFileChange = (e) => {
-        this.setState({removeSrc: false});
+        this.setState({removeSrc: false, setDefaultSrc: false});
         this.props.onFileChange(e);
     }
 
@@ -99,8 +99,8 @@ export default class SettingPicture extends Component {
 
             var reader = new FileReader();
             reader.onload = (e) => {
-                const orientation = this.getExifOrientation(e.target.result);
-                const orientationStyles = this.getOrientationStyles(orientation);
+                const orientation = FileUtils.getExifOrientation(e.target.result);
+                const orientationStyles = FileUtils.getOrientationStyles(orientation);
 
                 this.setState({
                     image: this.previewBlob,
@@ -109,53 +109,6 @@ export default class SettingPicture extends Component {
             };
             reader.readAsArrayBuffer(file);
         }
-    }
-
-    // based on https://stackoverflow.com/questions/7584794/accessing-jpeg-exif-rotation-data-in-javascript-on-the-client-side/32490603#32490603
-    getExifOrientation(data) {
-        var view = new DataView(data);
-
-        if (view.getUint16(0, false) !== 0xFFD8) {
-            return -2;
-        }
-
-        var length = view.byteLength;
-        var offset = 2;
-
-        while (offset < length) {
-            var marker = view.getUint16(offset, false);
-            offset += 2;
-
-            if (marker === 0xFFE1) {
-                if (view.getUint32(offset += 2, false) !== 0x45786966) {
-                    return -1;
-                }
-
-                var little = view.getUint16(offset += 6, false) === 0x4949;
-                offset += view.getUint32(offset + 4, little);
-                var tags = view.getUint16(offset, little);
-                offset += 2;
-
-                for (var i = 0; i < tags; i++) {
-                    if (view.getUint16(offset + (i * 12), little) === 0x0112) {
-                        return view.getUint16(offset + (i * 12) + 8, little);
-                    }
-                }
-            } else if ((marker & 0xFF00) === 0xFF00) {
-                offset += view.getUint16(offset, false);
-            } else {
-                break;
-            }
-        }
-        return -1;
-    }
-
-    getOrientationStyles(orientation) {
-        const {
-            transform,
-            'transform-origin': transformOrigin,
-        } = exif2css(orientation);
-        return {transform, transformOrigin};
     }
 
     renderImg = () => {
@@ -255,42 +208,11 @@ export default class SettingPicture extends Component {
 
         const img = this.renderImg();
 
-        let confirmButton;
-        let selectButtonSpinner;
-        let fileInputDisabled = false;
-        if (this.props.loadingPicture) {
-            confirmButton = (
-                <img
-                    className='spinner'
-                    src={loadingGif}
-                />
-            );
-            selectButtonSpinner = (
-                <span
-                    className='icon fa fa-refresh icon--rotate'
-                    title={localizeMessage('generic_icons.loading', 'Loading Icon')}
-                />
-            );
-            fileInputDisabled = true;
+        let confirmButtonClass = 'btn btn-sm';
+        if (this.props.submitActive || this.state.removeSrc || this.state.setDefaultSrc) {
+            confirmButtonClass += ' btn-primary';
         } else {
-            let confirmButtonClass = 'btn btn-sm';
-            if (this.props.submitActive || this.state.removeSrc || this.state.setDefaultSrc) {
-                confirmButtonClass += ' btn-primary';
-            } else {
-                confirmButtonClass += ' btn-inactive disabled';
-            }
-
-            confirmButton = (
-                <a
-                    className={confirmButtonClass}
-                    onClick={this.handleSave}
-                >
-                    <FormattedMessage
-                        id='setting_picture.save'
-                        defaultMessage='Save'
-                    />
-                </a>
-            );
+            confirmButtonClass += ' btn-inactive disabled';
         }
 
         let helpText;
@@ -328,9 +250,8 @@ export default class SettingPicture extends Component {
                             />
                             <div
                                 className='btn btn-sm btn-primary btn-file sel-btn'
-                                disabled={fileInputDisabled}
+                                disabled={this.props.loadingPicture}
                             >
-                                {selectButtonSpinner}
                                 <FormattedMessage
                                     id='setting_picture.select'
                                     defaultMessage='Select'
@@ -340,12 +261,25 @@ export default class SettingPicture extends Component {
                                     accept='.jpg,.png,.bmp'
                                     type='file'
                                     onChange={this.handleFileChange}
-                                    disabled={fileInputDisabled}
+                                    disabled={this.props.loadingPicture}
                                 />
                             </div>
-                            {confirmButton}
                             <a
-                                className='btn btn-sm theme'
+                                className={confirmButtonClass}
+                                onClick={this.props.loadingPicture ? () => true : this.handleSave}
+                            >
+                                <LoadingWrapper
+                                    loading={this.props.loadingPicture}
+                                    text={localizeMessage('setting_picture.uploading', 'Uploading...')}
+                                >
+                                    <FormattedMessage
+                                        id='setting_picture.save'
+                                        defaultMessage='Save'
+                                    />
+                                </LoadingWrapper>
+                            </a>
+                            <a
+                                className='btn btn-link btn-sm theme'
                                 href='#'
                                 onClick={this.handleCancel}
                             >

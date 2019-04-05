@@ -4,6 +4,8 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 
+import Markdown from 'components/markdown';
+
 export default class ActionButton extends React.PureComponent {
     static propTypes = {
         action: PropTypes.object.isRequired,
@@ -15,10 +17,18 @@ export default class ActionButton extends React.PureComponent {
         return (
             <button
                 data-action-id={action.id}
+                data-action-cookie={action.cookie}
                 key={action.id}
                 onClick={handleAction}
             >
-                {action.name}
+                <Markdown
+                    message={action.name}
+                    options={{
+                        mentionHighlight: false,
+                        markdown: false,
+                        autolinkedUrlSchemes: [],
+                    }}
+                />
             </button>
         );
     }

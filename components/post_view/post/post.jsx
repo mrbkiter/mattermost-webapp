@@ -19,19 +19,9 @@ export default class Post extends React.PureComponent {
         post: PropTypes.object.isRequired,
 
         /**
-         * The user who created the post
+         * The logged in user ID
          */
-        user: PropTypes.object,
-
-        /**
-         * The status of the poster
-         */
-        status: PropTypes.string,
-
-        /**
-         * The logged in user
-         */
-        currentUser: PropTypes.object.isRequired,
+        currentUserId: PropTypes.string.isRequired,
 
         /**
          * Set to center the post
@@ -51,7 +41,7 @@ export default class Post extends React.PureComponent {
         /**
          * Set to highlight the background of the post
          */
-        highlight: PropTypes.bool,
+        shouldHighlight: PropTypes.bool,
 
         /**
          * Set to render this post as if it was attached to the previous post
@@ -63,6 +53,11 @@ export default class Post extends React.PureComponent {
          */
         previousPostIsComment: PropTypes.bool,
 
+        /*
+         * Function called when the post options dropdown is opened
+         */
+        togglePostMenu: PropTypes.func,
+
         /**
          * Set to render this comment as a mention
          */
@@ -72,16 +67,6 @@ export default class Post extends React.PureComponent {
          * The number of replies in the same thread as this post
          */
         replyCount: PropTypes.number,
-
-        /**
-         * The post count used for selenium tests
-         */
-        lastPostCount: PropTypes.number,
-
-        /**
-         * Function to get the post list HTML element
-         */
-        getPostList: PropTypes.func.isRequired,
 
         actions: PropTypes.shape({
             selectPost: PropTypes.func.isRequired,
@@ -118,6 +103,10 @@ export default class Post extends React.PureComponent {
     }
 
     handleDropdownOpened = (opened) => {
+        if (this.props.togglePostMenu) {
+            this.props.togglePostMenu(opened);
+        }
+
         this.setState({
             dropdownOpened: opened,
         });
@@ -144,7 +133,7 @@ export default class Post extends React.PureComponent {
             className += ' post--hide-controls';
         }
 
-        if (this.props.highlight) {
+        if (this.props.shouldHighlight) {
             className += ' post--highlight';
         }
 
@@ -156,7 +145,7 @@ export default class Post extends React.PureComponent {
         }
 
         let currentUserCss = '';
-        if (this.props.currentUser.id === post.user_id && !fromWebhook && !isSystemMessage) {
+        if (this.props.currentUserId === post.user_id && !fromWebhook && !isSystemMessage) {
             currentUserCss = 'current--user';
         }
 
@@ -230,8 +219,7 @@ export default class Post extends React.PureComponent {
                 <PostProfilePicture
                     compactDisplay={this.props.compactDisplay}
                     post={post}
-                    status={this.props.status}
-                    user={this.props.user}
+                    userId={post.user_id}
                 />
             );
 
@@ -258,7 +246,10 @@ export default class Post extends React.PureComponent {
                 onMouseLeave={this.unsetHover}
                 onTouchStart={this.setHover}
             >
-                <div className={'post__content ' + centerClass}>
+                <div
+                    id='postContent'
+                    className={'post__content ' + centerClass}
+                >
                     <div className='post__img'>
                         {profilePic}
                     </div>
@@ -267,22 +258,16 @@ export default class Post extends React.PureComponent {
                             post={post}
                             handleCommentClick={this.handleCommentClick}
                             handleDropdownOpened={this.handleDropdownOpened}
-                            user={this.props.user}
-                            currentUser={this.props.currentUser}
                             compactDisplay={this.props.compactDisplay}
-                            status={this.props.status}
-                            lastPostCount={this.props.lastPostCount}
                             isFirstReply={this.props.isFirstReply}
                             replyCount={this.props.replyCount}
                             showTimeWithoutHover={!hideProfilePicture}
-                            getPostList={this.props.getPostList}
                             hover={this.state.hover}
                         />
                         <PostBody
                             post={post}
                             handleCommentClick={this.handleCommentClick}
                             compactDisplay={this.props.compactDisplay}
-                            lastPostCount={this.props.lastPostCount}
                             isCommentMention={this.props.isCommentMention}
                             isFirstReply={this.props.isFirstReply}
                         />

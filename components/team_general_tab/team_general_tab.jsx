@@ -11,6 +11,8 @@ import * as Utils from 'utils/utils.jsx';
 import SettingItemMax from 'components/setting_item_max.jsx';
 import SettingItemMin from 'components/setting_item_min.jsx';
 import SettingPicture from 'components/setting_picture.jsx';
+import BackIcon from 'components/icon/back_icon';
+import LocalizedInput from 'components/localized_input/localized_input';
 
 const ACCEPTED_TEAM_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/bmp'];
 
@@ -342,7 +344,7 @@ export default class GeneralTab extends React.Component {
         } else {
             this.setState({
                 teamIconFile: null,
-                clientError: Utils.localizeMessage('general_tab.teamIconError', 'An error occured while selecting the image.'),
+                clientError: Utils.localizeMessage('general_tab.teamIconError', 'An error occurred while selecting the image.'),
             });
         }
     }
@@ -716,7 +718,7 @@ export default class GeneralTab extends React.Component {
                     className='form-group'
                 >
                     <div className='col-sm-12'>
-                        <input
+                        <LocalizedInput
                             id='allowedDomains'
                             autoFocus={true}
                             className='form-control'
@@ -724,7 +726,7 @@ export default class GeneralTab extends React.Component {
                             onChange={this.updateAllowedDomains}
                             value={this.state.allowed_domains}
                             onFocus={Utils.moveCursorToEnd}
-                            placeholder={Utils.localizeMessage('general_tab.AllowedDomainsExample', 'corp.mattermost.com, mattermost.org')}
+                            placeholder={{id: 'general_tab.AllowedDomainsExample', defaultMessage: 'corp.mattermost.com, mattermost.org'}}
                         />
                     </div>
                 </div>
@@ -783,11 +785,9 @@ export default class GeneralTab extends React.Component {
                         ref='title'
                     >
                         <div className='modal-back'>
-                            <i
-                                className='fa fa-angle-left'
-                                title={Utils.localizeMessage('generic_icons.back', 'Back Icon')}
-                                onClick={this.props.collapseModal}
-                            />
+                            <span onClick={this.props.collapseModal}>
+                                <BackIcon/>
+                            </span>
                         </div>
                         <FormattedMessage
                             id='general_tab.title'

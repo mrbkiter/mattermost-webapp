@@ -141,7 +141,7 @@
     .custom-textarea {
         border-color: $light-gray;
         color: inherit;
-        padding-right: 30px;
+        padding: 12px 30px 12px 15px;
 
         &:focus {
             border-color: $light-gray;
@@ -151,11 +151,6 @@
 
     .btn {
         font-size: 13px;
-
-        &.btn-default {
-            background: transparent;
-            border: none;
-        }
     }
 
     .info__label {
@@ -192,6 +187,21 @@
         margin-right: auto;
         max-width: 95%;
 
+        &.modal--overflow-visible {
+            .modal-body {
+                position: static;
+
+                .dropdown {
+                    position: static;
+                }
+
+                .dropdown-menu {
+                    left: auto;
+                    right: 20px;
+                }
+            }
+        }
+
         &.modal-xl {
             width: 800px;
         }
@@ -211,7 +221,7 @@
     .modal-header {
         @include border-radius(0);
         @include clearfix;
-        background: $primary-color;
+        background: alpha-color($black, .85);
         border: 1px solid $light-gray;
         color: $white;
         min-height: 56px;
@@ -317,6 +327,7 @@
 
         .modal-body {
             @include clearfix;
+            background: transparent;
             display: table;
             height: 100%;
             max-height: 100%;
@@ -463,14 +474,10 @@
         }
 
         .loader-percent {
-            bottom: 0;
             color: alpha-color($white, 0.8);
+            display: block;
+            margin-top: 12px;
             height: 20px;
-            left: 0;
-            margin: auto;
-            position: absolute;
-            right: 0;
-            top: 55px;
         }
 
         .modal-button-bar {
@@ -698,7 +705,7 @@
         flex-grow: 0;
         flex-shrink: 0;
         margin: 5px 0;
-        padding-left: 20px;
+        padding-left: 8px;
     }
 
     .more-modal__name {
@@ -818,7 +825,7 @@
     }
 }
 
-.team-selector-modal {
+.team-selector-modal, .channel-selector-modal {
     .more-modal__row {
         border: 0px;
         &:nth-child(odd) {
@@ -826,6 +833,13 @@
         }
         &:hover {
             background: rgba(0, 0, 0, .05);
+        }
+        .team-name {
+            padding-left: 5px;
+            color: $gray;
+        }
+        .icon__lock, .icon__globe {
+            margin-right: 5px;
         }
     }
 }
@@ -836,7 +850,7 @@
     }
 }
 
-.team-selector-modal {
+.team-selector-modal, .channel-selector-modal {
     .modal-header {
         background: $black;
         color: $white;
@@ -888,5 +902,18 @@
 .more-public-direct-channels {
     .filtered-user-list {
         height: calc(90vh - 180px);
+    }
+}
+
+.modal-body {
+    .manage-teams__teams {
+        .MenuWrapper {
+            position: static;
+        }
+
+        .Menu {
+            top: inherit;
+            margin-right: 20px;
+        }
     }
 }

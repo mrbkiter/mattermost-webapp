@@ -5,13 +5,13 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
 
-import {savePreferences, updateActive, revokeAllSessions} from 'actions/user_actions.jsx';
 import {emitUserLoggedOutEvent} from 'actions/global_actions.jsx';
 import Constants from 'utils/constants.jsx';
 import * as Utils from 'utils/utils.jsx';
 import SettingItemMax from 'components/setting_item_max.jsx';
 import SettingItemMin from 'components/setting_item_min.jsx';
 import ConfirmModal from 'components/confirm_modal.jsx';
+import BackIcon from 'components/icon/back_icon';
 
 import JoinLeaveSection from './join_leave_section';
 import CodeBlockCtrlEnterSection from './code_block_ctrl_enter_section';
@@ -32,6 +32,11 @@ export default class AdvancedSettingsDisplay extends React.Component {
         collapseModal: PropTypes.func.isRequired,
         enablePreviewFeatures: PropTypes.bool,
         enableUserDeactivation: PropTypes.bool,
+        actions: PropTypes.shape({
+            savePreferences: PropTypes.func.isRequired,
+            updateUserActive: PropTypes.func.isRequired,
+            revokeAllSessions: PropTypes.func.isRequired,
+        }).isRequired,
     }
 
     constructor(props) {
@@ -119,9 +124,10 @@ export default class AdvancedSettingsDisplay extends React.Component {
         this.handleSubmit(features);
     }
 
-    handleSubmit = (settings) => {
+    handleSubmit = async (settings) => {
         const preferences = [];
-        const userId = this.props.currentUser.id;
+        const {actions, currentUser} = this.props;
+        const userId = currentUser.id;
 
         // this should be refactored so we can actually be certain about what type everything is
         (Array.isArray(settings) ? settings : [settings]).forEach((setting) => {
@@ -135,12 +141,9 @@ export default class AdvancedSettingsDisplay extends React.Component {
 
         this.setState({isSaving: true});
 
-        savePreferences(
-            preferences,
-            () => {
-                this.handleUpdateSection('');
-            }
-        );
+        await actions.savePreferences(userId, preferences);
+
+        this.handleUpdateSection('');
     }
 
     handleDeactivateAccountSubmit = () => {
@@ -148,19 +151,20 @@ export default class AdvancedSettingsDisplay extends React.Component {
 
         this.setState({isSaving: true});
 
-        updateActive(userId, false,
-            null,
-            (err) => {
-                this.setState({serverError: err.message});
-            }
-        );
+        this.props.actions.updateUserActive(userId, false).
+            then(({error}) => {
+                if (error) {
+                    this.setState({serverError: error.message});
+                }
+            });
 
-        revokeAllSessions(userId,
-            () => {
-                emitUserLoggedOutEvent();
-            },
-            (err) => {
-                this.setState({serverError: err.message});
+        this.props.actions.revokeAllSessions(userId).then(
+            ({data, error}) => {
+                if (data) {
+                    emitUserLoggedOutEvent();
+                } else if (error) {
+                    this.setState({serverError: error.message});
+                }
             }
         );
     }
@@ -565,11 +569,9 @@ export default class AdvancedSettingsDisplay extends React.Component {
                         ref='title'
                     >
                         <div className='modal-back'>
-                            <i
-                                className='fa fa-angle-left'
-                                title={Utils.localizeMessage('generic_icons.back', 'Back Icon')}
-                                onClick={this.props.collapseModal}
-                            />
+                            <span onClick={this.props.collapseModal}>
+                                <BackIcon/>
+                            </span>
                         </div>
                         <FormattedMessage
                             id='user.settings.advance.title'

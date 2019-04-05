@@ -10,6 +10,7 @@ import {FormattedMessage} from 'react-intl';
 
 import GlobeIcon from 'components/svg/globe_icon';
 import LockIcon from 'components/svg/lock_icon';
+import LocalizedInput from 'components/localized_input/localized_input';
 import Constants from 'utils/constants.jsx';
 import {getShortenedURL} from 'utils/url.jsx';
 import * as UserAgent from 'utils/user_agent.jsx';
@@ -258,9 +259,11 @@ export default class NewChannelModal extends React.PureComponent {
             );
         } else {
             typeOptions = (
-                <div className='type-container'>
-                    {canCreatePublicChannel ? publicChannelDesc : null}
-                    {canCreatePrivateChannel ? privateChannelDesc : null}
+                <div className='type-container multi-select__radio'>
+                    <div className='radio'>
+                        {canCreatePublicChannel ? publicChannelDesc : null}
+                        {canCreatePrivateChannel ? privateChannelDesc : null}
+                    </div>
                 </div>
             );
         }
@@ -319,13 +322,13 @@ export default class NewChannelModal extends React.PureComponent {
                                     />
                                 </label>
                                 <div className='col-sm-9'>
-                                    <input
+                                    <LocalizedInput
                                         id={inputPrefixId + 'Name'}
                                         onChange={this.handleChange}
                                         type='text'
                                         ref='display_name'
                                         className='form-control'
-                                        placeholder={Utils.localizeMessage('channel_modal.nameEx', 'E.g.: "Bugs", "Marketing", "客户支持"')}
+                                        placeholder={{id: 'channel_modal.nameEx', defaultMessage: 'E.g.: "Bugs", "Marketing", "客户支持"'}}
                                         maxLength={Constants.MAX_CHANNELNAME_LENGTH}
                                         value={this.props.channelData.displayName}
                                         autoFocus={true}
@@ -424,7 +427,7 @@ export default class NewChannelModal extends React.PureComponent {
                         <Modal.Footer>
                             <button
                                 type='button'
-                                className='btn btn-default'
+                                className='btn btn-link'
                                 onClick={this.props.onModalDismissed}
                                 tabIndex='8'
                                 onBlur={() => document.getElementById(`${inputPrefixId}Name`).focus()}

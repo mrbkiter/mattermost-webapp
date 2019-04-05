@@ -6,7 +6,6 @@ import React from 'react';
 import classNames from 'classnames';
 
 import {trackEvent} from 'actions/diagnostics_actions.jsx';
-import {postListScrollChange} from 'actions/global_actions.jsx';
 import Constants from 'utils/constants.jsx';
 import * as Utils from 'utils/utils.jsx';
 import FileUploadOverlay from 'components/file_upload_overlay.jsx';
@@ -18,7 +17,7 @@ export default class SidebarRight extends React.PureComponent {
     static propTypes = {
         isExpanded: PropTypes.bool.isRequired,
         isOpen: PropTypes.bool.isRequired,
-        currentUser: PropTypes.object,
+        currentUserId: PropTypes.string.isRequired,
         channel: PropTypes.object,
         postRightVisible: PropTypes.bool,
         searchVisible: PropTypes.bool,
@@ -38,7 +37,6 @@ export default class SidebarRight extends React.PureComponent {
 
         if (!wasOpen && isOpen) {
             trackEvent('ui', 'ui_rhs_opened');
-            setTimeout(postListScrollChange, 0);
         }
 
         const {actions, isPinnedPosts, channel} = this.props;
@@ -54,7 +52,7 @@ export default class SidebarRight extends React.PureComponent {
     render() {
         const {
             channel,
-            currentUser,
+            currentUserId,
             isFlaggedPosts,
             isMentionSearch,
             isPinnedPosts,
@@ -71,7 +69,7 @@ export default class SidebarRight extends React.PureComponent {
         }
 
         var searchForm = null;
-        if (currentUser) {
+        if (currentUserId) {
             searchForm = <SearchBar isFocus={searchVisible && !isFlaggedPosts && !isPinnedPosts}/>;
         }
 
@@ -105,7 +103,7 @@ export default class SidebarRight extends React.PureComponent {
                     <div className='search-bar__container channel-header alt'>{searchForm}</div>
                     <RhsThread
                         previousRhsState={previousRhsState}
-                        currentUser={currentUser}
+                        currentUserId={currentUserId}
                         toggleSize={this.toggleSize}
                         shrink={this.onShrink}
                     />

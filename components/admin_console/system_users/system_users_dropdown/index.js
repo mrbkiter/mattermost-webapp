@@ -2,17 +2,28 @@
 // See LICENSE.txt for license information.
 
 import {connect} from 'react-redux';
+import {bindActionCreators} from 'redux';
 
-import {getCurrentRelativeTeamUrl} from 'mattermost-redux/selectors/entities/teams';
+import {updateUserActive} from 'mattermost-redux/actions/users';
 import {getCurrentUser} from 'mattermost-redux/selectors/entities/users';
+
+import {revokeAllSessions} from 'actions/user_actions.jsx';
 
 import SystemUsersDropdown from './system_users_dropdown.jsx';
 
 function mapStateToProps(state) {
     return {
         currentUser: getCurrentUser(state),
-        teamUrl: getCurrentRelativeTeamUrl(state),
     };
 }
 
-export default connect(mapStateToProps)(SystemUsersDropdown);
+function mapDispatchToProps(dispatch) {
+    return {
+        actions: bindActionCreators({
+            updateUserActive,
+            revokeAllSessions,
+        }, dispatch),
+    };
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(SystemUsersDropdown);

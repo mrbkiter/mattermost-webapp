@@ -12,6 +12,7 @@ import {displayEntireNameForUser, localizeMessage} from 'utils/utils.jsx';
 
 import MultiSelect from 'components/multiselect/multiselect.jsx';
 import ProfilePicture from 'components/profile_picture.jsx';
+import AddIcon from 'components/icon/add_icon';
 
 const USERS_PER_PAGE = 50;
 const MAX_SELECTABLE_VALUES = 20;
@@ -22,7 +23,7 @@ export default class AddUsersToTeam extends React.Component {
         currentTeamId: PropTypes.string.isRequired,
         searchTerm: PropTypes.string.isRequired,
         users: PropTypes.array.isRequired,
-        onModalDismissed: PropTypes.func,
+        onHide: PropTypes.func,
         actions: PropTypes.shape({
             getProfilesNotInTeam: PropTypes.func.isRequired,
             setModalSearchTerm: PropTypes.func.isRequired,
@@ -82,8 +83,8 @@ export default class AddUsersToTeam extends React.Component {
     }
 
     handleExit = () => {
-        if (this.props.onModalDismissed) {
-            this.props.onModalDismissed();
+        if (this.props.onHide) {
+            this.props.onHide();
         }
     }
 
@@ -157,6 +158,18 @@ export default class AddUsersToTeam extends React.Component {
             rowSelected = 'more-modal__row--selected';
         }
 
+        let tag = null;
+        if (option.is_bot) {
+            tag = (
+                <div className='bot-indicator bot-indicator__popoverlist'>
+                    <FormattedMessage
+                        id='post_info.bot'
+                        defaultMessage='BOT'
+                    />
+                </div>
+            );
+        }
+
         return (
             <div
                 key={option.id}
@@ -174,6 +187,7 @@ export default class AddUsersToTeam extends React.Component {
                 >
                     <div className='more-modal__name'>
                         {displayEntireNameForUser(option)}
+                        {tag}
                     </div>
                     <div className='more-modal__description'>
                         {option.email}
@@ -181,10 +195,7 @@ export default class AddUsersToTeam extends React.Component {
                 </div>
                 <div className='more-modal__actions'>
                     <div className='more-modal__actions--round'>
-                        <i
-                            className='fa fa-plus'
-                            title={localizeMessage('generic_icons.add', 'Add Icon')}
-                        />
+                        <AddIcon/>
                     </div>
                 </div>
             </div>
@@ -197,16 +208,19 @@ export default class AddUsersToTeam extends React.Component {
 
     render() {
         const numRemainingText = (
-            <FormattedMessage
-                id='multiselect.numPeopleRemaining'
-                defaultMessage='Use ↑↓ to browse, ↵ to select. You can add {num, number} more {num, plural, one {person} other {people}}. '
-                values={{
-                    num: MAX_SELECTABLE_VALUES - this.state.values.length,
-                }}
-            />
+            <div id='numPeopleRemaining'>
+                <FormattedMessage
+                    id='multiselect.numPeopleRemaining'
+                    defaultMessage='Use ↑↓ to browse, ↵ to select. You can add {num, number} more {num, plural, one {person} other {people}}. '
+                    values={{
+                        num: MAX_SELECTABLE_VALUES - this.state.values.length,
+                    }}
+                />
+            </div>
         );
 
         const buttonSubmitText = localizeMessage('multiselect.add', 'Add');
+        const buttonSubmitLoadingText = localizeMessage('multiselect.adding', 'Adding...');
 
         let users = [];
         if (this.props.users) {
@@ -220,6 +234,7 @@ export default class AddUsersToTeam extends React.Component {
 
         return (
             <Modal
+                id='addUsersToTeamModal'
                 dialogClassName={'more-modal more-direct-channels'}
                 show={this.state.show}
                 onHide={this.handleHide}
@@ -245,7 +260,6 @@ export default class AddUsersToTeam extends React.Component {
                         options={users}
                         optionRenderer={this.renderOption}
                         values={this.state.values}
-                        valueKey='id'
                         valueRenderer={this.renderValue}
                         perPage={USERS_PER_PAGE}
                         handlePageChange={this.handlePageChange}
@@ -256,6 +270,7 @@ export default class AddUsersToTeam extends React.Component {
                         maxValues={MAX_SELECTABLE_VALUES}
                         numRemainingText={numRemainingText}
                         buttonSubmitText={buttonSubmitText}
+                        buttonSubmitLoadingText={buttonSubmitLoadingText}
                         saving={this.state.saving}
                         loading={this.state.loadingUsers}
                     />

@@ -31,8 +31,11 @@
         left: 0;
         position: absolute;
         top: 0;
-        white-space: normal;
         z-index: 2;
+
+        p {
+            margin: 0;
+        }
     }
 
     .help__text {
@@ -272,8 +275,6 @@
     .post-list-holder-by-time {
         -webkit-overflow-scrolling: touch;
         height: 100%;
-        overflow-y: scroll;
-        padding: 1em 0 0;
         width: 100%;
         position: absolute;
         &.active {
@@ -432,7 +433,7 @@
         }
 
         &.custom-textarea--emoji-picker {
-            padding-right: 80px;
+            padding-right: 90px;
         }
 
         &.textbox-preview-area {
@@ -689,7 +690,6 @@
 
     .post-list__content {
         display: table-cell;
-        vertical-align: bottom;
 
         .dropdown-menu {
             &.bottom {
@@ -711,7 +711,7 @@
 .post {
     @include legacy-pie-clearfix;
     max-width: 100%;
-    padding: 8px .5em 0 1em;
+    padding: 8px .5em 0 1.5em;
     position: relative;
     word-wrap: break-word;
 
@@ -751,6 +751,7 @@
         .flag-icon__container,
         .post__reply,
         .post-reaction,
+        .post__dropdown,
         .post__remove {
             visibility: visible;
         }
@@ -772,6 +773,7 @@
         .comment-icon__container,
         .post__reply,
         .post__remove,
+        .post__dropdown,
         .reacticon__container,
         .permalink-icon {
             visibility: visible;
@@ -1134,7 +1136,7 @@
 
     &.same--root {
         &.same--user {
-            padding: 0 .5em 0 1em;
+            padding: 0 .5em 0 1.5em;
 
             &:hover,
             &.post--hovered {
@@ -1442,6 +1444,7 @@
         text-decoration: none;
         vertical-align: middle;
         width: 100%;
+        visibility: hidden;
 
         &:after {
             content: '...';
@@ -1658,7 +1661,7 @@
         margin: 0;
         text-rendering: auto;
         position: relative;
-        z-index: 5;
+        z-index: 2;
 
         &.pull-left {
             margin: 4px 5px 0 0;
@@ -1718,6 +1721,18 @@
 
     .post-waiting {
         color: #999999;
+        position: relative;
+
+        .spinner {
+            width: 20px;
+            position: absolute;
+            right: 8px;
+            top: 4px;
+        }
+
+        .post-message {
+            padding-right: 24px;
+        }
     }
 
     .permalink-icon {
@@ -1872,6 +1887,23 @@
     margin: 2px 10px 0 -4px;
 }
 
+.bot-indicator__autocomplete {
+    margin: 0px 4px;
+    padding: 0px 5px;
+    display: inline;
+}
+
+.bot-indicator__popoverlist {
+    margin: 0px 4px;
+    display: inline;
+}
+
+.bot-indicator__admin {
+    margin: 0px 4px;
+    background: rgba(61, 60, 64, 0.15);
+    display: inline;
+}
+
 .post__pinned-badge {
     margin-left: 7px;
     position: relative;
@@ -1966,6 +1998,10 @@
                 min-height: 32px;
                 min-width: 32px;
                 vertical-align: top;
+            }
+            .emoticon--unicode {
+                font-size: 32px;
+                line-height: 1.1;
             }
         }
     }

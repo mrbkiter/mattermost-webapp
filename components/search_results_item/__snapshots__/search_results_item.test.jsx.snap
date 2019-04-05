@@ -4,7 +4,7 @@ exports[`components/SearchResultsItem should match snapshot for DM 1`] = `
 <div
   className="search-item__container"
 >
-  <DateSeparator
+  <Connect(DateSeparator)
     date={2017-12-14T18:15:28.290Z}
   />
   <div
@@ -62,14 +62,7 @@ exports[`components/SearchResultsItem should match snapshot for DM 1`] = `
               "user_id": "user_id",
             }
           }
-          status="hello"
-          user={
-            Object {
-              "id": "user_id",
-              "locale": "en",
-              "username": "username",
-            }
-          }
+          userId="user_id"
         />
       </div>
       <div>
@@ -80,20 +73,10 @@ exports[`components/SearchResultsItem should match snapshot for DM 1`] = `
             className="col col__name"
           >
             <strong>
-              <UserProfile
+              <Connect(UserProfile)
                 disablePopover={false}
-                hasMention={false}
-                isRHS={false}
-                overwriteImage=""
-                overwriteName=""
-                status="hello"
-                user={
-                  Object {
-                    "id": "user_id",
-                    "locale": "en",
-                    "username": "username",
-                  }
-                }
+                isRHS={true}
+                userId="user_id"
               />
             </strong>
           </div>
@@ -103,6 +86,7 @@ exports[`components/SearchResultsItem should match snapshot for DM 1`] = `
             <Connect(PostTime)
               eventTime={1502715365009}
               isPermalink={true}
+              location="SEARCH"
               postId="id"
             />
             <span
@@ -115,16 +99,15 @@ exports[`components/SearchResultsItem should match snapshot for DM 1`] = `
               />
             </span>
             <Connect(PostFlagIcon)
-              idCount={-1}
-              idPrefix="searchPostFlag"
               isFlagged={true}
+              location="SEARCH"
               postId="id"
             />
           </div>
           <div
             className="col__controls col__reply"
           >
-            <Connect(InjectIntl(DotMenu))
+            <Connect(DotMenu)
               handleDropdownOpened={[Function]}
               isFlagged={true}
               isReadOnly={true}
@@ -153,9 +136,8 @@ exports[`components/SearchResultsItem should match snapshot for DM 1`] = `
               commentCount={0}
               extraClass=""
               handleCommentClick={[Function]}
-              id=""
-              idCount={-1}
-              idPrefix="searchCommentIcon"
+              location="SEARCH"
+              postId="id"
               searchStyle="search-item__comment"
             />
             <a
@@ -244,7 +226,7 @@ exports[`components/SearchResultsItem should match snapshot for archived channel
 <div
   className="search-item__container"
 >
-  <DateSeparator
+  <Connect(DateSeparator)
     date={2017-12-14T18:15:28.290Z}
   />
   <div
@@ -293,14 +275,7 @@ exports[`components/SearchResultsItem should match snapshot for archived channel
               "user_id": "user_id",
             }
           }
-          status="hello"
-          user={
-            Object {
-              "id": "user_id",
-              "locale": "en",
-              "username": "username",
-            }
-          }
+          userId="user_id"
         />
       </div>
       <div>
@@ -311,20 +286,10 @@ exports[`components/SearchResultsItem should match snapshot for archived channel
             className="col col__name"
           >
             <strong>
-              <UserProfile
+              <Connect(UserProfile)
                 disablePopover={false}
-                hasMention={false}
-                isRHS={false}
-                overwriteImage=""
-                overwriteName=""
-                status="hello"
-                user={
-                  Object {
-                    "id": "user_id",
-                    "locale": "en",
-                    "username": "username",
-                  }
-                }
+                isRHS={true}
+                userId="user_id"
               />
             </strong>
           </div>
@@ -334,19 +299,19 @@ exports[`components/SearchResultsItem should match snapshot for archived channel
             <Connect(PostTime)
               eventTime={1502715365009}
               isPermalink={true}
+              location="SEARCH"
               postId="id"
             />
             <Connect(PostFlagIcon)
-              idCount={-1}
-              idPrefix="searchPostFlag"
               isFlagged={true}
+              location="SEARCH"
               postId="id"
             />
           </div>
           <div
             className="col__controls col__reply"
           >
-            <Connect(InjectIntl(DotMenu))
+            <Connect(DotMenu)
               handleDropdownOpened={[Function]}
               isFlagged={true}
               isReadOnly={true}
@@ -375,9 +340,8 @@ exports[`components/SearchResultsItem should match snapshot for archived channel
               commentCount={0}
               extraClass=""
               handleCommentClick={[Function]}
-              id=""
-              idCount={-1}
-              idPrefix="searchCommentIcon"
+              location="SEARCH"
+              postId="id"
               searchStyle="search-item__comment"
             />
             <a
@@ -466,7 +430,7 @@ exports[`components/SearchResultsItem should match snapshot for channel 1`] = `
 <div
   className="search-item__container"
 >
-  <DateSeparator
+  <Connect(DateSeparator)
     date={2017-12-14T18:15:28.290Z}
   />
   <div
@@ -515,14 +479,7 @@ exports[`components/SearchResultsItem should match snapshot for channel 1`] = `
               "user_id": "user_id",
             }
           }
-          status="hello"
-          user={
-            Object {
-              "id": "user_id",
-              "locale": "en",
-              "username": "username",
-            }
-          }
+          userId="user_id"
         />
       </div>
       <div>
@@ -533,20 +490,10 @@ exports[`components/SearchResultsItem should match snapshot for channel 1`] = `
             className="col col__name"
           >
             <strong>
-              <UserProfile
+              <Connect(UserProfile)
                 disablePopover={false}
-                hasMention={false}
-                isRHS={false}
-                overwriteImage=""
-                overwriteName=""
-                status="hello"
-                user={
-                  Object {
-                    "id": "user_id",
-                    "locale": "en",
-                    "username": "username",
-                  }
-                }
+                isRHS={true}
+                userId="user_id"
               />
             </strong>
           </div>
@@ -556,19 +503,19 @@ exports[`components/SearchResultsItem should match snapshot for channel 1`] = `
             <Connect(PostTime)
               eventTime={1502715365009}
               isPermalink={true}
+              location="SEARCH"
               postId="id"
             />
             <Connect(PostFlagIcon)
-              idCount={-1}
-              idPrefix="searchPostFlag"
               isFlagged={true}
+              location="SEARCH"
               postId="id"
             />
           </div>
           <div
             className="col__controls col__reply"
           >
-            <Connect(InjectIntl(DotMenu))
+            <Connect(DotMenu)
               handleDropdownOpened={[Function]}
               isFlagged={true}
               isReadOnly={true}
@@ -597,9 +544,8 @@ exports[`components/SearchResultsItem should match snapshot for channel 1`] = `
               commentCount={0}
               extraClass=""
               handleCommentClick={[Function]}
-              id=""
-              idCount={-1}
-              idPrefix="searchCommentIcon"
+              location="SEARCH"
+              postId="id"
               searchStyle="search-item__comment"
             />
             <a
@@ -688,7 +634,7 @@ exports[`components/SearchResultsItem should match snapshot for deleted message 
 <div
   className="search-item__container"
 >
-  <DateSeparator
+  <Connect(DateSeparator)
     date={2017-12-14T18:15:28.290Z}
   />
   <div
@@ -745,14 +691,7 @@ exports[`components/SearchResultsItem should match snapshot for deleted message 
               "user_id": "user_id",
             }
           }
-          status="hello"
-          user={
-            Object {
-              "id": "user_id",
-              "locale": "en",
-              "username": "username",
-            }
-          }
+          userId="user_id"
         />
       </div>
       <div>
@@ -763,20 +702,11 @@ exports[`components/SearchResultsItem should match snapshot for deleted message 
             className="col col__name"
           >
             <strong>
-              <UserProfile
+              <Connect(UserProfile)
                 disablePopover={true}
-                hasMention={false}
-                isRHS={false}
-                overwriteImage=""
+                isRHS={true}
                 overwriteName="overridden_username"
-                status="hello"
-                user={
-                  Object {
-                    "id": "user_id",
-                    "locale": "en",
-                    "username": "username",
-                  }
-                }
+                userId="user_id"
               />
             </strong>
           </div>
@@ -795,6 +725,7 @@ exports[`components/SearchResultsItem should match snapshot for deleted message 
             <Connect(PostTime)
               eventTime={1502715365009}
               isPermalink={true}
+              location="SEARCH"
               postId="id"
             />
           </div>

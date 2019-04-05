@@ -12,15 +12,15 @@ import FileAttachmentListContainer from 'components/file_attachment_list';
 import CommentIcon from 'components/common/comment_icon.jsx';
 import DotMenu from 'components/dot_menu';
 import PostProfilePicture from 'components/post_profile_picture';
-import UserProfile from 'components/user_profile.jsx';
-import DateSeparator from 'components/post_view/date_separator.jsx';
+import UserProfile from 'components/user_profile';
+import DateSeparator from 'components/post_view/date_separator';
 import PostBodyAdditionalContent from 'components/post_view/post_body_additional_content';
 import PostFlagIcon from 'components/post_view/post_flag_icon';
 import ArchiveIcon from 'components/svg/archive_icon';
 import PostTime from 'components/post_view/post_time';
 import {browserHistory} from 'utils/browser_history';
 
-import Constants from 'utils/constants.jsx';
+import Constants, {Locations} from 'utils/constants.jsx';
 import * as PostUtils from 'utils/post_utils.jsx';
 import * as Utils from 'utils/utils.jsx';
 
@@ -36,16 +36,6 @@ export default class SearchResultsItem extends React.PureComponent {
         * An array of strings in this post that were matched by the search
         */
         matches: PropTypes.array,
-
-        /**
-        *  count used for passing down to PostFlagIcon, DotMenu and CommentIcon
-        */
-        lastPostCount: PropTypes.number,
-
-        /**
-        *  user object for rendering profile_picture
-        */
-        user: PropTypes.object,
 
         /**
         *  channel object for rendering channel name on top of result
@@ -73,11 +63,6 @@ export default class SearchResultsItem extends React.PureComponent {
         isFlagged: PropTypes.bool,
 
         /**
-        *  Data used for status in profile
-        */
-        status: PropTypes.string,
-
-        /**
         *  Data used creating URl for jump to post
         */
         currentTeamName: PropTypes.string,
@@ -91,6 +76,11 @@ export default class SearchResultsItem extends React.PureComponent {
          * Whether post username overrides are to be respected.
          */
         enablePostUsernameOverride: PropTypes.bool.isRequired,
+
+        /**
+         * Is the search results item from a bot.
+         */
+        isBot: PropTypes.bool.isRequired,
 
         /**
         *  Function used for closing LHS
@@ -141,6 +131,7 @@ export default class SearchResultsItem extends React.PureComponent {
                 isPermalink={isPermalink}
                 eventTime={post.create_at}
                 postId={post.id}
+                location={Locations.SEARCH}
             />
         );
     };
@@ -161,9 +152,7 @@ export default class SearchResultsItem extends React.PureComponent {
 
     render() {
         let channelName = null;
-        const channel = this.props.channel;
-        const user = this.props.user || {};
-        const post = this.props.post;
+        const {channel, post} = this.props;
 
         const channelIsArchived = channel ? channel.delete_at !== 0 : true;
 
@@ -193,7 +182,7 @@ export default class SearchResultsItem extends React.PureComponent {
         }
 
         let botIndicator;
-        if (post.props && post.props.from_webhook) {
+        if (post.props && post.props.from_webhook && !this.props.isBot) {
             botIndicator = (
                 <div className='bot-indicator'>
                     <FormattedMessage
@@ -208,8 +197,7 @@ export default class SearchResultsItem extends React.PureComponent {
             <PostProfilePicture
                 compactDisplay={this.props.compactDisplay}
                 post={post}
-                user={user}
-                status={this.props.status}
+                userId={post.user_id}
             />
         );
 
@@ -245,8 +233,7 @@ export default class SearchResultsItem extends React.PureComponent {
         } else {
             flagContent = (
                 <PostFlagIcon
-                    idPrefix={'searchPostFlag'}
-                    idCount={this.props.lastPostCount}
+                    location={Locations.SEARCH}
                     postId={post.id}
                     isFlagged={this.props.isFlagged}
                 />
@@ -256,16 +243,16 @@ export default class SearchResultsItem extends React.PureComponent {
                 <div className='col__controls col__reply'>
                     <DotMenu
                         post={post}
-                        location={'SEARCH'}
+                        location={Locations.SEARCH}
                         isFlagged={this.props.isFlagged}
                         handleDropdownOpened={this.handleDropdownOpened}
                         commentCount={this.props.commentCountForPost}
                         isReadOnly={channelIsArchived || null}
                     />
                     <CommentIcon
-                        idPrefix={'searchCommentIcon'}
-                        idCount={this.props.lastPostCount}
+                        location={Locations.SEARCH}
                         handleCommentClick={this.handleFocusRHSClick}
+                        postId={post.id}
                         searchStyle={'search-item__comment'}
                     />
                     <a
@@ -337,10 +324,10 @@ export default class SearchResultsItem extends React.PureComponent {
                                 <div className='col col__name'>
                                     <strong>
                                         <UserProfile
-                                            user={user}
+                                            userId={post.user_id}
                                             overwriteName={overrideUsername}
                                             disablePopover={disableProfilePopover}
-                                            status={this.props.status}
+                                            isRHS={true}
                                         />
                                     </strong>
                                 </div>

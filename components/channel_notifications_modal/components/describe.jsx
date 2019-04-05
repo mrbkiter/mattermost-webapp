@@ -7,18 +7,32 @@ import {FormattedMessage} from 'react-intl';
 
 import {IgnoreChannelMentions, NotificationLevels, NotificationSections} from 'utils/constants.jsx';
 
-export default function Describe({section, memberNotifyLevel, globalNotifyLevel, ignoreChannelMentions}) {
+export default function Describe({section, isCollapsed, memberNotifyLevel, globalNotifyLevel, ignoreChannelMentions}) {
     if (memberNotifyLevel === NotificationLevels.DEFAULT && globalNotifyLevel) {
+        const levelsFormattedMessageId = 'channel_notifications.levels.' + globalNotifyLevel;
         return (
-            <FormattedMessage
-                id='channel_notifications.globalDefault'
-                defaultMessage='Global default ({notifyLevel})'
-                values={{
-                    notifyLevel: (globalNotifyLevel),
-                }}
-            />
+            <React.Fragment>
+                <FormattedMessage
+                    id='channel_notifications.globalDefault'
+                    defaultMessage='Global default'
+                />
+                <span>{' ('}</span>
+                <FormattedMessage
+                    id={levelsFormattedMessageId}
+                    defaultMessage={globalNotifyLevel}
+                />
+                <span>{')'}</span>
+            </React.Fragment>
         );
     } else if (memberNotifyLevel === NotificationLevels.MENTION && section === NotificationSections.MARK_UNREAD) {
+        if (isCollapsed) {
+            return (
+                <FormattedMessage
+                    id='channel_notifications.muteChannel.on.title.collapse'
+                    defaultMessage='Mute is enabled. Desktop, email and push notifications will not be sent for this channel.'
+                />
+            );
+        }
         return (
             <FormattedMessage
                 id='channel_notifications.muteChannel.on.title'
@@ -87,4 +101,5 @@ Describe.propTypes = {
     ignoreChannelMentions: PropTypes.string,
     memberNotifyLevel: PropTypes.string.isRequired,
     section: PropTypes.string.isRequired,
+    isCollapsed: PropTypes.bool,
 };

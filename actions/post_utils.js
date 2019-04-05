@@ -28,7 +28,8 @@ export function completePostReceive(post, websocketMessageProps) {
         const state = getState();
 
         const rootPost = PostSelectors.getPost(state, post.root_id);
-        if (post.root_id && !rootPost) {
+        const postsInChannel = PostSelectors.getPostIdsInChannel(getState(), post.channel_id);
+        if (post.root_id && !rootPost && postsInChannel && postsInChannel.length !== 0) {
             const {data: posts} = await dispatch(PostActions.getPostThread(post.root_id));
             if (posts) {
                 dispatch(lastPostActions(post, websocketMessageProps));
@@ -54,13 +55,11 @@ export function lastPostActions(post, websocketMessageProps) {
         }
 
         // Need manual dispatch to remove pending post
+
         const actions = [{
-            type: PostTypes.RECEIVED_POSTS,
+            type: PostTypes.RECEIVED_NEW_POST,
             data: {
-                order: [],
-                posts: {
-                    [post.id]: post,
-                },
+                ...post,
             },
             channelId: post.channel_id,
         }, {
@@ -68,7 +67,7 @@ export function lastPostActions(post, websocketMessageProps) {
             data: {
                 id: post.channel_id + post.root_id,
                 userId: post.user_id,
-                now: post.create_at,
+                now: Date.now(),
             },
         }];
 

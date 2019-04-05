@@ -6,6 +6,7 @@ import {shallow} from 'enzyme';
 
 import Root from 'components/root/root';
 import * as GlobalActions from 'actions/global_actions.jsx';
+import * as Utils from 'utils/utils';
 
 jest.mock('fastclick', () => ({
     attach: () => {}, // eslint-disable-line no-empty-function
@@ -17,6 +18,12 @@ jest.mock('actions/diagnostics_actions', () => ({
 
 jest.mock('actions/global_actions', () => ({
     redirectUserToDefaultTeam: jest.fn(),
+}));
+
+jest.mock('utils/utils', () => ({
+    localizeMessage: () => {},
+    isDevMode: jest.fn(),
+    enableDevModeFeatures: jest.fn(),
 }));
 
 describe('components/Root', () => {
@@ -32,6 +39,27 @@ describe('components/Root', () => {
             pathname: '/',
         },
     };
+
+    test('should load config and license on mount and redirect to sign-up page', () => {
+        const props = {
+            ...baseProps,
+            noAccounts: true,
+            actions: {
+                ...baseProps.actions,
+                loadMeAndConfig: jest.fn(async () => [{}, {}, {}]),
+            },
+            history: {
+                push: jest.fn(),
+            },
+        };
+
+        const wrapper = shallow(<Root {...props}/>);
+
+        expect(props.actions.loadMeAndConfig).toHaveBeenCalledTimes(1);
+
+        wrapper.instance().onConfigLoaded();
+        expect(props.history.push).toHaveBeenCalledWith('/signup_user_complete');
+    });
 
     test('should load user, config, and license on mount and redirect to defaultTeam on success', (done) => {
         const props = {
@@ -74,5 +102,51 @@ describe('components/Root', () => {
         }
 
         shallow(<MockedRoot {...props}/>);
+    });
+
+    test('should load config and enable dev mode features', () => {
+        const props = {
+            ...baseProps,
+            actions: {
+                ...baseProps.actions,
+                loadMeAndConfig: jest.fn(async () => [{}, {}, {}]),
+            },
+        };
+        Utils.isDevMode.mockReturnValue(true);
+
+        const wrapper = shallow(<Root {...props}/>);
+
+        expect(props.actions.loadMeAndConfig).toHaveBeenCalledTimes(1);
+
+        // Must be invoked in onConfigLoaded
+        expect(Utils.isDevMode).not.toHaveBeenCalled();
+        expect(Utils.enableDevModeFeatures).not.toHaveBeenCalled();
+
+        wrapper.instance().onConfigLoaded();
+        expect(Utils.isDevMode).toHaveBeenCalledTimes(1);
+        expect(Utils.enableDevModeFeatures).toHaveBeenCalledTimes(1);
+    });
+
+    test('should load config and not enable dev mode features', () => {
+        const props = {
+            ...baseProps,
+            actions: {
+                ...baseProps.actions,
+                loadMeAndConfig: jest.fn(async () => [{}, {}, {}]),
+            },
+        };
+        Utils.isDevMode.mockReturnValue(false);
+
+        const wrapper = shallow(<Root {...props}/>);
+
+        expect(props.actions.loadMeAndConfig).toHaveBeenCalledTimes(1);
+
+        // Must be invoked in onConfigLoaded
+        expect(Utils.isDevMode).not.toHaveBeenCalled();
+        expect(Utils.enableDevModeFeatures).not.toHaveBeenCalled();
+
+        wrapper.instance().onConfigLoaded();
+        expect(Utils.isDevMode).toHaveBeenCalledTimes(1);
+        expect(Utils.enableDevModeFeatures).not.toHaveBeenCalled();
     });
 });

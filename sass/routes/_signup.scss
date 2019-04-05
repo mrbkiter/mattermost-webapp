@@ -11,7 +11,7 @@
     z-index: 5;
 
     .fa {
-        margin-right: 5px;
+        margin-right: 4px;
     }
 }
 
@@ -273,8 +273,17 @@
         padding: em(7px) em(15px);
 
         .fa {
+            margin: 0;
+            top: 1px;
             font-size: 17px;
-            margin-right: 8px;
+
+            &:last-child {
+                margin-left: 8px;
+            }
+
+            &:first-child {
+                margin-right: 8px;
+            }
 
             &.fa--margin-top {
                 position: relative;
@@ -398,18 +407,6 @@
                 font-size: .9em;
                 left: -2px;
                 margin-right: .5em;
-            }
-
-            &.fa-chevron-right {
-                font-size: .8em;
-                right: -5px;
-                top: 0;
-            }
-
-            &.fa-chevron-left {
-                font-size: .8em;
-                left: -2px;
-                top: 0px;
             }
         }
     }
@@ -543,6 +540,10 @@
             height: 3.5em;
             line-height: 3.6em;
             padding: 0 15px;
+            &.disabled {
+                cursor: default;
+                color: $dark-gray;
+            }
         }
     }
 

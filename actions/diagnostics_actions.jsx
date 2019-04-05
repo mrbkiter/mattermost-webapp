@@ -1,10 +1,9 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {getConfig} from 'mattermost-redux/selectors/entities/general';
-import {getCurrentUserId} from 'mattermost-redux/selectors/entities/users';
+import {Client4} from 'mattermost-redux/client';
 
-import store from 'stores/redux_store.jsx';
+import {isDevMode} from 'utils/utils';
 
 const SUPPORTS_CLEAR_MARKS = isSupported([performance.clearMarks]);
 const SUPPORTS_MARK = isSupported([performance.mark]);
@@ -16,23 +15,7 @@ const SUPPORTS_MEASURE_METHODS = isSupported([
 ]);
 
 export function trackEvent(category, event, props) {
-    if (global.window && global.window.analytics) {
-        const properties = Object.assign({category, type: event, user_actual_id: getCurrentUserId(store.getState())}, props);
-        const options = {
-            context: {
-                ip: '0.0.0.0',
-            },
-            page: {
-                path: '',
-                referrer: '',
-                search: '',
-                title: '',
-                url: '',
-            },
-            anonymousId: '00000000000000000000000000',
-        };
-        global.window.analytics.track('event', properties, options);
-    }
+    Client4.trackEvent(category, event, props);
 }
 
 /**
@@ -118,10 +101,4 @@ function isSupported(checks) {
         }
     }
     return true;
-}
-
-function isDevMode() {
-    const config = getConfig(store.getState());
-
-    return config.EnableDeveloper === 'true';
 }
