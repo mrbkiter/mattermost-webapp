@@ -4,9 +4,13 @@
 import {batchActions} from 'redux-batched-actions';
 
 import {SearchTypes} from 'mattermost-redux/action_types';
-import {searchPostsWithParams, getFlaggedPosts} from 'mattermost-redux/actions/search';
+import {
+    clearSearch,
+    getFlaggedPosts,
+    getPinnedPosts,
+    searchPostsWithParams,
+} from 'mattermost-redux/actions/search';
 import * as PostActions from 'mattermost-redux/actions/posts';
-import {Client4} from 'mattermost-redux/client';
 import {getCurrentUserId, getCurrentUserMentionKeys} from 'mattermost-redux/selectors/entities/users';
 import {getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
 import {getConfig} from 'mattermost-redux/selectors/entities/general';
@@ -15,12 +19,38 @@ import {getPost} from 'mattermost-redux/selectors/entities/posts';
 import {getUserTimezone} from 'mattermost-redux/selectors/entities/timezone';
 import {getUserCurrentTimezone} from 'mattermost-redux/utils/timezone_utils';
 
-import {trackEvent} from 'actions/diagnostics_actions.jsx';
-import {getSearchTerms, getRhsState} from 'selectors/rhs';
+import {trackEvent} from 'actions/telemetry_actions.jsx';
+import {getSearchTerms, getRhsState, getPluggableId} from 'selectors/rhs';
 import {ActionTypes, RHSStates} from 'utils/constants';
 import * as Utils from 'utils/utils';
 
 import {getBrowserUtcOffset, getUtcOffsetForTimeZone} from 'utils/timezone';
+
+function selectPostFromRightHandSideSearchWithPreviousState(post, previousRhsState) {
+    return async (dispatch, getState) => {
+        const postRootId = Utils.getRootId(post);
+        await dispatch(PostActions.getPostThread(postRootId));
+
+        dispatch({
+            type: ActionTypes.SELECT_POST,
+            postId: postRootId,
+            channelId: post.channel_id,
+            previousRhsState: previousRhsState || getRhsState(getState()),
+            timestamp: Date.now(),
+        });
+    };
+}
+
+function selectPostCardFromRightHandSideSearchWithPreviousState(post, previousRhsState) {
+    return async (dispatch, getState) => {
+        dispatch({
+            type: ActionTypes.SELECT_POST_CARD,
+            postId: post.id,
+            channelId: post.channel_id,
+            previousRhsState: previousRhsState || getRhsState(getState()),
+        });
+    };
+}
 
 export function updateRhsState(rhsState, channelId) {
     return (dispatch, getState) => {
@@ -38,16 +68,11 @@ export function updateRhsState(rhsState, channelId) {
 }
 
 export function selectPostFromRightHandSideSearch(post) {
-    return async (dispatch, getState) => {
-        await dispatch(PostActions.getPostThread(post.id));
+    return selectPostFromRightHandSideSearchWithPreviousState(post);
+}
 
-        dispatch({
-            type: ActionTypes.SELECT_POST,
-            postId: Utils.getRootId(post),
-            channelId: post.channel_id,
-            previousRhsState: getRhsState(getState()),
-        });
-    };
+export function selectPostCardFromRightHandSideSearch(post) {
+    return selectPostCardFromRightHandSideSearchWithPreviousState(post);
 }
 
 export function selectPostFromRightHandSideSearchByPostId(postId) {
@@ -60,6 +85,13 @@ export function selectPostFromRightHandSideSearchByPostId(postId) {
 export function updateSearchTerms(terms) {
     return {
         type: ActionTypes.UPDATE_RHS_SEARCH_TERMS,
+        terms,
+    };
+}
+
+function updateSearchResultsTerms(terms) {
+    return {
+        type: ActionTypes.UPDATE_RHS_SEARCH_RESULTS_TERMS,
         terms,
     };
 }
@@ -79,66 +111,48 @@ export function performSearch(terms, isMentionSearch) {
     };
 }
 
-export function showSearchResults() {
+export function showSearchResults(isMentionSearch = false) {
     return (dispatch, getState) => {
         const searchTerms = getSearchTerms(getState());
 
-        dispatch(updateRhsState(RHSStates.SEARCH));
-        dispatch({
-            type: ActionTypes.UPDATE_RHS_SEARCH_RESULTS_TERMS,
-            terms: searchTerms,
-        });
+        if (isMentionSearch) {
+            dispatch(updateRhsState(RHSStates.MENTION));
+        } else {
+            dispatch(updateRhsState(RHSStates.SEARCH));
+        }
+        dispatch(updateSearchResultsTerms(searchTerms));
 
         return dispatch(performSearch(searchTerms));
     };
 }
 
-function getSearchActions(result, teamId) {
-    return [
-        {
-            type: SearchTypes.RECEIVED_SEARCH_POSTS,
-            data: result,
-        },
-        {
-            type: SearchTypes.RECEIVED_SEARCH_TERM,
-            data: {
-                teamId,
-                terms: null,
-                isOrSearch: false,
-            },
-        },
-        {
-            type: SearchTypes.SEARCH_POSTS_SUCCESS,
-        },
-    ];
-}
-
-function getPreRHSSearchActions(searchPostRequest, terms, rhsState, channelId) {
-    const updateRHSState = {
+export function showRHSPlugin(pluggableId) {
+    const action = {
         type: ActionTypes.UPDATE_RHS_STATE,
-        state: rhsState,
+        state: RHSStates.PLUGIN,
+        pluggableId,
     };
 
-    if (channelId) {
-        updateRHSState.channelId = channelId;
-    }
-
-    return [
-        {
-            type: searchPostRequest,
-        },
-        {
-            type: ActionTypes.UPDATE_RHS_SEARCH_TERMS,
-            terms,
-        },
-        updateRHSState,
-    ];
+    return action;
 }
 
-function getPostRHSSearchActions(searchPostSuccess, result, teamId) {
-    const searchActions = getSearchActions(result, teamId);
+export function hideRHSPlugin(pluggableId) {
+    return (dispatch, getState) => {
+        if (getPluggableId(getState()) === pluggableId) {
+            dispatch(closeRightHandSide());
+        }
+    };
+}
 
-    return [...searchActions, {type: searchPostSuccess}];
+export function toggleRHSPlugin(pluggableId) {
+    return (dispatch, getState) => {
+        if (getPluggableId(getState()) === pluggableId) {
+            dispatch(hideRHSPlugin(pluggableId));
+            return;
+        }
+
+        dispatch(showRHSPlugin(pluggableId));
+    };
 }
 
 export function showFlaggedPosts() {
@@ -151,28 +165,22 @@ export function showFlaggedPosts() {
             state: RHSStates.FLAG,
         });
 
-        const result = await dispatch(getFlaggedPosts());
+        const results = await dispatch(getFlaggedPosts());
 
-        const postRHSSearchActions = getSearchActions(
-            result.data,
-            teamId
-        );
-
-        dispatch(batchActions(postRHSSearchActions));
-    };
-}
-
-export function getPinnedPosts(channelId) {
-    return async (dispatch, getState) => {
-        const currentChannelId = getCurrentChannelId(getState());
-        const result = await Client4.getPinnedPosts(channelId || currentChannelId);
-
-        await PostActions.getProfilesAndStatusesForPosts(result.posts, dispatch, getState);
-
-        const teamId = getCurrentTeamId(getState());
-        const searchActions = getSearchActions(result, teamId);
-
-        dispatch(batchActions(searchActions));
+        dispatch(batchActions([
+            {
+                type: SearchTypes.RECEIVED_SEARCH_POSTS,
+                data: results.data,
+            },
+            {
+                type: SearchTypes.RECEIVED_SEARCH_TERM,
+                data: {
+                    teamId,
+                    terms: null,
+                    isOrSearch: false,
+                },
+            },
+        ]));
     };
 }
 
@@ -180,34 +188,32 @@ export function showPinnedPosts(channelId) {
     return async (dispatch, getState) => {
         const state = getState();
         const currentChannelId = getCurrentChannelId(state);
-
-        const preRHSSearchActions = getPreRHSSearchActions(
-            ActionTypes.SEARCH_PINNED_POSTS_REQUEST,
-            '',
-            RHSStates.PIN,
-            currentChannelId
-        );
-
-        dispatch(batchActions(preRHSSearchActions));
-
-        let result;
-        try {
-            result = await Client4.getPinnedPosts(channelId || currentChannelId);
-        } catch (error) {
-            dispatch({type: ActionTypes.SEARCH_PINNED_POSTS_FAILURE, error});
-        }
-
-        await PostActions.getProfilesAndStatusesForPosts(result.posts, dispatch, getState);
-
         const teamId = getCurrentTeamId(state);
 
-        const postRHSSearchActions = getPostRHSSearchActions(
-            ActionTypes.SEARCH_PINNED_POSTS_SUCCESS,
-            result,
-            teamId
-        );
+        dispatch(batchActions([
+            {
+                type: ActionTypes.UPDATE_RHS_STATE,
+                channelId: channelId || currentChannelId,
+                state: RHSStates.PIN,
+            },
+        ]));
 
-        dispatch(batchActions(postRHSSearchActions));
+        const results = await dispatch(getPinnedPosts(channelId || currentChannelId));
+
+        dispatch(batchActions([
+            {
+                type: SearchTypes.RECEIVED_SEARCH_POSTS,
+                data: results.data,
+            },
+            {
+                type: SearchTypes.RECEIVED_SEARCH_TERM,
+                data: {
+                    teamId,
+                    terms: null,
+                    isOrSearch: false,
+                },
+            },
+        ]));
     };
 }
 
@@ -246,6 +252,7 @@ export function closeRightHandSide() {
                 type: ActionTypes.SELECT_POST,
                 postId: '',
                 channelId: '',
+                timestamp: 0,
             },
         ]));
     };
@@ -277,5 +284,55 @@ export function toggleRhsExpanded() {
 }
 
 export function selectPost(post) {
-    return {type: ActionTypes.SELECT_POST, postId: post.root_id || post.id, channelId: post.channel_id};
+    return {
+        type: ActionTypes.SELECT_POST,
+        postId: post.root_id || post.id,
+        channelId: post.channel_id,
+        timestamp: Date.now(),
+    };
+}
+
+export function selectPostCard(post) {
+    return {type: ActionTypes.SELECT_POST_CARD, postId: post.id, channelId: post.channel_id};
+}
+
+export function openRHSSearch() {
+    return (dispatch) => {
+        dispatch(clearSearch());
+        dispatch(updateSearchTerms(''));
+        dispatch(updateSearchResultsTerms(''));
+
+        dispatch(updateRhsState(RHSStates.SEARCH));
+    };
+}
+
+export function openAtPrevious(previous) {
+    return (dispatch, getState) => {
+        if (!previous) {
+            return openRHSSearch()(dispatch);
+        }
+
+        if (previous.isMentionSearch) {
+            return showMentions()(dispatch, getState);
+        }
+        if (previous.isPinnedPosts) {
+            return showPinnedPosts()(dispatch, getState);
+        }
+        if (previous.isFlaggedPosts) {
+            return showFlaggedPosts()(dispatch, getState);
+        }
+        if (previous.selectedPostId) {
+            const post = getPost(getState(), previous.selectedPostId);
+            return post ? selectPostFromRightHandSideSearchWithPreviousState(post, previous.previousRhsState)(dispatch, getState) : openRHSSearch()(dispatch);
+        }
+        if (previous.selectedPostCardId) {
+            const post = getPost(getState(), previous.selectedPostCardId);
+            return post ? selectPostCardFromRightHandSideSearchWithPreviousState(post, previous.previousRhsState)(dispatch, getState) : openRHSSearch()(dispatch);
+        }
+        if (previous.searchVisible) {
+            return showSearchResults()(dispatch, getState);
+        }
+
+        return openRHSSearch()(dispatch);
+    };
 }

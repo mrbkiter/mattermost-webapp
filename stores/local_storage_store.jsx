@@ -1,44 +1,88 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
-import {Constants} from 'utils/constants.jsx';
+import {getRedirectChannelNameForTeam} from 'mattermost-redux/selectors/entities/channels';
+
+import store from 'stores/redux_store.jsx';
+import {getBasePath} from 'selectors/general';
 
 const getPreviousTeamIdKey = (userId) => ['user_prev_team', userId].join(':');
 const getPreviousChannelNameKey = (userId, teamId) => ['user_team_prev_channel', userId, teamId].join(':');
-const getPenultimateChannelNameKey = (userId, teamId) => ['user_team_penultimate_channel', userId, teamId].join(':');
+export const getPenultimateChannelNameKey = (userId, teamId) => ['user_team_penultimate_channel', userId, teamId].join(':');
 const getRecentEmojisKey = (userId) => ['recent_emojis', userId].join(':');
+const getWasLoggedInKey = () => 'was_logged_in';
+
+const getPathScopedKey = (path, key) => {
+    if (path === '' || path === '/') {
+        return key;
+    }
+
+    return [path, key].join(':');
+};
 
 // LocalStorageStore exposes an interface for accessing entries in the localStorage.
 //
 // Note that this excludes keys managed by redux-persist. The latter cannot currently be used for
 // key/value storage that persists beyond logout. Ideally, we could purge all but certain parts
 // of the Redux store so as to allow them to be used on re-login.
+
+// Lets open a separate issue to refactor local storage and state interactions.
+// This whole store can be connected to redux
 class LocalStorageStoreClass {
-    getPreviousChannelName(userId, teamId) {
-        return localStorage.getItem(getPreviousChannelNameKey(userId, teamId)) || Constants.DEFAULT_CHANNEL;
+    getItem(key, state = store.getState()) {
+        const basePath = getBasePath(state);
+
+        return localStorage.getItem(getPathScopedKey(basePath, key));
+    }
+
+    setItem(key, value) {
+        const state = store.getState();
+        const basePath = getBasePath(state);
+
+        localStorage.setItem(getPathScopedKey(basePath, key), value);
+    }
+
+    getPreviousChannelName(userId, teamId, state = store.getState()) {
+        return this.getItem(getPreviousChannelNameKey(userId, teamId), state) || getRedirectChannelNameForTeam(state, teamId);
+    }
+
+    removeItem(key) {
+        const state = store.getState();
+        const basePath = getBasePath(state);
+
+        localStorage.removeItem(getPathScopedKey(basePath, key));
     }
 
     setPreviousChannelName(userId, teamId, channelName) {
-        localStorage.setItem(getPreviousChannelNameKey(userId, teamId), channelName);
+        this.setItem(getPreviousChannelNameKey(userId, teamId), channelName);
     }
 
-    getPenultimateChannelName(userId, teamId) {
-        return localStorage.getItem(getPenultimateChannelNameKey(userId, teamId)) || Constants.DEFAULT_CHANNEL;
+    getPenultimateChannelName(userId, teamId, state = store.getState()) {
+        return this.getItem(getPenultimateChannelNameKey(userId, teamId), state) || getRedirectChannelNameForTeam(state, teamId);
     }
 
     setPenultimateChannelName(userId, teamId, channelName) {
-        localStorage.setItem(getPenultimateChannelNameKey(userId, teamId), channelName);
+        this.setItem(getPenultimateChannelNameKey(userId, teamId), channelName);
+    }
+
+    removePreviousChannelName(userId, teamId, state = store.getState()) {
+        this.setItem(getPreviousChannelNameKey(userId, teamId), this.getPenultimateChannelName(userId, teamId, state));
+        this.removeItem(getPenultimateChannelNameKey(userId, teamId));
+    }
+
+    removePenultimateChannelName(userId, teamId) {
+        this.removeItem(getPenultimateChannelNameKey(userId, teamId));
     }
 
     getPreviousTeamId(userId) {
-        return localStorage.getItem(getPreviousTeamIdKey(userId));
+        return this.getItem(getPreviousTeamIdKey(userId));
     }
 
     setPreviousTeamId(userId, teamId) {
-        localStorage.setItem(getPreviousTeamIdKey(userId), teamId);
+        this.setItem(getPreviousTeamIdKey(userId), teamId);
     }
 
     getRecentEmojis(userId) {
-        const recentEmojis = localStorage.getItem(getRecentEmojisKey(userId));
+        const recentEmojis = this.getItem(getRecentEmojisKey(userId));
         if (!recentEmojis) {
             return null;
         }
@@ -48,20 +92,20 @@ class LocalStorageStoreClass {
 
     setRecentEmojis(userId, recentEmojis = []) {
         if (recentEmojis.length) {
-            localStorage.setItem(getRecentEmojisKey(userId), JSON.stringify(recentEmojis));
+            this.setItem(getRecentEmojisKey(userId), JSON.stringify(recentEmojis));
         }
     }
 
     setWasLoggedIn(wasLoggedIn) {
         if (wasLoggedIn) {
-            localStorage.setItem('was_logged_in', 'true');
+            this.setItem(getWasLoggedInKey(), 'true');
         } else {
-            localStorage.setItem('was_logged_in', 'false');
+            this.setItem(getWasLoggedInKey(), 'false');
         }
     }
 
     getWasLoggedIn() {
-        return localStorage.getItem('was_logged_in') === 'true';
+        return this.getItem(getWasLoggedInKey()) === 'true';
     }
 }
 

@@ -1,16 +1,16 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
+/* eslint-disable react/no-string-refs */
 
 import PropTypes from 'prop-types';
 import React from 'react';
-import ReactDOM from 'react-dom';
 import {FormattedMessage} from 'react-intl';
 
-import {trackEvent} from 'actions/diagnostics_actions.jsx';
+import {trackEvent} from 'actions/telemetry_actions.jsx';
 import Constants from 'utils/constants.jsx';
-import {cleanUpUrlable} from 'utils/url.jsx';
+import {cleanUpUrlable} from 'utils/url';
 import logoImage from 'images/logo.png';
-import NextIcon from 'components/icon/next_icon';
+import NextIcon from 'components/widgets/icons/fa_next_icon';
 
 export default class TeamSignupDisplayNamePage extends React.PureComponent {
     static propTypes = {
@@ -29,7 +29,9 @@ export default class TeamSignupDisplayNamePage extends React.PureComponent {
     constructor(props) {
         super(props);
 
-        this.state = {};
+        this.state = {
+            teamDisplayName: this.props.state.team.display_name,
+        };
     }
 
     componentDidMount() {
@@ -38,8 +40,8 @@ export default class TeamSignupDisplayNamePage extends React.PureComponent {
 
     submitNext = (e) => {
         e.preventDefault();
-
-        var displayName = ReactDOM.findDOMNode(this.refs.name).value.trim();
+        trackEvent('display_name', 'click_next');
+        var displayName = this.state.teamDisplayName.trim();
         if (!displayName) {
             this.setState({nameError: (
                 <FormattedMessage
@@ -74,6 +76,10 @@ export default class TeamSignupDisplayNamePage extends React.PureComponent {
         e.currentTarget.select();
     }
 
+    handleDisplayNameChange = (e) => {
+        this.setState({teamDisplayName: e.target.value});
+    }
+
     render() {
         var nameError = null;
         var nameDivClass = 'form-group';
@@ -86,6 +92,7 @@ export default class TeamSignupDisplayNamePage extends React.PureComponent {
             <div>
                 <form>
                     <img
+                        alt={'signup logo'}
                         className='signup-team-logo'
                         src={logoImage}
                     />
@@ -101,13 +108,13 @@ export default class TeamSignupDisplayNamePage extends React.PureComponent {
                                 <input
                                     id='teamNameInput'
                                     type='text'
-                                    ref='name'
                                     className='form-control'
                                     placeholder=''
                                     maxLength='128'
-                                    defaultValue={this.props.state.team.display_name}
+                                    value={this.state.teamDisplayName}
                                     autoFocus={true}
                                     onFocus={this.handleFocus}
+                                    onChange={this.handleDisplayNameChange}
                                     spellCheck='false'
                                 />
                             </div>
@@ -123,7 +130,7 @@ export default class TeamSignupDisplayNamePage extends React.PureComponent {
                     <button
                         id='teamNameNextButton'
                         type='submit'
-                        className='btn btn-primary margin--extra'
+                        className='btn btn-primary mt-8'
                         onClick={this.submitNext}
                     >
                         <FormattedMessage
@@ -137,3 +144,4 @@ export default class TeamSignupDisplayNamePage extends React.PureComponent {
         );
     }
 }
+/* eslint-disable react/no-string-refs */

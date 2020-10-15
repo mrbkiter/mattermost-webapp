@@ -2,13 +2,11 @@
 
 exports[`components/user_settings/advanced/JoinLeaveSection should match snapshot 1`] = `
 <SettingItemMin
-  focused={false}
   section="joinLeave"
   title={
     <FormattedMessage
       defaultMessage="Enable Join/Leave Messages"
       id="user.settings.advance.joinLeaveTitle"
-      values={Object {}}
     />
   }
   updateSection={[Function]}
@@ -21,7 +19,15 @@ exports[`components/user_settings/advanced/JoinLeaveSection should match snapsho
   infoPosition="bottom"
   inputs={
     Array [
-      <div>
+      <fieldset>
+        <legend
+          className="form-legend hidden-label"
+        >
+          <FormattedMessage
+            defaultMessage="Enable Join/Leave Messages"
+            id="user.settings.advance.joinLeaveTitle"
+          />
+        </legend>
         <div
           className="radio"
         >
@@ -37,7 +43,6 @@ exports[`components/user_settings/advanced/JoinLeaveSection should match snapsho
             <FormattedMessage
               defaultMessage="On"
               id="user.settings.advance.on"
-              values={Object {}}
             />
           </label>
           <br />
@@ -57,20 +62,19 @@ exports[`components/user_settings/advanced/JoinLeaveSection should match snapsho
             <FormattedMessage
               defaultMessage="Off"
               id="user.settings.advance.off"
-              values={Object {}}
             />
           </label>
           <br />
         </div>
-        <div>
-          <br />
+        <div
+          className="mt-5"
+        >
           <FormattedMessage
             defaultMessage="When \\"On\\", System Messages saying a user has joined or left a channel will be visible. When \\"Off\\", the System Messages about joining or leaving a channel will be hidden. A message will still show up when you are added to a channel, so you can receive a notification."
             id="user.settings.advance.joinLeaveDesc"
-            values={Object {}}
           />
         </div>
-      </div>,
+      </fieldset>,
     ]
   }
   saving={false}
@@ -81,7 +85,6 @@ exports[`components/user_settings/advanced/JoinLeaveSection should match snapsho
     <FormattedMessage
       defaultMessage="Enable Join/Leave Messages"
       id="user.settings.advance.joinLeaveTitle"
-      values={Object {}}
     />
   }
   updateSection={[Function]}

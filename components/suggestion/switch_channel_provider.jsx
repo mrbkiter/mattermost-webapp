@@ -14,12 +14,11 @@ import {
     makeGetChannel,
     getMyChannelMemberships,
 } from 'mattermost-redux/selectors/entities/channels';
-import {getBool, getMyPreferences} from 'mattermost-redux/selectors/entities/preferences';
+import {getTeammateNameDisplaySetting, getBool, getMyPreferences} from 'mattermost-redux/selectors/entities/preferences';
 import {getConfig} from 'mattermost-redux/selectors/entities/general';
 import {getLastPostPerChannel} from 'mattermost-redux/selectors/entities/posts';
 import {getCurrentTeamId} from 'mattermost-redux/selectors/entities/teams';
 import {
-    getCurrentUser,
     getCurrentUserId,
     getUserIdsInChannels,
     getUser,
@@ -35,15 +34,13 @@ import {
     isUnreadChannel,
 } from 'mattermost-redux/utils/channel_utils';
 
-import {FormattedMessage} from 'react-intl';
+import BotBadge from 'components/widgets/badges/bot_badge';
+import GuestBadge from 'components/widgets/badges/guest_badge';
+import Avatar from 'components/widgets/users/avatar';
 
-import DraftIcon from 'components/svg/draft_icon';
-import GlobeIcon from 'components/svg/globe_icon';
-import LockIcon from 'components/svg/lock_icon';
-import ArchiveIcon from 'components/svg/archive_icon';
 import {getPostDraft} from 'selectors/rhs';
 import store from 'stores/redux_store.jsx';
-import {Constants, StoragePrefixes} from 'utils/constants.jsx';
+import {Constants, StoragePrefixes} from 'utils/constants';
 import * as Utils from 'utils/utils.jsx';
 
 import Provider from './provider.jsx';
@@ -51,35 +48,19 @@ import Suggestion from './suggestion.jsx';
 
 const getState = store.getState;
 
-function getChannelDisplayName(channel) {
-    if (channel.type !== Constants.GM_CHANNEL) {
-        return channel.display_name;
-    }
-
-    const currentUser = getCurrentUser(getState());
-
-    if (currentUser) {
-        return channel.display_name.
-            split(',').
-            map((username) => username.trim()).
-            filter((username) => username !== currentUser.username).
-            join(', ');
-    }
-
-    return channel.display_name;
-}
-
 class SwitchChannelSuggestion extends Suggestion {
     static get propTypes() {
         return {
             ...super.propTypes,
             channelMember: PropTypes.object,
             hasDraft: PropTypes.bool,
+            userImageUrl: PropTypes.string,
+            dmChannelTeammate: PropTypes.object,
         };
     }
 
     render() {
-        const {item, isSelection} = this.props;
+        const {item, isSelection, userImageUrl} = this.props;
         const channel = item.channel;
         const channelIsArchived = channel.delete_at && channel.delete_at !== 0;
 
@@ -96,33 +77,44 @@ class SwitchChannelSuggestion extends Suggestion {
             className += ' suggestion--selected';
         }
 
-        let displayName = channel.display_name;
+        const displayName = channel.display_name;
         let icon = null;
         if (channelIsArchived) {
             icon = (
-                <ArchiveIcon className='icon icon__archive'/>
+                <div className='suggestion-list__icon suggestion-list__icon--large'>
+                    <i className='icon icon-archive-outline'/>
+                </div>
             );
         } else if (this.props.hasDraft) {
             icon = (
-                <DraftIcon className='icon icon__draft icon--body'/>
+                <div className='suggestion-list__icon suggestion-list__icon--large'>
+                    <i className='icon icon-pencil-outline'/>
+                </div>
             );
         } else if (channel.type === Constants.OPEN_CHANNEL) {
             icon = (
-                <GlobeIcon className='icon icon__globe icon--body'/>
+                <div className='suggestion-list__icon suggestion-list__icon--large'>
+                    <i className='icon icon-globe'/>
+                </div>
             );
         } else if (channel.type === Constants.PRIVATE_CHANNEL) {
             icon = (
-                <LockIcon className='icon icon__lock icon--body'/>
+                <div className='suggestion-list__icon suggestion-list__icon--large'>
+                    <i className='icon icon-lock-outline'/>
+                </div>
             );
         } else if (channel.type === Constants.GM_CHANNEL) {
-            displayName = getChannelDisplayName(channel);
-            icon = <div className='status status--group'>{'G'}</div>;
+            icon = (
+                <div className='suggestion-list__icon suggestion-list__icon--large'>
+                    <div className='status status--group'>{'G'}</div>
+                </div>
+            );
         } else {
             icon = (
                 <div className='pull-left'>
-                    <img
-                        className='mention__image'
-                        src={Utils.imageURLForUser(channel.userId)}
+                    <Avatar
+                        size='sm'
+                        url={userImageUrl}
                     />
                 </div>
             );
@@ -130,28 +122,37 @@ class SwitchChannelSuggestion extends Suggestion {
 
         let tag = null;
         if (channel.type === Constants.DM_CHANNEL) {
-            var teammate = Utils.getDirectTeammate(channel.id);
-            if (teammate && teammate.is_bot) {
-                tag = (
-                    <div className='bot-indicator bot-indicator__autocomplete'>
-                        <FormattedMessage
-                            id='post_info.bot'
-                            defaultMessage='BOT'
-                        />
-                    </div>
-                );
-            }
+            const teammate = this.props.dmChannelTeammate;
+            tag = (
+                <React.Fragment>
+                    <BotBadge
+                        show={Boolean(teammate && teammate.is_bot)}
+                        className='badge-autocomplete'
+                    />
+                    <GuestBadge
+                        show={Boolean(teammate && Utils.isGuest(teammate))}
+                        className='badge-autocomplete'
+                    />
+                </React.Fragment>
+            );
         }
 
         return (
             <div
                 onClick={this.handleClick}
+                onMouseMove={this.handleMouseMove}
                 className={className}
+                role='listitem'
+                ref={(node) => {
+                    this.node = node;
+                }}
                 id={`switchChannel_${channel.name}`}
+                data-testid={channel.name}
+                aria-label={displayName || channel.name}
                 {...Suggestion.baseProps}
             >
                 {icon}
-                {displayName}
+                <span>{displayName}</span>
                 {tag}
                 {badge}
             </div>
@@ -160,16 +161,25 @@ class SwitchChannelSuggestion extends Suggestion {
 }
 
 function mapStateToPropsForSwitchChannelSuggestion(state, ownProps) {
-    const channelId = ownProps.item && ownProps.item.channel ? ownProps.item.channel.id : '';
+    const channel = ownProps.item && ownProps.item.channel;
+    const channelId = channel ? channel.id : '';
     const draft = channelId ? getPostDraft(state, StoragePrefixes.DRAFT, channelId) : false;
+    const user = channel && getUser(state, channel.userId);
+    const userImageUrl = user && Utils.imageURLForUser(user.id, user.last_picture_update);
+    let dmChannelTeammate = channel && channel.type === Constants.DM_CHANNEL && Utils.getDirectTeammate(state, channel.id);
+    if (channel && Utils.isEmptyObject(dmChannelTeammate)) {
+        dmChannelTeammate = getUser(state, channel.userId);
+    }
 
     return {
         channelMember: getMyChannelMemberships(state)[channelId],
         hasDraft: draft && Boolean(draft.message.trim() || draft.fileInfos.length || draft.uploadsInProgress.length),
+        userImageUrl,
+        dmChannelTeammate,
     };
 }
 
-const ConnectedSwitchChannelSuggestion = connect(mapStateToPropsForSwitchChannelSuggestion)(SwitchChannelSuggestion);
+const ConnectedSwitchChannelSuggestion = connect(mapStateToPropsForSwitchChannelSuggestion, null, null, {forwardRef: true})(SwitchChannelSuggestion);
 
 let prefix = '';
 
@@ -195,14 +205,14 @@ function quickSwitchSorter(wrappedA, wrappedB) {
     const a = wrappedA.channel;
     const b = wrappedB.channel;
 
-    let aDisplayName = getChannelDisplayName(a).toLowerCase();
-    let bDisplayName = getChannelDisplayName(b).toLowerCase();
+    let aDisplayName = a.display_name.toLowerCase();
+    let bDisplayName = b.display_name.toLowerCase();
 
-    if (a.type === Constants.DM_CHANNEL) {
+    if (a.type === Constants.DM_CHANNEL && aDisplayName.startsWith('@')) {
         aDisplayName = aDisplayName.substring(1);
     }
 
-    if (b.type === Constants.DM_CHANNEL) {
+    if (b.type === Constants.DM_CHANNEL && bDisplayName.startsWith('@')) {
         bDisplayName = bDisplayName.substring(1);
     }
 
@@ -324,14 +334,30 @@ export default class SwitchChannelProvider extends Provider {
     }
 
     userWrappedChannel(user, channel) {
-        let displayName = `@${user.username}`;
+        const teammateNameDisplay = getTeammateNameDisplaySetting(getState());
+        let displayName;
 
-        if ((user.first_name || user.last_name) && user.nickname) {
-            displayName += ` - ${Utils.getFullName(user)} (${user.nickname})`;
-        } else if (user.nickname) {
-            displayName += ` - (${user.nickname})`;
-        } else if (user.first_name || user.last_name) {
-            displayName += ` - ${Utils.getFullName(user)}`;
+        // The naming format is fullname - @username (nickname) if DISPLAY_PREFER_FULL_NAME is set.
+        // Otherwise, it's @username - fullname (nickname)
+        if (teammateNameDisplay === Preferences.DISPLAY_PREFER_FULL_NAME) {
+            if ((user.first_name || user.last_name) && user.nickname) {
+                displayName = `${Utils.getFullName(user)} - @${user.username} (${user.nickname})`;
+            } else if (user.nickname) {
+                displayName = `@${user.username} - (${user.nickname})`;
+            } else if (user.first_name || user.last_name) {
+                displayName = `${Utils.getFullName(user)} - @${user.username}`;
+            } else {
+                displayName = `@${user.username}`;
+            }
+        } else {
+            displayName = `@${user.username}`;
+            if ((user.first_name || user.last_name) && user.nickname) {
+                displayName += ` - ${Utils.getFullName(user)} (${user.nickname})`;
+            } else if (user.nickname) {
+                displayName += ` - (${user.nickname})`;
+            } else if (user.first_name || user.last_name) {
+                displayName += ` - ${Utils.getFullName(user)}`;
+            }
         }
 
         if (user.delete_at) {
@@ -389,7 +415,7 @@ export default class SwitchChannelProvider extends Provider {
                 } else if (channelIsArchived && !members[channel.id]) {
                     continue;
                 } else if (newChannel.type === Constants.GM_CHANNEL) {
-                    newChannel.name = getChannelDisplayName(newChannel);
+                    newChannel.name = newChannel.display_name;
                     wrappedChannel.name = newChannel.name;
                     const isGMVisible = isGroupChannelVisible(config, getMyPreferences(state), channel, getLastPostPerChannel(state)[channel.id], isUnreadChannel(getMyChannelMemberships(state), channel));
                     if (isGMVisible) {
@@ -408,7 +434,7 @@ export default class SwitchChannelProvider extends Provider {
                         completedChannels[user.id] = true;
                         wrappedChannel = this.userWrappedChannel(
                             user,
-                            newChannel
+                            newChannel,
                         );
                         const isDMVisible = isDirectChannelVisible(user.id, config, getMyPreferences(state), channel, getLastPostPerChannel(state)[channel.id], isUnreadChannel(getMyChannelMemberships(state), channel));
                         if (isDMVisible) {
@@ -462,7 +488,7 @@ export default class SwitchChannelProvider extends Provider {
 
         const channelNames = channels.
             sort(quickSwitchSorter).
-            map((wrappedChannel) => wrappedChannel.channel.name);
+            map((wrappedChannel) => wrappedChannel.channel.id);
 
         if (skipNotInChannel) {
             channels.push({
@@ -490,7 +516,7 @@ export default class SwitchChannelProvider extends Provider {
 
             let wrappedChannel = {channel, name: channel.name, deactivated: false};
             if (channel.type === Constants.GM_CHANNEL) {
-                wrappedChannel.name = getChannelDisplayName(channel);
+                wrappedChannel.name = channel.display_name;
             } else if (channel.type === Constants.DM_CHANNEL) {
                 const user = getUser(getState(), Utils.getUserIdFromChannelId(channel.name));
 
@@ -500,14 +526,14 @@ export default class SwitchChannelProvider extends Provider {
 
                 wrappedChannel = this.userWrappedChannel(
                     user,
-                    channel
+                    channel,
                 );
             }
             wrappedChannel.type = Constants.MENTION_UNREAD_CHANNELS;
             channels.push(wrappedChannel);
         }
 
-        const channelNames = channels.map((wrappedChannel) => wrappedChannel.channel.name);
+        const channelNames = channels.map((wrappedChannel) => wrappedChannel.channel.id);
 
         resultsCallback({
             matchedPretext: '',

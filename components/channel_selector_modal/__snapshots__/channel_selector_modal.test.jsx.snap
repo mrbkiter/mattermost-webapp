@@ -3,10 +3,11 @@
 exports[`components/ChannelSelectorModal should match snapshot 1`] = `
 <Modal
   animation={true}
+  aria-labelledby="channelSelectorModalLabel"
   autoFocus={true}
   backdrop={true}
   bsClass="modal"
-  dialogClassName="more-modal more-direct-channels channel-selector-modal"
+  dialogClassName="a11y__modal more-modal more-direct-channels channel-selector-modal"
   dialogComponentClass={[Function]}
   enforceFocus={true}
   keyboard={true}
@@ -26,6 +27,7 @@ exports[`components/ChannelSelectorModal should match snapshot 1`] = `
   onHide={[Function]}
   renderBackdrop={[Function]}
   restoreFocus={true}
+  role="dialog"
   show={true}
 >
   <ModalHeader
@@ -35,10 +37,11 @@ exports[`components/ChannelSelectorModal should match snapshot 1`] = `
   >
     <ModalTitle
       bsClass="modal-title"
-      componentClass="h4"
+      componentClass="h1"
+      id="channelSelectorModalLabel"
     >
-      <InjectIntl(FormattedMarkdownMessage)
-        defaultMessage="Add Channels To **Channel Selection** List"
+      <injectIntl(FormattedMarkdownMessage)
+        defaultMessage="Add Channels to **Channel Selection** List"
         id="add_channels_to_scheme.title"
       />
     </ModalTitle>
@@ -48,6 +51,7 @@ exports[`components/ChannelSelectorModal should match snapshot 1`] = `
     componentClass="div"
   >
     <MultiSelect
+      ariaLabelRenderer={[Function]}
       buttonSubmitText="Add"
       handleAdd={[Function]}
       handleDelete={[Function]}
@@ -60,30 +64,18 @@ exports[`components/ChannelSelectorModal should match snapshot 1`] = `
         <FormattedMessage
           defaultMessage="Use ↑↓ to browse, ↵ to select."
           id="multiselect.selectChannels"
-          values={Object {}}
         />
       }
       optionRenderer={[Function]}
-      options={
-        Array [
-          Object {
-            "delete_at": 0,
-            "display_name": "Channel 3",
-            "id": "id3",
-            "scheme_id": "test",
-            "team_display_name": "Team 3",
-          },
-          Object {
-            "delete_at": 0,
-            "display_name": "Channel 4",
-            "id": "id4",
-            "scheme_id": "",
-            "team_display_name": "Team 4",
-          },
-        ]
-      }
+      options={Array []}
       perPage={50}
+      placeholderText="Search and add channels"
       saving={false}
+      selectedItemRef={
+        Object {
+          "current": null,
+        }
+      }
       valueRenderer={[Function]}
       values={Array []}
     />

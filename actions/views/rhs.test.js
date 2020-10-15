@@ -5,8 +5,7 @@ import {batchActions} from 'redux-batched-actions';
 import configureStore from 'redux-mock-store';
 import thunk from 'redux-thunk';
 import * as PostActions from 'mattermost-redux/actions/posts';
-import {searchPostsWithParams, getFlaggedPosts} from 'mattermost-redux/actions/search';
-import {Client4} from 'mattermost-redux/client';
+import * as SearchActions from 'mattermost-redux/actions/search';
 import {SearchTypes} from 'mattermost-redux/action_types';
 
 import {
@@ -14,18 +13,21 @@ import {
     selectPostFromRightHandSideSearch,
     updateSearchTerms,
     performSearch,
-    getPinnedPosts,
     showSearchResults,
     showFlaggedPosts,
     showPinnedPosts,
     showMentions,
     closeRightHandSide,
+    showRHSPlugin,
+    hideRHSPlugin,
+    toggleRHSPlugin,
     toggleMenu,
     openMenu,
     closeMenu,
+    openAtPrevious,
 } from 'actions/views/rhs';
-import {trackEvent} from 'actions/diagnostics_actions.jsx';
-import {ActionTypes, RHSStates} from 'utils/constants.jsx';
+import {trackEvent} from 'actions/telemetry_actions.jsx';
+import {ActionTypes, RHSStates} from 'utils/constants';
 import {getBrowserUtcOffset} from 'utils/timezone.jsx';
 
 const mockStore = configureStore([thunk]);
@@ -33,9 +35,19 @@ const mockStore = configureStore([thunk]);
 const currentChannelId = '123';
 const currentTeamId = '321';
 const currentUserId = 'user123';
+const pluggableId = 'pluggableId';
+const previousSelectedPost = {
+    id: 'post123',
+    channel_id: 'channel123',
+    root_id: 'root123',
+};
 
 const UserSelectors = require('mattermost-redux/selectors/entities/users');
 UserSelectors.getCurrentUserMentionKeys = jest.fn(() => [{key: '@here'}, {key: '@mattermost'}, {key: '@channel'}, {key: '@all'}]);
+
+// Mock Date.now() to return a constant value.
+const POST_CREATED_TIME = Date.now();
+global.Date.now = jest.fn(() => POST_CREATED_TIME);
 
 jest.mock('mattermost-redux/actions/posts', () => ({
     getPostThread: (...args) => ({type: 'MOCK_GET_POST_THREAD', args}),
@@ -44,29 +56,12 @@ jest.mock('mattermost-redux/actions/posts', () => ({
 
 jest.mock('mattermost-redux/actions/search', () => ({
     searchPostsWithParams: (...args) => ({type: 'MOCK_SEARCH_POSTS', args}),
-    getFlaggedPosts: (...args) => ({type: 'MOCK_GET_FLAGGED_POSTS', args}),
+    clearSearch: (...args) => ({type: 'MOCK_CLEAR_SEARCH', args}),
+    getFlaggedPosts: jest.fn(),
+    getPinnedPosts: jest.fn(),
 }));
 
-jest.mock('mattermost-redux/client', () => {
-    const flaggedPosts = [
-        {id: 'post1', channel_id: 'channel1'},
-        {id: 'post2', channel_id: 'channel2'},
-    ];
-
-    const pinnedPosts = [
-        {id: 'post3', channel_id: 'channel3'},
-        {id: 'post4', channel_id: 'channel4'},
-    ];
-
-    return {
-        Client4: {
-            getFlaggedPosts: jest.fn(() => ({posts: flaggedPosts, order: [0, 1]})),
-            getPinnedPosts: jest.fn(() => ({posts: pinnedPosts, order: [1, 0]})),
-        },
-    };
-});
-
-jest.mock('actions/diagnostics_actions.jsx', () => ({
+jest.mock('actions/telemetry_actions.jsx', () => ({
     trackEvent: jest.fn(),
 }));
 
@@ -96,6 +91,12 @@ describe('rhs view actions', () => {
                     },
                 },
             },
+            posts: {
+                posts: {
+                    [previousSelectedPost.id]: previousSelectedPost,
+                },
+            },
+            preferences: {myPreferences: {}},
         },
         views: {
             rhs: {
@@ -135,31 +136,34 @@ describe('rhs view actions', () => {
             store.dispatch(selectPostFromRightHandSideSearch(post));
 
             const compareStore = mockStore(initialState);
-            compareStore.dispatch(PostActions.getPostThread(post.id));
+            compareStore.dispatch(PostActions.getPostThread(post.root_id));
 
             expect(store.getActions()[0]).toEqual(compareStore.getActions()[0]);
         });
 
-        test(`it dispatches ${ActionTypes.SELECT_POST} correctly`, async () => {
-            store = mockStore({
-                ...initialState,
-                views: {
-                    rhs: {
-                        rhsState: RHSStates.FLAG,
+        describe(`it dispatches ${ActionTypes.SELECT_POST} correctly`, () => {
+            it('with mocked date', async () => {
+                store = mockStore({
+                    ...initialState,
+                    views: {
+                        rhs: {
+                            rhsState: RHSStates.FLAG,
+                        },
                     },
-                },
+                });
+
+                await store.dispatch(selectPostFromRightHandSideSearch(post));
+
+                const action = {
+                    type: ActionTypes.SELECT_POST,
+                    postId: post.root_id,
+                    channelId: post.channel_id,
+                    previousRhsState: RHSStates.FLAG,
+                    timestamp: POST_CREATED_TIME,
+                };
+
+                expect(store.getActions()[1]).toEqual(action);
             });
-
-            await store.dispatch(selectPostFromRightHandSideSearch(post));
-
-            const action = {
-                type: ActionTypes.SELECT_POST,
-                postId: post.root_id,
-                channelId: post.channel_id,
-                previousRhsState: RHSStates.FLAG,
-            };
-
-            expect(store.getActions()[1]).toEqual(action);
         });
     });
 
@@ -188,12 +192,12 @@ describe('rhs view actions', () => {
             const timeZoneOffset = getBrowserUtcOffset() * 60;
 
             const compareStore = mockStore(initialState);
-            compareStore.dispatch(searchPostsWithParams(currentTeamId, {include_deleted_channels: false, terms, is_or_search: false, time_zone_offset: timeZoneOffset, page: 0, per_page: 20}, true));
+            compareStore.dispatch(SearchActions.searchPostsWithParams(currentTeamId, {include_deleted_channels: false, terms, is_or_search: false, time_zone_offset: timeZoneOffset, page: 0, per_page: 20}, true));
 
             expect(store.getActions()).toEqual(compareStore.getActions());
 
             store.dispatch(performSearch(terms, true));
-            compareStore.dispatch(searchPostsWithParams(currentTeamId, {include_deleted_channels: false, terms, is_or_search: true, time_zone_offset: timeZoneOffset, page: 0, per_page: 20}, true));
+            compareStore.dispatch(SearchActions.searchPostsWithParams(currentTeamId, {include_deleted_channels: false, terms, is_or_search: true, time_zone_offset: timeZoneOffset, page: 0, per_page: 20}, true));
 
             expect(store.getActions()).toEqual(compareStore.getActions());
         });
@@ -230,123 +234,151 @@ describe('rhs view actions', () => {
 
     describe('showFlaggedPosts', () => {
         test('it dispatches the right actions', async () => {
-            function getSearchActions(result, teamId) {
-                return [
-                    {
-                        type: SearchTypes.RECEIVED_SEARCH_POSTS,
-                        data: result,
-                    },
-                    {
-                        type: SearchTypes.RECEIVED_SEARCH_TERM,
-                        data: {
-                            teamId,
-                            terms: null,
-                            isOrSearch: false,
-                        },
-                    },
-                    {
-                        type: SearchTypes.SEARCH_POSTS_SUCCESS,
-                    },
-                ];
-            }
+            SearchActions.getFlaggedPosts.mockReturnValue((dispatch) => {
+                dispatch({type: 'MOCK_GET_FLAGGED_POSTS'});
 
-            store.dispatch(showFlaggedPosts());
-
-            const compareStore = mockStore(initialState);
-
-            compareStore.dispatch({
-                type: ActionTypes.UPDATE_RHS_STATE,
-                state: RHSStates.FLAG,
+                return {data: 'data'};
             });
 
-            const result = await compareStore.dispatch(getFlaggedPosts());
+            await store.dispatch(showFlaggedPosts());
 
-            const postRHSSearchActions = getSearchActions(
-                result.data,
-                currentTeamId
-            );
+            expect(SearchActions.getFlaggedPosts).toHaveBeenCalled();
 
-            compareStore.dispatch(batchActions(postRHSSearchActions));
-
-            expect(store.getActions()).toEqual(compareStore.getActions());
-        });
-    });
-
-    describe('getPinnedPosts', () => {
-        test('it dispatches the right actions', async () => {
-            await store.dispatch(getPinnedPosts());
-
-            const compareStore = mockStore(initialState);
-            const result = await Client4.getPinnedPosts(currentChannelId);
-            await PostActions.getProfilesAndStatusesForPosts(result.posts, compareStore.dispatch, compareStore.getState);
-
-            compareStore.dispatch(batchActions([
+            expect(store.getActions()).toEqual([
                 {
-                    type: SearchTypes.RECEIVED_SEARCH_POSTS,
-                    data: result,
+                    type: ActionTypes.UPDATE_RHS_STATE,
+                    state: RHSStates.FLAG,
                 },
                 {
-                    type: SearchTypes.RECEIVED_SEARCH_TERM,
-                    data: {
-                        teamId: '321',
-                        terms: null,
-                        isOrSearch: false,
+                    type: 'MOCK_GET_FLAGGED_POSTS',
+                },
+                {
+                    type: 'BATCHING_REDUCER.BATCH',
+                    meta: {
+                        batch: true,
                     },
+                    payload: [
+                        {
+                            type: SearchTypes.RECEIVED_SEARCH_POSTS,
+                            data: 'data',
+                        },
+                        {
+                            type: SearchTypes.RECEIVED_SEARCH_TERM,
+                            data: {
+                                teamId: currentTeamId,
+                                terms: null,
+                                isOrSearch: false,
+                            },
+                        },
+                    ],
                 },
-                {
-                    type: SearchTypes.SEARCH_POSTS_SUCCESS,
-                },
-            ]));
-
-            expect(store.getActions()).toEqual(compareStore.getActions());
+            ]);
         });
     });
 
     describe('showPinnedPosts', () => {
-        test('it dispatches the right actions', async () => {
-            store.dispatch(showPinnedPosts());
+        test('it dispatches the right actions for the current channel', async () => {
+            SearchActions.getPinnedPosts.mockReturnValue((dispatch) => {
+                dispatch({type: 'MOCK_GET_PINNED_POSTS'});
 
-            const compareStore = mockStore(initialState);
-            const result = await Client4.getPinnedPosts('123');
-            await PostActions.getProfilesAndStatusesForPosts(result.posts, compareStore.dispatch, compareStore.getState);
+                return {data: 'data'};
+            });
 
-            compareStore.dispatch(batchActions([
-                {
-                    type: ActionTypes.SEARCH_PINNED_POSTS_REQUEST,
-                },
-                {
-                    type: ActionTypes.UPDATE_RHS_SEARCH_TERMS,
-                    terms: '',
-                },
-                {
-                    type: ActionTypes.UPDATE_RHS_STATE,
-                    state: RHSStates.PIN,
-                    channelId: '123',
-                },
-            ]));
+            await store.dispatch(showPinnedPosts());
 
-            compareStore.dispatch(batchActions([
+            expect(SearchActions.getPinnedPosts).toHaveBeenCalledWith(currentChannelId);
+
+            expect(store.getActions()).toEqual([
                 {
-                    type: SearchTypes.RECEIVED_SEARCH_POSTS,
-                    data: result,
-                },
-                {
-                    type: SearchTypes.RECEIVED_SEARCH_TERM,
-                    data: {
-                        teamId: '321',
-                        terms: null,
-                        isOrSearch: false,
+                    type: 'BATCHING_REDUCER.BATCH',
+                    meta: {
+                        batch: true,
                     },
+                    payload: [
+                        {
+                            type: ActionTypes.UPDATE_RHS_STATE,
+                            channelId: currentChannelId,
+                            state: RHSStates.PIN,
+                        },
+                    ],
                 },
                 {
-                    type: SearchTypes.SEARCH_POSTS_SUCCESS,
+                    type: 'MOCK_GET_PINNED_POSTS',
                 },
                 {
-                    type: ActionTypes.SEARCH_PINNED_POSTS_SUCCESS,
+                    type: 'BATCHING_REDUCER.BATCH',
+                    meta: {
+                        batch: true,
+                    },
+                    payload: [
+                        {
+                            type: SearchTypes.RECEIVED_SEARCH_POSTS,
+                            data: 'data',
+                        },
+                        {
+                            type: SearchTypes.RECEIVED_SEARCH_TERM,
+                            data: {
+                                teamId: currentTeamId,
+                                terms: null,
+                                isOrSearch: false,
+                            },
+                        },
+                    ],
                 },
-            ]));
+            ]);
+        });
 
-            expect(store.getActions()).toEqual(compareStore.getActions());
+        test('it dispatches the right actions for a specific channel', async () => {
+            const channelId = 'channel1';
+
+            SearchActions.getPinnedPosts.mockReturnValue((dispatch) => {
+                dispatch({type: 'MOCK_GET_PINNED_POSTS'});
+
+                return {data: 'data'};
+            });
+
+            await store.dispatch(showPinnedPosts(channelId));
+
+            expect(SearchActions.getPinnedPosts).toHaveBeenCalledWith(channelId);
+
+            expect(store.getActions()).toEqual([
+                {
+                    type: 'BATCHING_REDUCER.BATCH',
+                    meta: {
+                        batch: true,
+                    },
+                    payload: [
+                        {
+                            type: ActionTypes.UPDATE_RHS_STATE,
+                            channelId,
+                            state: RHSStates.PIN,
+                        },
+                    ],
+                },
+                {
+                    type: 'MOCK_GET_PINNED_POSTS',
+                },
+                {
+                    type: 'BATCHING_REDUCER.BATCH',
+                    meta: {
+                        batch: true,
+                    },
+                    payload: [
+                        {
+                            type: SearchTypes.RECEIVED_SEARCH_POSTS,
+                            data: 'data',
+                        },
+                        {
+                            type: SearchTypes.RECEIVED_SEARCH_TERM,
+                            data: {
+                                teamId: currentTeamId,
+                                terms: null,
+                                isOrSearch: false,
+                            },
+                        },
+                    ],
+                },
+            ]);
         });
     });
 
@@ -397,6 +429,7 @@ describe('rhs view actions', () => {
                     type: ActionTypes.SELECT_POST,
                     postId: '',
                     channelId: '',
+                    timestamp: 0,
                 },
             ]));
 
@@ -435,5 +468,290 @@ describe('rhs view actions', () => {
         });
 
         expect(store.getActions()).toEqual(compareStore.getActions());
+    });
+
+    describe('Plugin actions', () => {
+        const stateWithPluginRhs = {
+            ...initialState,
+            views: {
+                rhs: {
+                    state: RHSStates.PLUGIN,
+                    pluggableId,
+                },
+            },
+        };
+
+        const stateWithoutPluginRhs = {
+            ...initialState,
+            views: {
+                rhs: {
+                    state: RHSStates.PIN,
+                },
+            },
+        };
+
+        describe('showRHSPlugin', () => {
+            it('dispatches the right action', () => {
+                store.dispatch(showRHSPlugin(pluggableId));
+
+                const compareStore = mockStore(initialState);
+                compareStore.dispatch({
+                    type: ActionTypes.UPDATE_RHS_STATE,
+                    state: RHSStates.PLUGIN,
+                    pluggableId,
+                });
+
+                expect(store.getActions()).toEqual(compareStore.getActions());
+            });
+        });
+
+        describe('hideRHSPlugin', () => {
+            it('it dispatches the right action when plugin rhs is opened', () => {
+                store = mockStore(stateWithPluginRhs);
+
+                store.dispatch(hideRHSPlugin(pluggableId));
+
+                const compareStore = mockStore(stateWithPluginRhs);
+                compareStore.dispatch(closeRightHandSide());
+
+                expect(store.getActions()).toEqual(compareStore.getActions());
+            });
+
+            it('it doesn\'t dispatch the action when plugin rhs is closed', () => {
+                store = mockStore(stateWithoutPluginRhs);
+
+                store.dispatch(hideRHSPlugin(pluggableId));
+
+                const compareStore = mockStore(initialState);
+
+                expect(store.getActions()).toEqual(compareStore.getActions());
+            });
+
+            it('it doesn\'t dispatch the action when other plugin rhs is opened', () => {
+                store = mockStore(stateWithPluginRhs);
+
+                store.dispatch(hideRHSPlugin('pluggableId2'));
+
+                const compareStore = mockStore(initialState);
+
+                expect(store.getActions()).toEqual(compareStore.getActions());
+            });
+        });
+
+        describe('toggleRHSPlugin', () => {
+            it('it dispatches hide action when rhs is open', () => {
+                store = mockStore(stateWithPluginRhs);
+
+                store.dispatch(toggleRHSPlugin(pluggableId));
+
+                const compareStore = mockStore(initialState);
+                compareStore.dispatch(closeRightHandSide());
+
+                expect(store.getActions()).toEqual(compareStore.getActions());
+            });
+
+            it('it dispatches hide action when rhs is closed', () => {
+                store = mockStore(stateWithoutPluginRhs);
+
+                store.dispatch(toggleRHSPlugin(pluggableId));
+
+                const compareStore = mockStore(initialState);
+                compareStore.dispatch(showRHSPlugin(pluggableId));
+
+                expect(store.getActions()).toEqual(compareStore.getActions());
+            });
+        });
+    });
+
+    describe('openAtPrevious', () => {
+        const batchingReducerBatch = {
+            type: 'BATCHING_REDUCER.BATCH',
+            meta: {
+                batch: true,
+            },
+            payload: [
+                {
+                    type: SearchTypes.RECEIVED_SEARCH_POSTS,
+                    data: 'data',
+                },
+                {
+                    type: SearchTypes.RECEIVED_SEARCH_TERM,
+                    data: {
+                        teamId: currentTeamId,
+                        terms: null,
+                        isOrSearch: false,
+                    },
+                },
+            ],
+        };
+
+        function actionsForEmptySearch() {
+            const compareStore = mockStore(initialState);
+
+            compareStore.dispatch(SearchActions.clearSearch());
+            compareStore.dispatch(updateSearchTerms(''));
+            compareStore.dispatch({
+                type: ActionTypes.UPDATE_RHS_SEARCH_RESULTS_TERMS,
+                terms: '',
+            });
+            compareStore.dispatch(updateRhsState(RHSStates.SEARCH));
+
+            return compareStore.getActions();
+        }
+
+        it('opens to empty search when not previously opened', () => {
+            store.dispatch(openAtPrevious(null));
+
+            expect(store.getActions()).toEqual(actionsForEmptySearch());
+        });
+
+        it('opens a mention search', () => {
+            store.dispatch(openAtPrevious({isMentionSearch: true}));
+            const compareStore = mockStore(initialState);
+
+            compareStore.dispatch(performSearch('@mattermost ', true));
+            compareStore.dispatch(batchActions([
+                {
+                    type: ActionTypes.UPDATE_RHS_SEARCH_TERMS,
+                    terms: '@mattermost ',
+                },
+                {
+                    type: ActionTypes.UPDATE_RHS_STATE,
+                    state: RHSStates.MENTION,
+                },
+            ]));
+
+            expect(store.getActions()).toEqual(compareStore.getActions());
+        });
+
+        it('opens pinned posts', async () => {
+            SearchActions.getPinnedPosts.mockReturnValue((dispatch) => {
+                dispatch({type: 'MOCK_GET_PINNED_POSTS'});
+                return {data: 'data'};
+            });
+
+            await store.dispatch(openAtPrevious({isPinnedPosts: true}));
+
+            expect(SearchActions.getPinnedPosts).toHaveBeenCalledWith(currentChannelId);
+
+            expect(store.getActions()).toEqual([
+                {
+                    type: 'BATCHING_REDUCER.BATCH',
+                    meta: {
+                        batch: true,
+                    },
+                    payload: [
+                        {
+                            type: ActionTypes.UPDATE_RHS_STATE,
+                            channelId: currentChannelId,
+                            state: RHSStates.PIN,
+                        },
+                    ],
+                },
+                {
+                    type: 'MOCK_GET_PINNED_POSTS',
+                },
+                batchingReducerBatch,
+            ]);
+        });
+
+        it('opens flagged posts', async () => {
+            SearchActions.getFlaggedPosts.mockReturnValue((dispatch) => {
+                dispatch({type: 'MOCK_GET_FLAGGED_POSTS'});
+
+                return {data: 'data'};
+            });
+
+            await store.dispatch(openAtPrevious({isFlaggedPosts: true}));
+
+            expect(SearchActions.getFlaggedPosts).toHaveBeenCalled();
+
+            expect(store.getActions()).toEqual([
+                {
+                    type: ActionTypes.UPDATE_RHS_STATE,
+                    state: RHSStates.FLAG,
+                },
+                {
+                    type: 'MOCK_GET_FLAGGED_POSTS',
+                },
+                batchingReducerBatch,
+            ]);
+        });
+
+        it('opens selected post', async () => {
+            const previousState = 'flag';
+            await store.dispatch(openAtPrevious({selectedPostId: previousSelectedPost.id, previousRhsState: previousState}));
+
+            const compareStore = mockStore(initialState);
+            compareStore.dispatch(PostActions.getPostThread(previousSelectedPost.root_id));
+            compareStore.dispatch({
+                type: ActionTypes.SELECT_POST,
+                postId: previousSelectedPost.root_id,
+                channelId: previousSelectedPost.channel_id,
+                previousRhsState: previousState,
+                timestamp: POST_CREATED_TIME,
+            });
+
+            expect(store.getActions()).toEqual(compareStore.getActions());
+        });
+
+        it('opens empty search when selected post does not exist', async () => {
+            await store.dispatch(openAtPrevious({selectedPostId: 'postxyz'}));
+
+            expect(store.getActions()).toEqual(actionsForEmptySearch());
+        });
+
+        it('opens selected post card', async () => {
+            const previousState = 'flag';
+            await store.dispatch(openAtPrevious({selectedPostCardId: previousSelectedPost.id, previousRhsState: previousState}));
+
+            const compareStore = mockStore(initialState);
+            compareStore.dispatch({
+                type: ActionTypes.SELECT_POST_CARD,
+                postId: previousSelectedPost.id,
+                channelId: previousSelectedPost.channel_id,
+                previousRhsState: previousState,
+            });
+
+            expect(store.getActions()).toEqual(compareStore.getActions());
+        });
+
+        it('opens empty search when selected post card does not exist', async () => {
+            await store.dispatch(openAtPrevious({selectedPostCardId: 'postxyz'}));
+
+            expect(store.getActions()).toEqual(actionsForEmptySearch());
+        });
+
+        it('opens search results', async () => {
+            const terms = '@here test search';
+
+            const searchInitialState = {
+                ...initialState,
+                views: {
+                    rhs: {
+                        searchTerms: terms,
+                    },
+                },
+            };
+
+            store = mockStore(searchInitialState);
+            await store.dispatch(openAtPrevious({searchVisible: true}));
+
+            const compareStore = mockStore(searchInitialState);
+            compareStore.dispatch(updateRhsState(RHSStates.SEARCH));
+            compareStore.dispatch({
+                type: ActionTypes.UPDATE_RHS_SEARCH_RESULTS_TERMS,
+                terms,
+            });
+            compareStore.dispatch(performSearch(terms));
+
+            expect(store.getActions()).toEqual(compareStore.getActions());
+        });
+
+        it('opens empty search when no other options set', () => {
+            store.dispatch(openAtPrevious({}));
+
+            expect(store.getActions()).toEqual(actionsForEmptySearch());
+        });
     });
 });

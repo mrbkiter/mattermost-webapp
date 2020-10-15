@@ -2,11 +2,10 @@
 // See LICENSE.txt for license information.
 
 import React from 'react';
-import {FormattedMessage} from 'react-intl';
 
-import {autocompleteUsersInTeam} from 'actions/user_actions.jsx';
 import * as Utils from 'utils/utils.jsx';
-import SelectIcon from 'components/icon/select_icon';
+import BotBadge from 'components/widgets/badges/bot_badge';
+import Avatar from 'components/widgets/users/avatar';
 
 import Provider from './provider.jsx';
 import Suggestion from './suggestion.jsx';
@@ -17,50 +16,44 @@ class SearchUserSuggestion extends Suggestion {
 
         let className = 'search-autocomplete__item';
         if (isSelection) {
-            className += ' selected';
+            className += ' selected a11y--focused';
         }
 
         const username = item.username;
         let description = '';
 
         if ((item.first_name || item.last_name) && item.nickname) {
-            description = `- ${Utils.getFullName(item)} (${item.nickname})`;
+            description = `${Utils.getFullName(item)} (${item.nickname})`;
         } else if (item.nickname) {
-            description = `- (${item.nickname})`;
+            description = `(${item.nickname})`;
         } else if (item.first_name || item.last_name) {
-            description = `- ${Utils.getFullName(item)}`;
-        }
-
-        let tag = null;
-        if (item.is_bot) {
-            tag = (
-                <div className='bot-indicator bot-indicator__autocomplete'>
-                    <FormattedMessage
-                        id='post_info.bot'
-                        defaultMessage='BOT'
-                    />
-                </div>
-            );
+            description = `${Utils.getFullName(item)}`;
         }
 
         return (
             <div
                 className={className}
+                ref={(node) => {
+                    this.node = node;
+                }}
                 onClick={this.handleClick}
+                onMouseMove={this.handleMouseMove}
                 {...Suggestion.baseProps}
             >
-                <SelectIcon/>
-                <img
-                    className='profile-img rounded'
-                    src={Utils.imageURLForUser(item)}
+                <Avatar
+                    size='sm'
+                    username={username}
+                    url={Utils.imageURLForUser(item.id, item.last_picture_update)}
                 />
-                <div className='mention--align'>
+                <div className='mention--align ml-3'>
                     <span>
-                        {username}
+                        {'@'}{username}
                     </span>
-                    {tag}
-                    <span className='mention__fullname'>
-                        {' '}
+                    <BotBadge
+                        show={Boolean(item.is_bot)}
+                        className='badge-autocomplete'
+                    />
+                    <span className='ml-2 mention__fullname'>
                         {description}
                     </span>
                 </div>
@@ -70,37 +63,46 @@ class SearchUserSuggestion extends Suggestion {
 }
 
 export default class SearchUserProvider extends Provider {
+    constructor(userSearchFunc) {
+        super();
+        this.autocompleteUsersInTeam = userSearchFunc;
+    }
+
     handlePretextChanged(pretext, resultsCallback) {
         const captured = (/\bfrom:\s*(\S*)$/i).exec(pretext.toLowerCase());
-        if (captured) {
-            const usernamePrefix = captured[1];
 
-            this.startNewRequest(usernamePrefix);
-
-            autocompleteUsersInTeam(
-                usernamePrefix,
-                (data) => {
-                    if (this.shouldCancelDispatch(usernamePrefix)) {
-                        return;
-                    }
-
-                    const users = Object.assign([], data.users);
-                    const mentions = users.map((user) => user.username);
-
-                    resultsCallback({
-                        matchedPretext: usernamePrefix,
-                        terms: mentions,
-                        items: users,
-                        component: SearchUserSuggestion,
-                    });
-                }
-            );
-        }
+        this.doAutocomplete(captured, resultsCallback);
 
         return Boolean(captured);
     }
 
+    async doAutocomplete(captured, resultsCallback) {
+        if (!captured) {
+            return;
+        }
+
+        const usernamePrefix = captured[1];
+
+        this.startNewRequest(usernamePrefix);
+
+        const data = await this.autocompleteUsersInTeam(usernamePrefix);
+
+        if (this.shouldCancelDispatch(usernamePrefix)) {
+            return;
+        }
+
+        const users = Object.assign([], data.users);
+        const mentions = users.map((user) => user.username);
+
+        resultsCallback({
+            matchedPretext: usernamePrefix,
+            terms: mentions,
+            items: users,
+            component: SearchUserSuggestion,
+        });
+    }
+
     allowDividers() {
-        return false;
+        return true;
     }
 }

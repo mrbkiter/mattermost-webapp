@@ -7,9 +7,44 @@ import {FormattedMessage} from 'react-intl';
 import {Link} from 'react-router-dom';
 
 import {t} from 'utils/i18n';
-import CopyText from 'components/copy_text.jsx';
+import CopyText from 'components/copy_text';
 
 import DeleteIntegration from './delete_integration.jsx';
+
+export function matchesFilter(outgoingWebhook, channel, filter) {
+    if (!filter) {
+        return true;
+    }
+
+    const {
+        display_name: displayName,
+        description,
+        trigger_words: triggerWords,
+    } = outgoingWebhook;
+
+    if (
+        (displayName && displayName.toLowerCase().indexOf(filter) !== -1) ||
+        (description && description.toLowerCase().indexOf(filter) !== -1)
+    ) {
+        return true;
+    }
+
+    if (triggerWords) {
+        for (const triggerWord of triggerWords) {
+            if (triggerWord.toLowerCase().indexOf(filter) !== -1) {
+                return true;
+            }
+        }
+    }
+
+    if (channel && channel.name) {
+        if (channel.name.toLowerCase().indexOf(filter) !== -1) {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 export default class InstalledOutgoingWebhook extends React.PureComponent {
     static propTypes = {
@@ -55,20 +90,13 @@ export default class InstalledOutgoingWebhook extends React.PureComponent {
         channel: PropTypes.object,
     }
 
-    constructor(props) {
-        super(props);
-
-        this.handleRegenToken = this.handleRegenToken.bind(this);
-        this.handleDelete = this.handleDelete.bind(this);
-    }
-
-    handleRegenToken(e) {
+    handleRegenToken = (e) => {
         e.preventDefault();
 
         this.props.onRegenToken(this.props.outgoingWebhook);
     }
 
-    handleDelete() {
+    handleDelete = () => {
         this.props.onDelete(this.props.outgoingWebhook);
     }
 
@@ -86,41 +114,6 @@ export default class InstalledOutgoingWebhook extends React.PureComponent {
         );
     }
 
-    matchesFilter(outgoingWebhook, channel, filter) {
-        if (!filter) {
-            return true;
-        }
-
-        const {
-            display_name: displayName,
-            description,
-            trigger_words: triggerWords,
-        } = outgoingWebhook;
-
-        if (
-            (displayName && displayName.toLowerCase().indexOf(filter) !== -1) ||
-            (description && description.toLowerCase().indexOf(filter) !== -1)
-        ) {
-            return true;
-        }
-
-        if (triggerWords) {
-            for (const triggerWord of triggerWords) {
-                if (triggerWord.toLowerCase().indexOf(filter) !== -1) {
-                    return true;
-                }
-            }
-        }
-
-        if (channel && channel.name) {
-            if (channel.name.toLowerCase().indexOf(filter) !== -1) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     render() {
         const outgoingWebhook = this.props.outgoingWebhook;
         const channel = this.props.channel;
@@ -128,7 +121,7 @@ export default class InstalledOutgoingWebhook extends React.PureComponent {
         const triggerWordsFull = 0;
         const triggerWordsStartsWith = 1;
 
-        if (outgoingWebhook && !this.matchesFilter(outgoingWebhook, channel, filter)) {
+        if (outgoingWebhook && !matchesFilter(outgoingWebhook, channel, filter)) {
             return null;
         }
 
@@ -164,7 +157,7 @@ export default class InstalledOutgoingWebhook extends React.PureComponent {
 
         const urls = (
             <div className='item-details__row'>
-                <span className='item-details__url'>
+                <span className='item-details__url word-break--all'>
                     <FormattedMessage
                         id='installed_integrations.callback_urls'
                         defaultMessage='Callback URLs: {urls}'
@@ -225,10 +218,11 @@ export default class InstalledOutgoingWebhook extends React.PureComponent {
         return (
             <div className='backstage-list__item'>
                 <div className='item-details'>
-                    <div className='item-details__row'>
-                        <span className='item-details__name'>
+                    <div className='item-details__row d-flex flex-column flex-md-row justify-content-between'>
+                        <strong className='item-details__name'>
                             {displayName}
-                        </span>
+                        </strong>
+                        {actions}
                     </div>
                     {description}
                     <div className='item-details__row'>
@@ -282,7 +276,6 @@ export default class InstalledOutgoingWebhook extends React.PureComponent {
                     </div>
                     {urls}
                 </div>
-                {actions}
             </div>
         );
     }

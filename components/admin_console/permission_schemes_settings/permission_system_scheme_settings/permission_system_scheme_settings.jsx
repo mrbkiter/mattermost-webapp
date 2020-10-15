@@ -5,26 +5,31 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {FormattedMessage} from 'react-intl';
 
-import ConfirmModal from 'components/confirm_modal.jsx';
+import GeneralConstants from 'mattermost-redux/constants/general';
 
-import {PermissionsScope, DefaultRolePermissions} from 'utils/constants.jsx';
+import ConfirmModal from 'components/confirm_modal';
+
+import {PermissionsScope, DefaultRolePermissions} from 'utils/constants';
 import {localizeMessage} from 'utils/utils.jsx';
 import {t} from 'utils/i18n';
 
-import SaveButton from 'components/save_button.jsx';
-import LoadingScreen from 'components/loading_screen.jsx';
-import FormError from 'components/form_error.jsx';
+import SaveButton from 'components/save_button';
+import LoadingScreen from 'components/loading_screen';
+import FormError from 'components/form_error';
 import BlockableLink from 'components/admin_console/blockable_link';
-import AdminPanelTogglable from 'components/widgets/admin_console/admin_panel_togglable.jsx';
+import AdminPanelTogglable from 'components/widgets/admin_console/admin_panel_togglable';
 
 import FormattedMarkdownMessage from 'components/formatted_markdown_message';
 
-import PermissionsTree from '../permissions_tree';
+import PermissionsTree, {EXCLUDED_PERMISSIONS} from '../permissions_tree';
+import GuestPermissionsTree, {GUEST_INCLUDED_PERMISSIONS} from '../guest_permissions_tree';
 
-export default class PermissionSystemSchemeSettings extends React.Component {
+export default class PermissionSystemSchemeSettings extends React.PureComponent {
     static propTypes = {
+        config: PropTypes.object.isRequired,
         roles: PropTypes.object.isRequired,
         license: PropTypes.object.isRequired,
+        isDisabled: PropTypes.bool,
         actions: PropTypes.shape({
             loadRolesIfNeeded: PropTypes.func.isRequired,
             editRole: PropTypes.func.isRequired,
@@ -42,19 +47,37 @@ export default class PermissionSystemSchemeSettings extends React.Component {
             serverError: null,
             roles: {},
             openRoles: {
+                guests: true,
                 all_users: true,
                 system_admin: true,
                 team_admin: true,
                 channel_admin: true,
             },
+            urlParams: new URLSearchParams(props.location.search),
         };
-        this.rolesNeeded = ['system_admin', 'system_user', 'team_admin', 'team_user', 'channel_admin', 'channel_user'];
+        this.rolesNeeded = [
+            GeneralConstants.SYSTEM_ADMIN_ROLE,
+            GeneralConstants.SYSTEM_USER_ROLE,
+            GeneralConstants.TEAM_ADMIN_ROLE,
+            GeneralConstants.TEAM_USER_ROLE,
+            GeneralConstants.CHANNEL_ADMIN_ROLE,
+            GeneralConstants.CHANNEL_USER_ROLE,
+            GeneralConstants.SYSTEM_GUEST_ROLE,
+            GeneralConstants.TEAM_GUEST_ROLE,
+            GeneralConstants.CHANNEL_GUEST_ROLE,
+        ];
     }
 
     componentDidMount() {
         this.props.actions.loadRolesIfNeeded(this.rolesNeeded);
         if (this.rolesNeeded.every((roleName) => this.props.roles[roleName])) {
             this.loadRolesIntoState(this.props);
+        }
+
+        if (this.state.urlParams.get('rowIdFromQuery')) {
+            setTimeout(() => {
+                this.selectRow(this.state.urlParams.get('rowIdFromQuery'));
+            }, 1000);
         }
     }
 
@@ -95,7 +118,20 @@ export default class PermissionSystemSchemeSettings extends React.Component {
     }
 
     loadRolesIntoState(props) {
-        const {system_admin, team_admin, channel_admin, system_user, team_user, channel_user} = props.roles; // eslint-disable-line camelcase
+        /* eslint-disable camelcase */
+        const {
+            system_admin,
+            team_admin,
+            channel_admin,
+            system_user,
+            team_user,
+            channel_user,
+            system_guest,
+            team_guest,
+            channel_guest,
+        } = props.roles;
+        /* eslint-enable camelcase */
+
         this.setState({
             selectedPermission: null,
             loaded: true,
@@ -107,6 +143,11 @@ export default class PermissionSystemSchemeSettings extends React.Component {
                     name: 'all_users',
                     displayName: 'All members',
                     permissions: system_user.permissions.concat(team_user.permissions).concat(channel_user.permissions),
+                },
+                guests: {
+                    name: 'guests',
+                    displayName: 'Guests',
+                    permissions: system_guest.permissions.concat(team_guest.permissions).concat(channel_guest.permissions),
                 },
             },
         });
@@ -129,16 +170,82 @@ export default class PermissionSystemSchemeSettings extends React.Component {
         };
     }
 
+    deriveRolesFromGuests = (role) => {
+        return {
+            system_guest: {
+                ...this.props.roles.system_guest,
+                permissions: role.permissions.filter((p) => PermissionsScope[p] === 'system_scope'),
+            },
+            team_guest: {
+                ...this.props.roles.team_guest,
+                permissions: role.permissions.filter((p) => PermissionsScope[p] === 'team_scope'),
+            },
+            channel_guest: {
+                ...this.props.roles.channel_guest,
+                permissions: role.permissions.filter((p) => PermissionsScope[p] === 'channel_scope'),
+            },
+        };
+    }
+
+    restoreExcludedPermissions = (roles) => {
+        for (const permission of this.props.roles.system_user.permissions) {
+            if (EXCLUDED_PERMISSIONS.includes(permission)) {
+                roles.system_user.permissions.push(permission);
+            }
+        }
+        for (const permission of this.props.roles.team_user.permissions) {
+            if (EXCLUDED_PERMISSIONS.includes(permission)) {
+                roles.team_user.permissions.push(permission);
+            }
+        }
+        for (const permission of this.props.roles.channel_user.permissions) {
+            if (EXCLUDED_PERMISSIONS.includes(permission)) {
+                roles.channel_user.permissions.push(permission);
+            }
+        }
+        return roles;
+    }
+
+    restoreGuestPermissions = (roles) => {
+        for (const permission of this.props.roles.system_guest.permissions) {
+            if (!GUEST_INCLUDED_PERMISSIONS.includes(permission)) {
+                roles.system_guest.permissions.push(permission);
+            }
+        }
+        for (const permission of this.props.roles.team_guest.permissions) {
+            if (!GUEST_INCLUDED_PERMISSIONS.includes(permission)) {
+                roles.team_guest.permissions.push(permission);
+            }
+        }
+        for (const permission of this.props.roles.channel_guest.permissions) {
+            if (!GUEST_INCLUDED_PERMISSIONS.includes(permission)) {
+                roles.channel_guest.permissions.push(permission);
+            }
+        }
+        return roles;
+    }
+
     handleSubmit = async () => {
         const teamAdminPromise = this.props.actions.editRole(this.state.roles.team_admin);
         const channelAdminPromise = this.props.actions.editRole(this.state.roles.channel_admin);
-        const roles = this.deriveRolesFromAllUsers(this.state.roles.all_users);
+        const roles = this.restoreExcludedPermissions(this.deriveRolesFromAllUsers(this.state.roles.all_users));
+        const guestRoles = this.restoreGuestPermissions(this.deriveRolesFromGuests(this.state.roles.guests));
         const systemUserPromise = this.props.actions.editRole(roles.system_user);
         const teamUserPromise = this.props.actions.editRole(roles.team_user);
         const channelUserPromise = this.props.actions.editRole(roles.channel_user);
+
+        const promises = [teamAdminPromise, channelAdminPromise, systemUserPromise, teamUserPromise, channelUserPromise];
+
+        if (this.haveGuestAccountsPermissions()) {
+            const systemGuestPromise = this.props.actions.editRole(guestRoles.system_guest);
+            const teamGuestPromise = this.props.actions.editRole(guestRoles.team_guest);
+            const channelGuestPromise = this.props.actions.editRole(guestRoles.channel_guest);
+            promises.push(systemGuestPromise, teamGuestPromise, channelGuestPromise);
+        }
+
         this.setState({saving: true});
 
-        const results = await Promise.all([teamAdminPromise, channelAdminPromise, systemUserPromise, teamUserPromise, channelUserPromise]);
+        const results = await Promise.all(promises);
         let serverError = null;
         let saveNeeded = false;
         for (const result of results) {
@@ -188,119 +295,151 @@ export default class PermissionSystemSchemeSettings extends React.Component {
         this.props.actions.setNavigationBlocked(true);
     }
 
+    haveGuestAccountsPermissions = () => {
+        return this.props.license.GuestAccountsPermissions === 'true';
+    }
+
     render = () => {
-        const hasCustomSchemes = this.props.license.CustomPermissionsSchemes === 'true';
         if (!this.state.loaded) {
             return <LoadingScreen/>;
         }
         return (
             <div className='wrapper--fixed'>
-                <h3 className={'admin-console-header ' + (hasCustomSchemes ? 'with-back' : '')}>
-                    {hasCustomSchemes &&
+                <div className='admin-console__header with-back'>
+                    <div>
                         <BlockableLink
-                            to='/admin_console/permissions/schemes'
+                            to='/admin_console/user_management/permissions'
                             className='fa fa-angle-left back'
-                        />}
-                    <FormattedMessage
-                        id='admin.permissions.systemScheme'
-                        defaultMessage='System Scheme'
-                    />
-                </h3>
-
-                <div className={'banner info'}>
-                    <div className='banner__content'>
-                        <span>
-                            <FormattedMarkdownMessage
-                                id='admin.permissions.systemScheme.introBanner'
-                                defaultMessage='Configure the default permissions for Team Admins, Channel Admins and other members. This scheme is inherited by all teams unless a [Team Override Scheme](!https://about.mattermost.com/default-team-override-scheme) is applied in specific teams.'
-                            />
-                        </span>
+                        />
+                        <FormattedMessage
+                            id='admin.permissions.systemScheme'
+                            defaultMessage='System Scheme'
+                        />
                     </div>
                 </div>
 
-                <AdminPanelTogglable
-                    className='permissions-block'
-                    open={this.state.openRoles.all_users}
-                    id='all_users'
-                    onToggle={() => this.toggleRole('all_users')}
-                    titleId={t('admin.permissions.systemScheme.allMembersTitle')}
-                    titleDefault='All Members'
-                    subtitleId={t('admin.permissions.systemScheme.allMembersDescription')}
-                    subtitleDefault='Permissions granted to all members, including administrators and newly created users.'
-                >
-                    <PermissionsTree
-                        selected={this.state.selectedPermission}
-                        role={this.state.roles.all_users}
-                        scope={'system_scope'}
-                        onToggle={this.togglePermission}
-                        selectRow={this.selectRow}
-                    />
-                </AdminPanelTogglable>
+                <div className='admin-console__wrapper'>
+                    <div className='admin-console__content'>
+                        <div className={'banner info'}>
+                            <div className='banner__content'>
+                                <span>
+                                    <FormattedMarkdownMessage
+                                        id='admin.permissions.systemScheme.introBanner'
+                                        defaultMessage='Configure the default permissions for Team Admins, Channel Admins and other members. This scheme is inherited by all teams unless a [Team Override Scheme](!https://about.mattermost.com/default-team-override-scheme) is applied in specific teams.'
+                                    />
+                                </span>
+                            </div>
+                        </div>
 
-                <AdminPanelTogglable
-                    className='permissions-block'
-                    open={this.state.openRoles.channel_admin}
-                    onToggle={() => this.toggleRole('channel_admin')}
-                    titleId={t('admin.permissions.systemScheme.channelAdminsTitle')}
-                    titleDefault='Channel Administrators'
-                    subtitleId={t('admin.permissions.systemScheme.channelAdminsDescription')}
-                    subtitleDefault='Permissions granted to channel creators and any users promoted to Channel Administrator.'
-                >
-                    <PermissionsTree
-                        parentRole={this.state.roles.all_users}
-                        role={this.state.roles.channel_admin}
-                        scope={'channel_scope'}
-                        onToggle={this.togglePermission}
-                        selectRow={this.selectRow}
-                    />
-                </AdminPanelTogglable>
+                        {this.props.license && this.props.config.EnableGuestAccounts === 'true' &&
+                            <AdminPanelTogglable
+                                className='permissions-block'
+                                open={this.state.openRoles.guests}
+                                id='all_users'
+                                onToggle={() => this.toggleRole('guests')}
+                                titleId={t('admin.permissions.systemScheme.GuestsTitle')}
+                                titleDefault='Guests'
+                                subtitleId={t('admin.permissions.systemScheme.GuestsDescription')}
+                                subtitleDefault='Permissions granted to guest users.'
+                            >
+                                <GuestPermissionsTree
+                                    selected={this.state.selectedPermission}
+                                    role={this.state.roles.guests}
+                                    scope={'system_scope'}
+                                    onToggle={this.togglePermission}
+                                    selectRow={this.selectRow}
+                                    readOnly={this.props.isDisabled || !this.haveGuestAccountsPermissions()}
+                                />
+                            </AdminPanelTogglable>}
 
-                <AdminPanelTogglable
-                    className='permissions-block'
-                    open={this.state.openRoles.team_admin}
-                    onToggle={() => this.toggleRole('team_admin')}
-                    titleId={t('admin.permissions.systemScheme.teamAdminsTitle')}
-                    titleDefault='Team Administrators'
-                    subtitleId={t('admin.permissions.systemScheme.teamAdminsDescription')}
-                    subtitleDefault='Permissions granted to team creators and any users promoted to Team Administrator.'
-                >
-                    <PermissionsTree
-                        parentRole={this.state.roles.all_users}
-                        role={this.state.roles.team_admin}
-                        scope={'team_scope'}
-                        onToggle={this.togglePermission}
-                        selectRow={this.selectRow}
-                    />
-                </AdminPanelTogglable>
+                        <AdminPanelTogglable
+                            className='permissions-block'
+                            open={this.state.openRoles.all_users}
+                            id='all_users'
+                            onToggle={() => this.toggleRole('all_users')}
+                            titleId={t('admin.permissions.systemScheme.allMembersTitle')}
+                            titleDefault='All Members'
+                            subtitleId={t('admin.permissions.systemScheme.allMembersDescription')}
+                            subtitleDefault='Permissions granted to all members, including administrators and newly created users.'
+                        >
+                            <PermissionsTree
+                                selected={this.state.selectedPermission}
+                                role={this.state.roles.all_users}
+                                scope={'system_scope'}
+                                onToggle={this.togglePermission}
+                                selectRow={this.selectRow}
+                                readOnly={this.props.isDisabled}
+                            />
+                        </AdminPanelTogglable>
 
-                <AdminPanelTogglable
-                    className='permissions-block'
-                    open={this.state.openRoles.system_admin}
-                    onToggle={() => this.toggleRole('system_admin')}
-                    titleId={t('admin.permissions.systemScheme.systemAdminsTitle')}
-                    titleDefault='System Administrators'
-                    subtitleId={t('admin.permissions.systemScheme.systemAdminsDescription')}
-                    subtitleDefault='Full permissions granted to System Administrators.'
-                >
-                    <PermissionsTree
-                        readOnly={true}
-                        role={this.state.roles.system_admin}
-                        scope={'system_scope'}
-                        onToggle={this.togglePermission}
-                        selectRow={this.selectRow}
-                    />
-                </AdminPanelTogglable>
+                        <AdminPanelTogglable
+                            className='permissions-block'
+                            open={this.state.openRoles.channel_admin}
+                            onToggle={() => this.toggleRole('channel_admin')}
+                            titleId={t('admin.permissions.systemScheme.channelAdminsTitle')}
+                            titleDefault='Channel Administrators'
+                            subtitleId={t('admin.permissions.systemScheme.channelAdminsDescription')}
+                            subtitleDefault='Permissions granted to channel creators and any users promoted to Channel Administrator.'
+                        >
+                            <PermissionsTree
+                                parentRole={this.state.roles.all_users}
+                                role={this.state.roles.channel_admin}
+                                scope={'channel_scope'}
+                                onToggle={this.togglePermission}
+                                selectRow={this.selectRow}
+                                readOnly={this.props.isDisabled}
+                            />
+                        </AdminPanelTogglable>
+
+                        <AdminPanelTogglable
+                            className='permissions-block'
+                            open={this.state.openRoles.team_admin}
+                            onToggle={() => this.toggleRole('team_admin')}
+                            titleId={t('admin.permissions.systemScheme.teamAdminsTitle')}
+                            titleDefault='Team Administrators'
+                            subtitleId={t('admin.permissions.systemScheme.teamAdminsDescription')}
+                            subtitleDefault='Permissions granted to team creators and any users promoted to Team Administrator.'
+                        >
+                            <PermissionsTree
+                                parentRole={this.state.roles.all_users}
+                                role={this.state.roles.team_admin}
+                                scope={'team_scope'}
+                                onToggle={this.togglePermission}
+                                selectRow={this.selectRow}
+                                readOnly={this.props.isDisabled}
+                            />
+                        </AdminPanelTogglable>
+
+                        <AdminPanelTogglable
+                            className='permissions-block'
+                            open={this.state.openRoles.system_admin}
+                            onToggle={() => this.toggleRole('system_admin')}
+                            titleId={t('admin.permissions.systemScheme.systemAdminsTitle')}
+                            titleDefault='System Administrators'
+                            subtitleId={t('admin.permissions.systemScheme.systemAdminsDescription')}
+                            subtitleDefault='Full permissions granted to System Administrators.'
+                        >
+                            <PermissionsTree
+                                readOnly={true}
+                                role={this.state.roles.system_admin}
+                                scope={'system_scope'}
+                                onToggle={this.togglePermission}
+                                selectRow={this.selectRow}
+                            />
+                        </AdminPanelTogglable>
+                    </div>
+                </div>
 
                 <div className='admin-console-save'>
                     <SaveButton
                         saving={this.state.saving}
-                        disabled={!this.state.saveNeeded || (this.canSave && !this.canSave())}
+                        disabled={this.props.isDisabled || !this.state.saveNeeded || (this.canSave && !this.canSave())}
                         onClick={this.handleSubmit}
                         savingMessage={localizeMessage('admin.saving', 'Saving Config...')}
                     />
                     <BlockableLink
                         className='cancel-button'
-                        to='/admin_console/permissions/schemes'
+                        to='/admin_console/user_management/permissions'
                     >
                         <FormattedMessage
                             id='admin.permissions.permissionSchemes.cancel'
@@ -308,6 +447,7 @@ export default class PermissionSystemSchemeSettings extends React.Component {
                         />
                     </BlockableLink>
                     <a
+                        data-testid='resetPermissionsToDefault'
                         onClick={() => this.setState({showResetDefaultModal: true})}
                         className='cancel-button reset-defaults-btn'
                     >
@@ -347,7 +487,6 @@ export default class PermissionSystemSchemeSettings extends React.Component {
                     }}
                     onCancel={() => this.setState({showResetDefaultModal: false})}
                 />
-
             </div>
         );
     };

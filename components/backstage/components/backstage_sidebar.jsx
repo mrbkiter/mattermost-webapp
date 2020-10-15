@@ -13,7 +13,7 @@ import TeamPermissionGate from 'components/permissions_gates/team_permission_gat
 import BackstageCategory from './backstage_category.jsx';
 import BackstageSection from './backstage_section.jsx';
 
-export default class BackstageSidebar extends React.Component {
+export default class BackstageSidebar extends React.PureComponent {
     static get propTypes() {
         return {
             team: PropTypes.object.isRequired,
@@ -24,6 +24,7 @@ export default class BackstageSidebar extends React.Component {
             enableCommands: PropTypes.bool.isRequired,
             enableOAuthServiceProvider: PropTypes.bool.isRequired,
             canCreateOrDeleteCustomEmoji: PropTypes.bool.isRequired,
+            canManageIntegrations: PropTypes.bool.isRequired,
         };
     }
 
@@ -48,6 +49,10 @@ export default class BackstageSidebar extends React.Component {
     }
 
     renderIntegrations() {
+        if (!this.props.canManageIntegrations) {
+            return null;
+        }
+
         let incomingWebhooks = null;
         if (this.props.enableIncomingWebhooks) {
             incomingWebhooks = (
@@ -64,6 +69,7 @@ export default class BackstageSidebar extends React.Component {
                                 defaultMessage='Incoming Webhooks'
                             />
                         )}
+                        id='incomingWebhooks'
                     />
                 </TeamPermissionGate>
             );
@@ -85,6 +91,7 @@ export default class BackstageSidebar extends React.Component {
                                 defaultMessage='Outgoing Webhooks'
                             />
                         )}
+                        id='outgoingWebhooks'
                     />
                 </TeamPermissionGate>
             );
@@ -106,6 +113,7 @@ export default class BackstageSidebar extends React.Component {
                                 defaultMessage='Slash Commands'
                             />
                         )}
+                        id='slashCommands'
                     />
                 </TeamPermissionGate>
             );
@@ -124,13 +132,16 @@ export default class BackstageSidebar extends React.Component {
                                 defaultMessage='OAuth 2.0 Applications'
                             />
                         }
+                        id='oauthApps'
                     />
                 </SystemPermissionGate>
             );
         }
 
+        // Note that we allow managing bot accounts even if bot account creation is disabled: only
+        // a permissions check is required.
         const botAccounts = (
-            <SystemPermissionGate permissions={['manage_bots']}>
+            <SystemPermissionGate permissions={['manage_bots', 'manage_others_bots']}>
                 <BackstageSection
                     name='bots'
                     parentLink={'/' + this.props.team.name + '/integrations'}
@@ -140,33 +151,29 @@ export default class BackstageSidebar extends React.Component {
                             defaultMessage='Bot Accounts'
                         />
                     }
+                    id='botAccounts'
                 />
             </SystemPermissionGate>
         );
 
         return (
-            <TeamPermissionGate
-                permissions={[Permissions.MANAGE_INCOMING_WEBHOOKS, Permissions.MANAGE_OUTGOING_WEBHOOKS, Permissions.MANAGE_SLASH_COMMANDS, Permissions.MANAGE_OAUTH]}
-                teamId={this.props.team.id}
+            <BackstageCategory
+                name='integrations'
+                icon='fa-link'
+                parentLink={'/' + this.props.team.name}
+                title={
+                    <FormattedMessage
+                        id='backstage_sidebar.integrations'
+                        defaultMessage='Integrations'
+                    />
+                }
             >
-                <BackstageCategory
-                    name='integrations'
-                    icon='fa-link'
-                    parentLink={'/' + this.props.team.name}
-                    title={
-                        <FormattedMessage
-                            id='backstage_sidebar.integrations'
-                            defaultMessage='Integrations'
-                        />
-                    }
-                >
-                    {incomingWebhooks}
-                    {outgoingWebhooks}
-                    {commands}
-                    {oauthApps}
-                    {botAccounts}
-                </BackstageCategory>
-            </TeamPermissionGate>
+                {incomingWebhooks}
+                {outgoingWebhooks}
+                {commands}
+                {oauthApps}
+                {botAccounts}
+            </BackstageCategory>
         );
     }
 

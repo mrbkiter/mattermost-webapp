@@ -10,8 +10,10 @@ import {shallowWithIntl} from 'tests/helpers/intl-test-helper';
 
 import FileUpload from 'components/file_upload/file_upload.jsx';
 
+const generatedIdRegex = /[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}/;
+
 jest.mock('utils/file_utils', () => {
-    const original = require.requireActual('utils/file_utils');
+    const original = jest.requireActual('utils/file_utils');
     return {
         ...original,
         canDownloadFiles: jest.fn(() => true),
@@ -19,15 +21,30 @@ jest.mock('utils/file_utils', () => {
 });
 
 jest.mock('utils/utils', () => {
-    const original = require.requireActual('utils/utils');
+    const original = jest.requireActual('utils/utils');
     return {
         ...original,
         clearFileInput: jest.fn(),
-        generateId: jest.fn(() => 'generated_id_1').mockImplementationOnce(() => 'generated_id_2'),
         sortFilesByName: jest.fn((files) => {
             return files.sort((a, b) => a.name.localeCompare(b.name, 'en', {numeric: true}));
         }),
     };
+});
+
+const RealDate = Date;
+const RealFile = File;
+
+beforeEach(() => {
+    global.Date.prototype.getDate = () => 1;
+    global.Date.prototype.getFullYear = () => 2000;
+    global.Date.prototype.getHours = () => 1;
+    global.Date.prototype.getMinutes = () => 1;
+    global.Date.prototype.getMonth = () => 1;
+});
+
+afterEach(() => {
+    global.Date = RealDate;
+    global.File = RealFile;
 });
 
 describe('components/FileUpload', () => {
@@ -43,7 +60,6 @@ describe('components/FileUpload', () => {
 
         baseProps = {
             currentChannelId: 'channel_id',
-            intl: {},
             fileCount: 1,
             getTarget: emptyFunction,
             locale: General.DEFAULT_LOCALE,
@@ -66,7 +82,7 @@ describe('components/FileUpload', () => {
 
     test('should match snapshot', () => {
         const wrapper = shallowWithIntl(
-            <FileUpload {...baseProps}/>
+            <FileUpload {...baseProps}/>,
         );
 
         expect(wrapper).toMatchSnapshot();
@@ -74,11 +90,51 @@ describe('components/FileUpload', () => {
 
     test('should call onClick when fileInput is clicked', () => {
         const wrapper = shallowWithIntl(
-            <FileUpload {...baseProps}/>
+            <FileUpload {...baseProps}/>,
         );
 
         wrapper.find('input').simulate('click');
         expect(baseProps.onClick).toHaveBeenCalledTimes(1);
+    });
+
+    test('should prevent event default and progogation on call of onTouchEnd on fileInput', () => {
+        const wrapper = shallowWithIntl(
+            <FileUpload {...baseProps}/>,
+        );
+        const instance = wrapper.instance();
+        instance.handleLocalFileUploaded = jest.fn();
+        instance.fileInput = {
+            current: {
+                click: () => instance.handleLocalFileUploaded(),
+            },
+        };
+
+        const event = {stopPropagation: jest.fn(), preventDefault: jest.fn()};
+        wrapper.find('button').simulate('touchend', event);
+
+        expect(event.stopPropagation).toHaveBeenCalled();
+        expect(event.preventDefault).toHaveBeenCalled();
+        expect(instance.handleLocalFileUploaded).toHaveBeenCalled();
+    });
+
+    test('should prevent event default and progogation on call of onClick on fileInput', () => {
+        const wrapper = shallowWithIntl(
+            <FileUpload {...baseProps}/>,
+        );
+        const instance = wrapper.instance();
+        instance.handleLocalFileUploaded = jest.fn();
+        instance.fileInput = {
+            current: {
+                click: () => instance.handleLocalFileUploaded(),
+            },
+        };
+
+        const event = {stopPropagation: jest.fn(), preventDefault: jest.fn()};
+        wrapper.find('button').simulate('click', event);
+
+        expect(event.stopPropagation).toHaveBeenCalled();
+        expect(event.preventDefault).toHaveBeenCalled();
+        expect(instance.handleLocalFileUploaded).toHaveBeenCalled();
     });
 
     test('should match state and call handleMaxUploadReached or props.onClick on handleLocalFileUploaded', () => {
@@ -86,7 +142,7 @@ describe('components/FileUpload', () => {
             <FileUpload
                 {...baseProps}
                 fileCount={4}
-            />
+            />,
         );
 
         const evt = {preventDefault: jest.fn()};
@@ -116,7 +172,7 @@ describe('components/FileUpload', () => {
         };
 
         const wrapper = shallowWithIntl(
-            <FileUpload {...baseProps}/>
+            <FileUpload {...baseProps}/>,
         );
 
         wrapper.instance().fileUploadSuccess(data, 'channel_id', 'root_id');
@@ -134,7 +190,7 @@ describe('components/FileUpload', () => {
         };
 
         const wrapper = shallowWithIntl(
-            <FileUpload {...baseProps}/>
+            <FileUpload {...baseProps}/>,
         );
 
         wrapper.instance().fileUploadFail(params.err, params.clientId, params.channelId, params.rootId);
@@ -143,11 +199,60 @@ describe('components/FileUpload', () => {
         expect(baseProps.onUploadError).toHaveBeenCalledWith(params.err, params.clientId, params.channelId, params.rootId);
     });
 
+    test.each([
+        ['File constructor is supported', true],
+        ['File constructor is not supported', false],
+    ])('should upload file on paste when %s', (_, fileSupported) => {
+        const expectedFileName = 'Image Pasted at 2000-2-1 01-01';
+
+        const event = new Event('paste');
+        event.preventDefault = jest.fn();
+        const getAsFile = jest.fn().mockReturnValue(new File(['test'], 'test'));
+        const file = {getAsFile, kind: 'file', name: 'test'};
+        event.clipboardData = {items: [file], types: ['image/png']};
+
+        const wrapper = shallowWithIntl(
+            <FileUpload
+                {...baseProps}
+            />,
+        );
+        jest.spyOn(wrapper.instance(), 'containsEventTarget').mockReturnValue(true);
+        const spy = jest.spyOn(wrapper.instance(), 'checkPluginHooksAndUploadFiles');
+
+        if (!fileSupported) {
+            global.File = undefined;
+        }
+        document.dispatchEvent(event);
+        expect(event.preventDefault).toHaveBeenCalled();
+        expect(spy).toHaveBeenCalledWith([expect.objectContaining({name: expectedFileName})]);
+        expect(spy.mock.calls[0][0][0]).toBeInstanceOf(Blob); // first call, first arg, first item in array
+        expect(baseProps.onFileUploadChange).toHaveBeenCalled();
+    });
+
+    test('should not prevent paste event default if no file in clipboard', () => {
+        const event = new Event('paste');
+        event.preventDefault = jest.fn();
+        const getAsString = jest.fn();
+        event.clipboardData = {items: [{getAsString, kind: 'string', type: 'text/plain'}], types: ['text/plain']};
+
+        const wrapper = shallowWithIntl(
+            <FileUpload
+                {...baseProps}
+            />,
+        );
+        const spy = jest.spyOn(wrapper.instance(), 'containsEventTarget').mockReturnValue(true);
+
+        document.dispatchEvent(event);
+
+        expect(spy).toHaveBeenCalled();
+        expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
     test('should have props.functions when uploadFiles is called', () => {
         const files = [{name: 'file1.pdf'}, {name: 'file2.jpg'}];
 
         const wrapper = shallowWithIntl(
-            <FileUpload {...baseProps}/>
+            <FileUpload {...baseProps}/>,
         );
 
         wrapper.instance().checkPluginHooksAndUploadFiles(files);
@@ -155,7 +260,10 @@ describe('components/FileUpload', () => {
         expect(uploadFile).toHaveBeenCalledTimes(2);
 
         expect(baseProps.onUploadStart).toHaveBeenCalledTimes(1);
-        expect(baseProps.onUploadStart).toHaveBeenCalledWith(['generated_id_2', 'generated_id_1'], baseProps.currentChannelId);
+        expect(baseProps.onUploadStart).toHaveBeenCalledWith(
+            Array(2).fill(expect.stringMatching(generatedIdRegex)),
+            baseProps.currentChannelId,
+        );
 
         expect(baseProps.onUploadError).toHaveBeenCalledTimes(1);
         expect(baseProps.onUploadError).toHaveBeenCalledWith(null);
@@ -167,7 +275,7 @@ describe('components/FileUpload', () => {
         const files = [{name: 'file1.pdf'}, {name: 'file2.jpg'}];
 
         const wrapper = shallowWithIntl(
-            <FileUpload {...props}/>
+            <FileUpload {...props}/>,
         );
 
         wrapper.instance().checkPluginHooksAndUploadFiles(files);
@@ -186,7 +294,7 @@ describe('components/FileUpload', () => {
         const files = [{name: 'file1.pdf'}, {name: 'file2.jpg'}];
 
         const wrapper = shallowWithIntl(
-            <FileUpload {...props}/>
+            <FileUpload {...props}/>,
         );
 
         wrapper.instance().checkPluginHooksAndUploadFiles(files);
@@ -203,7 +311,7 @@ describe('components/FileUpload', () => {
         const files = [{name: 'file1.pdf', size: MaxFileSize + 1}];
 
         const wrapper = shallowWithIntl(
-            <FileUpload {...baseProps}/>
+            <FileUpload {...baseProps}/>,
         );
 
         wrapper.instance().checkPluginHooksAndUploadFiles(files);
@@ -218,7 +326,7 @@ describe('components/FileUpload', () => {
 
     test('should functions when handleChange is called', () => {
         const wrapper = shallowWithIntl(
-            <FileUpload {...baseProps}/>
+            <FileUpload {...baseProps}/>,
         );
 
         const e = {target: {files: [{name: 'file1.pdf'}]}};
@@ -238,10 +346,10 @@ describe('components/FileUpload', () => {
 
     test('should functions when handleDrop is called', () => {
         const wrapper = shallowWithIntl(
-            <FileUpload {...baseProps}/>
+            <FileUpload {...baseProps}/>,
         );
 
-        const e = {originalEvent: {dataTransfer: {files: [{name: 'file1.pdf'}]}}};
+        const e = {dataTransfer: {files: [{name: 'file1.pdf'}]}};
         const instance = wrapper.instance();
         instance.uploadFiles = jest.fn();
         instance.handleDrop(e);
@@ -250,7 +358,7 @@ describe('components/FileUpload', () => {
         expect(baseProps.onUploadError).toHaveBeenCalledWith(null);
 
         expect(instance.uploadFiles).toBeCalled();
-        expect(instance.uploadFiles).toHaveBeenCalledWith(e.originalEvent.dataTransfer.files);
+        expect(instance.uploadFiles).toHaveBeenCalledWith(e.dataTransfer.files);
 
         expect(baseProps.onFileUploadChange).toBeCalled();
         expect(baseProps.onFileUploadChange).toHaveBeenCalledWith();
@@ -264,7 +372,7 @@ describe('components/FileUpload', () => {
         const files = [{name: 'file1.pdf'}, {name: 'file2.jpg'}];
 
         const wrapper = shallowWithIntl(
-            <FileUpload {...props}/>
+            <FileUpload {...props}/>,
         );
 
         wrapper.instance().checkPluginHooksAndUploadFiles(files);
@@ -285,7 +393,7 @@ describe('components/FileUpload', () => {
         const files = [{name: 'file1.pdf'}, {name: 'file2.jpg'}];
 
         const wrapper = shallowWithIntl(
-            <FileUpload {...props}/>
+            <FileUpload {...props}/>,
         );
 
         wrapper.instance().checkPluginHooksAndUploadFiles(files);
@@ -293,7 +401,7 @@ describe('components/FileUpload', () => {
         expect(uploadFile).toHaveBeenCalledTimes(1);
 
         expect(baseProps.onUploadStart).toHaveBeenCalledTimes(1);
-        expect(baseProps.onUploadStart).toHaveBeenCalledWith(['generated_id_1'], props.currentChannelId);
+        expect(baseProps.onUploadStart).toHaveBeenCalledWith([expect.stringMatching(generatedIdRegex)], props.currentChannelId);
 
         expect(baseProps.onUploadError).toHaveBeenCalledTimes(1);
         expect(baseProps.onUploadError).toHaveBeenCalledWith(null);

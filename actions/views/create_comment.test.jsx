@@ -52,6 +52,7 @@ jest.mock('actions/global_actions.jsx', () => ({
 
 jest.mock('actions/hooks', () => ({
     runMessageWillBePostedHooks: jest.fn((post) => () => ({data: post})),
+    runSlashCommandWillBePostedHooks: jest.fn((message, args) => () => ({data: {message, args}})),
 }));
 
 jest.mock('actions/post_actions.jsx', () => ({
@@ -61,7 +62,7 @@ jest.mock('actions/post_actions.jsx', () => ({
 }));
 
 jest.mock('actions/storage', () => {
-    const original = require.requireActual('actions/storage');
+    const original = jest.requireActual('actions/storage');
     return {
         ...original,
         setGlobalItem: (...args) => ({type: 'MOCK_SET_GLOBAL_ITEM', args}),
@@ -92,7 +93,9 @@ describe('rhs view actions', () => {
                     },
                 },
                 postsInChannel: {
-                    [channelId]: [latestPostId],
+                    [channelId]: [
+                        {order: [latestPostId], recent: true},
+                    ],
                 },
                 postsInThread: {},
                 messagesHistory: {
@@ -102,8 +105,14 @@ describe('rhs view actions', () => {
                     messages: ['test message'],
                 },
             },
+            preferences: {
+                myPreferences: {},
+            },
             users: {
                 currentUserId,
+                profiles: {
+                    [currentUserId]: {id: currentUserId},
+                },
             },
             teams: {
                 currentTeamId: teamId,
@@ -187,7 +196,7 @@ describe('rhs view actions', () => {
             testStore.dispatch(moveHistoryIndexBack(Posts.MESSAGE_TYPES.COMMENT));
 
             expect(store.getActions()).toEqual(
-                expect.arrayContaining(testStore.getActions())
+                expect.arrayContaining(testStore.getActions()),
             );
         });
 
@@ -201,7 +210,7 @@ describe('rhs view actions', () => {
             testStore.dispatch(updateCommentDraft(rootId, {message: 'test message', fileInfos: [], uploadsInProgress: []}));
 
             expect(store.getActions()).toEqual(
-                expect.arrayContaining(testStore.getActions())
+                expect.arrayContaining(testStore.getActions()),
             );
         });
     });
@@ -225,7 +234,7 @@ describe('rhs view actions', () => {
             expect(PostActions.createPost).toHaveBeenCalled();
 
             expect(lastCall(PostActions.createPost.mock.calls)[0]).toEqual(
-                expect.objectContaining(post)
+                expect.objectContaining(post),
             );
 
             expect(lastCall(PostActions.createPost.mock.calls)[1]).toBe(draft.fileInfos);
@@ -268,11 +277,12 @@ describe('rhs view actions', () => {
             parent_id: rootId,
         };
 
-        const draft = {message: 'test msg'};
+        const draft = {message: '/test msg'};
 
         test('it calls executeCommand', async () => {
             await store.dispatch(submitCommand(channelId, rootId, draft));
 
+            expect(HookActions.runSlashCommandWillBePostedHooks).toHaveBeenCalled();
             expect(executeCommand).toHaveBeenCalled();
 
             // First argument
@@ -280,6 +290,15 @@ describe('rhs view actions', () => {
 
             // Second argument
             expect(lastCall(executeCommand.mock.calls)[1]).toEqual(args);
+        });
+
+        test('it does not call executeComaand when hooks fail', async () => {
+            HookActions.runSlashCommandWillBePostedHooks.mockImplementation(() => () => ({error: {message: 'An error occurred'}}));
+
+            await store.dispatch(submitCommand(channelId, rootId, draft));
+
+            expect(HookActions.runSlashCommandWillBePostedHooks).toHaveBeenCalled();
+            expect(executeCommand).not.toHaveBeenCalled();
         });
 
         test('it calls submitPost on error.sendMessage', async () => {
@@ -293,7 +312,7 @@ describe('rhs view actions', () => {
 
             await store.dispatch(remockedSubmitCommand(channelId, rootId, draft));
 
-            const expectedActions = [{args: ['test msg', {channel_id: '4j5j4k3k34j4', parent_id: 'fc234c34c23', root_id: 'fc234c34c23', team_id: '4j5nmn4j3'}], type: 'MOCK_ACTIONS_COMMAND_EXECUTE'}];
+            const expectedActions = [{args: ['/test msg', {channel_id: '4j5j4k3k34j4', parent_id: 'fc234c34c23', root_id: 'fc234c34c23', team_id: '4j5nmn4j3'}], type: 'MOCK_ACTIONS_COMMAND_EXECUTE'}];
             expect(store.getActions()).toEqual(expectedActions);
         });
     });
@@ -308,7 +327,7 @@ describe('rhs view actions', () => {
             testStore.dispatch(addMessageIntoHistory(''));
 
             expect(store.getActions()).toEqual(
-                expect.arrayContaining(testStore.getActions())
+                expect.arrayContaining(testStore.getActions()),
             );
         });
 
@@ -319,7 +338,7 @@ describe('rhs view actions', () => {
             testStore.dispatch(updateCommentDraft(rootId, null));
 
             expect(store.getActions()).toEqual(
-                expect.arrayContaining(testStore.getActions())
+                expect.arrayContaining(testStore.getActions()),
             );
         });
 
@@ -346,7 +365,7 @@ describe('rhs view actions', () => {
             testStore.dispatch(submitReaction(latestPostId, '+', 'smile'));
 
             expect(store.getActions()).toEqual(
-                expect.arrayContaining(testStore.getActions())
+                expect.arrayContaining(testStore.getActions()),
             );
         });
 
@@ -442,16 +461,15 @@ describe('rhs view actions', () => {
         test('it dispatches the correct actions', () => {
             store.dispatch(onEditLatestPost());
 
-            const testStore = mockStore(initialState);
-            testStore.dispatch(PostActions.setEditingPost(
-                latestPostId,
-                0,
-                'reply_textbox',
-                'Comment',
-                true
-            ));
-
-            expect(store.getActions()).toEqual(testStore.getActions());
+            expect(store.getActions()).toEqual([
+                PostActions.setEditingPost(
+                    latestPostId,
+                    0,
+                    'reply_textbox',
+                    'Comment',
+                    true,
+                ),
+            ]);
         });
     });
 });

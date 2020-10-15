@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {Route, NavLink} from 'react-router-dom';
 
-export default class BackstageCategory extends React.Component {
+export default class BackstageCategory extends React.PureComponent {
     static get propTypes() {
         return {
             name: PropTypes.string.isRequired,
@@ -20,12 +20,6 @@ export default class BackstageCategory extends React.Component {
         return {
             parentLink: '',
             children: [],
-        };
-    }
-
-    static get contextTypes() {
-        return {
-            router: PropTypes.object.isRequired,
         };
     }
 
@@ -46,24 +40,27 @@ export default class BackstageCategory extends React.Component {
                         {title}
                     </span>
                 </NavLink>
-                <Route
-                    path={link}
-                    render={() => (
-                        <ul className='sections'>
-                            {
-                                React.Children.map(children, (child) => {
-                                    if (!child) {
-                                        return child;
-                                    }
+                {
+                    children && children.length > 0 &&
+                    <Route
+                        path={link}
+                        render={() => (
+                            <ul className='sections'>
+                                {
+                                    React.Children.map(children, (child) => {
+                                        if (!child) {
+                                            return child;
+                                        }
 
-                                    return React.cloneElement(child, {
-                                        parentLink: link,
-                                    });
-                                })
-                            }
-                        </ul>
-                    )}
-                />
+                                        return React.cloneElement(child, {
+                                            parentLink: link,
+                                        });
+                                    })
+                                }
+                            </ul>
+                        )}
+                    />
+                }
             </li>
         );
     }

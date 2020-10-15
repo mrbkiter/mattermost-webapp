@@ -4,47 +4,52 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
-import {OverlayTrigger, Tooltip} from 'react-bootstrap';
+import {Tooltip} from 'react-bootstrap';
 
+import OverlayTrigger from 'components/overlay_trigger';
+
+import {localizeMessage} from 'utils/utils.jsx';
 import {Constants} from 'utils/constants';
 import {t} from 'utils/i18n';
 
 export default function HeaderIconWrapper({
     iconComponent,
+    ariaLabel,
     buttonClass,
     buttonId,
     onClick,
     tooltipKey,
     tooltipText,
+    isRhsOpen,
 }) {
-    function getTooltip(key) {
-        const toolTips = {
-            flaggedPosts: {
-                class: 'text-nowrap',
-                id: 'flaggedTooltip',
-                messageID: t('channel_header.flagged'),
-                message: 'Flagged Posts',
-            },
-            pinnedPosts: {
-                class: '',
-                id: 'pinnedPostTooltip',
-                messageID: t('channel_header.pinnedPosts'),
-                message: 'Pinned Posts',
-            },
-            recentMentions: {
-                class: '',
-                id: 'recentMentionsTooltip',
-                messageID: t('channel_header.recentMentions'),
-                message: 'Recent Mentions',
-            },
-            search: {
-                class: '',
-                id: 'searchTooltip',
-                messageID: t('channel_header.search'),
-                message: 'Search',
-            },
-        };
+    const toolTips = {
+        flaggedPosts: {
+            class: 'text-nowrap',
+            id: 'flaggedTooltip',
+            messageID: t('channel_header.flagged'),
+            message: 'Saved posts',
+        },
+        pinnedPosts: {
+            class: '',
+            id: 'pinnedPostTooltip',
+            messageID: t('channel_header.pinnedPosts'),
+            message: 'Pinned posts',
+        },
+        recentMentions: {
+            class: '',
+            id: 'recentMentionsTooltip',
+            messageID: t('channel_header.recentMentions'),
+            message: 'Recent mentions',
+        },
+        search: {
+            class: '',
+            id: 'searchTooltip',
+            messageID: t('channel_header.search'),
+            message: 'Search',
+        },
+    };
 
+    function getTooltip(key) {
         if (toolTips[key] == null) {
             return null;
         }
@@ -76,18 +81,24 @@ export default function HeaderIconWrapper({
         tooltip = getTooltip(tooltipKey);
     }
 
+    let ariaLabelText;
+    if (ariaLabel) {
+        ariaLabelText = `${localizeMessage(toolTips[tooltipKey].messageID, toolTips[tooltipKey].message)}`;
+    }
+
     if (tooltip) {
         return (
             <div className='flex-child'>
                 <OverlayTrigger
-                    trigger={['hover', 'focus']}
+                    trigger={['hover']}
                     delayShow={Constants.OVERLAY_TIME_DELAY}
                     placement='bottom'
-                    overlay={tooltip}
+                    overlay={isRhsOpen ? <></> : tooltip}
                 >
                     <button
                         id={buttonId}
-                        className={buttonClass || 'channel-header__icon icon--hidden style--none'}
+                        aria-label={ariaLabelText}
+                        className={buttonClass || 'channel-header__icon'}
                         onClick={onClick}
                     >
                         {iconComponent}
@@ -101,7 +112,7 @@ export default function HeaderIconWrapper({
         <div className='flex-child'>
             <button
                 id={buttonId}
-                className={buttonClass || 'channel-header__icon icon--hidden style--none'}
+                className={buttonClass || 'channel-header__icon'}
                 onClick={onClick}
             >
                 {iconComponent}
@@ -111,10 +122,12 @@ export default function HeaderIconWrapper({
 }
 
 HeaderIconWrapper.propTypes = {
+    ariaLabel: PropTypes.bool,
     buttonClass: PropTypes.string,
     buttonId: PropTypes.string.isRequired,
     iconComponent: PropTypes.element.isRequired,
     onClick: PropTypes.func.isRequired,
     tooltipKey: PropTypes.string,
-    tooltipText: PropTypes.string,
+    tooltipText: PropTypes.node,
+    isRhsOpen: PropTypes.bool,
 };

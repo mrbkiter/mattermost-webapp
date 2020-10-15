@@ -5,32 +5,21 @@ import React from 'react';
 import {FormattedMessage} from 'react-intl';
 
 import {elasticsearchPurgeIndexes, elasticsearchTest} from 'actions/admin_actions.jsx';
-import {JobStatuses, JobTypes} from 'utils/constants.jsx';
+import {JobStatuses, JobTypes} from 'utils/constants';
 import * as Utils from 'utils/utils.jsx';
 import {t} from 'utils/i18n';
 
-import AdminSettings from './admin_settings.jsx';
-import BooleanSetting from './boolean_setting.jsx';
+import AdminSettings from './admin_settings';
+import BooleanSetting from './boolean_setting';
 import JobsTable from './jobs';
 import RequestButton from './request_button/request_button.jsx';
 import SettingsGroup from './settings_group.jsx';
-import TextSetting from './text_setting.jsx';
+import TextSetting from './text_setting';
 
 export default class ElasticsearchSettings extends AdminSettings {
-    constructor(props) {
-        super(props);
-
-        this.getConfigFromState = this.getConfigFromState.bind(this);
-
-        this.doTestConfig = this.doTestConfig.bind(this);
-        this.handleSettingChanged = this.handleSettingChanged.bind(this);
-        this.handleSaved = this.handleSaved.bind(this);
-
-        this.renderSettings = this.renderSettings.bind(this);
-    }
-
-    getConfigFromState(config) {
+    getConfigFromState = (config) => {
         config.ElasticsearchSettings.ConnectionUrl = this.state.connectionUrl;
+        config.ElasticsearchSettings.SkipTLSVerification = this.state.skipTLSVerification;
         config.ElasticsearchSettings.Username = this.state.username;
         config.ElasticsearchSettings.Password = this.state.password;
         config.ElasticsearchSettings.Sniff = this.state.sniff;
@@ -44,6 +33,7 @@ export default class ElasticsearchSettings extends AdminSettings {
     getStateFromConfig(config) {
         return {
             connectionUrl: config.ElasticsearchSettings.ConnectionUrl,
+            skipTLSVerification: config.ElasticsearchSettings.SkipTLSVerification,
             username: config.ElasticsearchSettings.Username,
             password: config.ElasticsearchSettings.Password,
             sniff: config.ElasticsearchSettings.Sniff,
@@ -56,7 +46,7 @@ export default class ElasticsearchSettings extends AdminSettings {
         };
     }
 
-    handleSettingChanged(id, value) {
+    handleSettingChanged = (id, value) => {
         if (id === 'enableIndexing') {
             if (value === false) {
                 this.setState({
@@ -71,7 +61,7 @@ export default class ElasticsearchSettings extends AdminSettings {
             }
         }
 
-        if (id === 'connectionUrl' || id === 'username' || id === 'password' || id === 'sniff') {
+        if (id === 'connectionUrl' || id === 'skipTLSVerification' || id === 'username' || id === 'password' || id === 'sniff') {
             this.setState({
                 configTested: false,
                 canSave: false,
@@ -87,17 +77,17 @@ export default class ElasticsearchSettings extends AdminSettings {
         this.handleChange(id, value);
     }
 
-    handleSaved() {
+    handleSaved = () => {
         this.setState({
             canPurgeAndIndex: this.state.enableIndexing,
         });
     }
 
-    canSave() {
+    canSave = () => {
         return this.state.canSave;
     }
 
-    doTestConfig(success, error) {
+    doTestConfig = (success, error) => {
         const config = JSON.parse(JSON.stringify(this.props.config));
         this.getConfigFromState(config);
 
@@ -109,7 +99,6 @@ export default class ElasticsearchSettings extends AdminSettings {
                     canSave: true,
                 });
                 success();
-                this.doSubmit();
             },
             (err) => {
                 this.setState({
@@ -117,7 +106,7 @@ export default class ElasticsearchSettings extends AdminSettings {
                     canSave: false,
                 });
                 error(err);
-            }
+            },
         );
     }
 
@@ -144,7 +133,7 @@ export default class ElasticsearchSettings extends AdminSettings {
         );
     }
 
-    renderSettings() {
+    renderSettings = () => {
         return (
             <SettingsGroup>
                 <BooleanSetting
@@ -178,6 +167,7 @@ export default class ElasticsearchSettings extends AdminSettings {
                     value={this.state.enableIndexing}
                     onChange={this.handleSettingChanged}
                     setByEnv={this.isSetByEnv('ElasticsearchSettings.EnableIndexing')}
+                    disabled={this.props.isDisabled}
                 />
                 <TextSetting
                     id='connectionUrl'
@@ -209,9 +199,28 @@ export default class ElasticsearchSettings extends AdminSettings {
                         />
                     }
                     value={this.state.connectionUrl}
-                    disabled={!this.state.enableIndexing}
+                    disabled={this.props.isDisabled || !this.state.enableIndexing}
                     onChange={this.handleSettingChanged}
                     setByEnv={this.isSetByEnv('ElasticsearchSettings.ConnectionUrl')}
+                />
+                <BooleanSetting
+                    id='skipTLSVerification'
+                    label={
+                        <FormattedMessage
+                            id='admin.elasticsearch.skipTLSVerificationTitle'
+                            defaultMessage='Skip TLS Verification:'
+                        />
+                    }
+                    helpText={
+                        <FormattedMessage
+                            id='admin.elasticsearch.skipTLSVerificationDescription'
+                            defaultMessage='When true, Mattermost will not require the Elasticsearch certificate to be signed by a trusted Certificate Authority.'
+                        />
+                    }
+                    value={this.state.skipTLSVerification}
+                    disabled={this.props.isDisabled || !this.state.enableIndexing}
+                    onChange={this.handleSettingChanged}
+                    setByEnv={this.isSetByEnv('ElasticsearchSettings.SkipTLSVerification')}
                 />
                 <TextSetting
                     id='username'
@@ -229,7 +238,7 @@ export default class ElasticsearchSettings extends AdminSettings {
                         />
                     }
                     value={this.state.username}
-                    disabled={!this.state.enableIndexing}
+                    disabled={this.props.isDisabled || !this.state.enableIndexing}
                     onChange={this.handleSettingChanged}
                     setByEnv={this.isSetByEnv('ElasticsearchSettings.Username')}
                 />
@@ -249,7 +258,7 @@ export default class ElasticsearchSettings extends AdminSettings {
                         />
                     }
                     value={this.state.password}
-                    disabled={!this.state.enableIndexing}
+                    disabled={this.props.isDisabled || !this.state.enableIndexing}
                     onChange={this.handleSettingChanged}
                     setByEnv={this.isSetByEnv('ElasticsearchSettings.Password')}
                 />
@@ -268,11 +277,12 @@ export default class ElasticsearchSettings extends AdminSettings {
                         />
                     }
                     value={this.state.sniff}
-                    disabled={!this.state.enableIndexing}
+                    disabled={this.props.isDisabled || !this.state.enableIndexing}
                     onChange={this.handleSettingChanged}
                     setByEnv={this.isSetByEnv('ElasticsearchSettings.Sniff')}
                 />
                 <RequestButton
+                    id='testConfig'
                     requestAction={this.doTestConfig}
                     helpText={
                         <FormattedMessage
@@ -305,7 +315,7 @@ export default class ElasticsearchSettings extends AdminSettings {
                         <div className='job-table-setting'>
                             <JobsTable
                                 jobType={JobTypes.ELASTICSEARCH_POST_INDEXING}
-                                disabled={!this.state.canPurgeAndIndex}
+                                disabled={!this.state.canPurgeAndIndex || this.props.isDisabled}
                                 createJobButtonText={
                                     <FormattedMessage
                                         id='admin.elasticsearch.createJob.title'
@@ -324,6 +334,7 @@ export default class ElasticsearchSettings extends AdminSettings {
                     </div>
                 </div>
                 <RequestButton
+                    id='purgeIndexesSection'
                     requestAction={elasticsearchPurgeIndexes}
                     helpText={
                         <FormattedMessage
@@ -345,7 +356,7 @@ export default class ElasticsearchSettings extends AdminSettings {
                         id: t('admin.elasticsearch.purgeIndexesButton.error'),
                         defaultMessage: 'Failed to purge indexes: {error}',
                     }}
-                    disabled={!this.state.canPurgeAndIndex}
+                    disabled={this.props.isDisabled || !this.state.canPurgeAndIndex}
                     label={(
                         <FormattedMessage
                             id='admin.elasticsearch.purgeIndexesButton.label'
@@ -368,7 +379,7 @@ export default class ElasticsearchSettings extends AdminSettings {
                         />
                     }
                     value={this.state.enableSearching}
-                    disabled={!this.state.enableIndexing || !this.state.configTested}
+                    disabled={this.props.isDisabled || !this.state.enableIndexing || !this.state.configTested}
                     onChange={this.handleSettingChanged}
                     setByEnv={this.isSetByEnv('ElasticsearchSettings.EnableSearching')}
                 />
@@ -387,7 +398,7 @@ export default class ElasticsearchSettings extends AdminSettings {
                         />
                     }
                     value={this.state.enableAutocomplete}
-                    disabled={!this.state.enableIndexing || !this.state.configTested}
+                    disabled={this.props.isDisabled || !this.state.enableIndexing || !this.state.configTested}
                     onChange={this.handleSettingChanged}
                     setByEnv={this.isSetByEnv('ElasticsearchSettings.EnableAutocomplete')}
                 />

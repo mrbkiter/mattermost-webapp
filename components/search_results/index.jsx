@@ -9,7 +9,7 @@ import {getChannel} from 'mattermost-redux/selectors/entities/channels';
 import {getConfig} from 'mattermost-redux/selectors/entities/general';
 import {getSearchMatches, getSearchResults} from 'mattermost-redux/selectors/entities/posts';
 import * as PreferenceSelectors from 'mattermost-redux/selectors/entities/preferences';
-import {getCurrentUser} from 'mattermost-redux/selectors/entities/users';
+import {getCurrentSearchForCurrentTeam} from 'mattermost-redux/selectors/entities/search';
 
 import {
     getSearchResultsTerms,
@@ -29,8 +29,6 @@ function makeMapStateToProps() {
     return function mapStateToProps(state) {
         const config = getConfig(state);
 
-        const dataRetentionEnableMessageDeletion = config.DataRetentionEnableMessageDeletion === 'true';
-        const dataRetentionMessageRetentionDays = config.DataRetentionMessageRetentionDays;
         const viewArchivedChannels = config.ExperimentalViewArchivedChannels === 'true';
 
         const newResults = getSearchResults(state);
@@ -54,18 +52,18 @@ function makeMapStateToProps() {
             });
         }
 
+        const currentSearch = getCurrentSearchForCurrentTeam(state) || {};
+
         return {
             results: posts,
             matches: getSearchMatches(state),
-            currentUser: getCurrentUser(state),
             searchTerms: getSearchResultsTerms(state),
             isSearchingTerm: getIsSearchingTerm(state),
             isSearchingFlaggedPost: getIsSearchingFlaggedPost(state),
             isSearchingPinnedPost: getIsSearchingPinnedPost(state),
             isSearchGettingMore: getIsSearchGettingMore(state),
+            isSearchAtEnd: currentSearch.isEnd,
             compactDisplay: PreferenceSelectors.get(state, Preferences.CATEGORY_DISPLAY_SETTINGS, Preferences.MESSAGE_DISPLAY, Preferences.MESSAGE_DISPLAY_DEFAULT) === Preferences.MESSAGE_DISPLAY_COMPACT,
-            dataRetentionEnableMessageDeletion,
-            dataRetentionMessageRetentionDays,
         };
     };
 }

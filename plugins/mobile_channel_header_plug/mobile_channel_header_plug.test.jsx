@@ -23,7 +23,7 @@ describe('plugins/MobileChannelHeaderPlug', () => {
                 channelMember={{}}
                 theme={{}}
                 isDropdown={false}
-            />
+            />,
         );
         expect(wrapper).toMatchSnapshot();
 
@@ -39,7 +39,7 @@ describe('plugins/MobileChannelHeaderPlug', () => {
                 channelMember={{}}
                 theme={{}}
                 isDropdown={false}
-            />
+            />,
         );
         expect(wrapper).toMatchSnapshot();
 
@@ -61,7 +61,7 @@ describe('plugins/MobileChannelHeaderPlug', () => {
                 channelMember={{}}
                 theme={{}}
                 isDropdown={false}
-            />
+            />,
         );
         expect(wrapper).toMatchSnapshot();
 
@@ -77,7 +77,7 @@ describe('plugins/MobileChannelHeaderPlug', () => {
                 channelMember={{}}
                 theme={{}}
                 isDropdown={true}
-            />
+            />,
         );
         expect(wrapper).toMatchSnapshot();
 
@@ -93,13 +93,13 @@ describe('plugins/MobileChannelHeaderPlug', () => {
                 channelMember={{}}
                 theme={{}}
                 isDropdown={true}
-            />
+            />,
         );
         expect(wrapper).toMatchSnapshot();
 
-        // Render a single list item containing a button
+        // Render a single list item containing an anchor
         expect(wrapper.find('li')).toHaveLength(1);
-        expect(wrapper.find('button')).toHaveLength(1);
+        expect(wrapper.find('a')).toHaveLength(1);
     });
 
     test('should match snapshot with two extended components, in dropdown', () => {
@@ -110,20 +110,20 @@ describe('plugins/MobileChannelHeaderPlug', () => {
                 channelMember={{}}
                 theme={{}}
                 isDropdown={true}
-            />
+            />,
         );
         expect(wrapper).toMatchSnapshot();
 
         // Render a two list items containing anchors
         expect(wrapper.find('li')).toHaveLength(2);
-        expect(wrapper.find('button')).toHaveLength(0);
         expect(wrapper.find('a')).toHaveLength(2);
 
-        wrapper.instance().fireAction = jest.fn();
+        const instance = wrapper.instance();
+        instance.fireAction = jest.fn();
 
         wrapper.find('a').first().simulate('click');
-        expect(wrapper.instance().fireAction).toHaveBeenCalledTimes(1);
-        expect(wrapper.instance().fireAction).toBeCalledWith(testPlug);
+        expect(instance.fireAction).toHaveBeenCalledTimes(1);
+        expect(instance.fireAction).toBeCalledWith(testPlug);
     });
 
     test('should call plugin.action on fireAction', () => {
@@ -144,7 +144,7 @@ describe('plugins/MobileChannelHeaderPlug', () => {
                 channelMember={channelMember}
                 theme={{}}
                 isDropdown={true}
-            />
+            />,
         );
 
         wrapper.instance().fireAction(newTestPlug);

@@ -41,26 +41,20 @@
         display: block;
     }
 
-    .admin-setting-user--align {
-        margin-right: 5px;
+    .Avatar {
+        margin-right: 7px;
+        margin-top: 3px;
+        text-align: center;
+        display: block;
     }
 
-    .icon {
-        @include opacity(.5);
-        display: inline-block;
-        margin: 0 7px 0 0;
-        position: relative;
-        text-align: center;
-        top: 2px;
-        vertical-align: top;
-        width: 16px;
+    span {
+        text-overflow: ellipsis;
+        overflow: hidden;
+    }
 
-        &.icon__globe {
-            svg {
-                height: 14px;
-                width: 14px;
-            }
-        }
+    .admin-setting-user--align {
+        margin-right: 5px;
     }
 
     .status {
@@ -78,12 +72,12 @@
     .mention--align {
         @include clearfix;
         text-overflow: ellipsis;
-        margin-right: 5px;
     }
 }
 
 .mention__image {
     @include border-radius(20px);
+    flex: 0 0 16px;
     display: block;
     font-size: 15px;
     height: 16px;
@@ -92,6 +86,7 @@
     margin-top: 3px;
     text-align: center;
     width: 16px;
+    min-width: 16px;
 
     .mention--align {
         display: inline-block;
@@ -103,11 +98,24 @@
 }
 
 .mention__fullname {
-    @include opacity(.5);
+    color: rgba(v(center-channel-color-rgb), 0.56);
+    margin: 0 0 0 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .mention--highlight {
+    padding: 0 1px;
+    border-radius: 4px;
     background-color: $yellow;
+
+    .mention--highlight {
+        padding: 0;
+    }
+}
+
+.group-mention-link {
+    color: var(--link-color);
 }
 
 .mention__purpose {

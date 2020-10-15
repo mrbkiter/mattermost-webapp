@@ -18,28 +18,24 @@ exports[`components/tutorial/tutorial_intro_screens/TutorialIntroScreens should 
           <FormattedMessage
             defaultMessage="Welcome to:"
             id="tutorial_intro.screenOne.title1"
-            values={Object {}}
           />
         </h3>
         <h1>
           <FormattedMessage
             defaultMessage="Mattermost"
             id="tutorial_intro.screenOne.title2"
-            values={Object {}}
           />
         </h1>
         <p>
           <FormattedMessage
             defaultMessage="Your team communication all in one place, instantly searchable and available anywhere."
             id="tutorial_intro.screenOne.body1"
-            values={Object {}}
           />
         </p>
         <p>
           <FormattedMessage
             defaultMessage="Keep your team connected to help them achieve what matters most."
             id="tutorial_intro.screenOne.body2"
-            values={Object {}}
           />
         </p>
         <div
@@ -78,12 +74,10 @@ exports[`components/tutorial/tutorial_intro_screens/TutorialIntroScreens should 
           className="btn btn-primary"
           id="tutorialNextButton"
           onClick={[Function]}
-          tabIndex="1"
         >
           <FormattedMessage
             defaultMessage="Next"
             id="tutorial_intro.next"
-            values={Object {}}
           />
         </button>
         <a
@@ -93,9 +87,8 @@ exports[`components/tutorial/tutorial_intro_screens/TutorialIntroScreens should 
           onClick={[Function]}
         >
           <FormattedMessage
-            defaultMessage="Skip tutorial"
+            defaultMessage="Skip Tutorial"
             id="tutorial_intro.skip"
-            values={Object {}}
           />
         </a>
       </div>

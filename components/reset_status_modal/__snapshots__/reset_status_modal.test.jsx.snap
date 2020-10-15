@@ -17,7 +17,6 @@ exports[`components/ResetStatusModal should match snapshot 1`] = `
     <FormattedMessage
       defaultMessage="Do not ask me again"
       id="modal.manual_status.ask"
-      values={Object {}}
     />
   }
   confirmButtonClass="btn btn-primary"
@@ -50,7 +49,7 @@ exports[`components/ResetStatusModal should match snapshot 1`] = `
   showCheckbox={true}
   title={
     <FormattedMessage
-      defaultMessage="Your status is set to \\"{status}\\""
+      defaultMessage="Your Status is Set to \\"{status}\\""
       id="modal.manual_status.title_"
       values={
         Object {
@@ -79,7 +78,6 @@ exports[`components/ResetStatusModal should match snapshot, render modal for OOF
     <FormattedMessage
       defaultMessage="Do not ask me again"
       id="modal.manual_status.ask"
-      values={Object {}}
     />
   }
   confirmButtonClass="btn btn-primary"
@@ -112,7 +110,7 @@ exports[`components/ResetStatusModal should match snapshot, render modal for OOF
   showCheckbox={false}
   title={
     <FormattedMessage
-      defaultMessage="Your status is set to \\"{status}\\""
+      defaultMessage="Your Status is Set to \\"{status}\\""
       id="modal.manual_status.title_"
       values={
         Object {

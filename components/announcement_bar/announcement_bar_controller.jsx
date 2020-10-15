@@ -4,9 +4,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import ConfigurationAnnouncementBar from './configuration_bar.jsx';
+import ConfigurationAnnouncementBar from './configuration_bar';
+import VersionBar from './version_bar';
 import TextDismissableBar from './text_dismissable_bar.jsx';
-import AnnouncementBar from './announcement_bar.jsx';
+import AnnouncementBar from './default_announcement_bar';
+
+import CloudAnnouncementBar from './cloud_announcement_bar';
 
 export default class AnnouncementBarController extends React.PureComponent {
     static propTypes = {
@@ -19,6 +22,7 @@ export default class AnnouncementBarController extends React.PureComponent {
         canViewSystemErrors: PropTypes.bool.isRequired,
         latestError: PropTypes.object,
         totalUsers: PropTypes.number,
+        warnMetricsStatus: PropTypes.object,
         actions: PropTypes.shape({
             dismissError: PropTypes.func.isRequired,
         }).isRequired,
@@ -48,17 +52,26 @@ export default class AnnouncementBarController extends React.PureComponent {
                 />
             );
         }
+        let cloudAnnouncementBar = null;
+        if (this.props.license.Cloud === 'true') {
+            cloudAnnouncementBar = (
+                <CloudAnnouncementBar/>
+            );
+        }
 
         return (
             <React.Fragment>
                 {adminConfiguredAnnouncementBar}
                 {errorBar}
+                {cloudAnnouncementBar}
+                <VersionBar/>
                 <ConfigurationAnnouncementBar
                     config={this.props.config}
                     license={this.props.license}
                     canViewSystemErrors={this.props.canViewSystemErrors}
                     totalUsers={this.props.totalUsers}
                     user={this.props.user}
+                    warnMetricsStatus={this.props.warnMetricsStatus}
                 />
             </React.Fragment>
         );

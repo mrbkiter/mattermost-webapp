@@ -2,9 +2,10 @@
 // See LICENSE.txt for license information.
 
 import React from 'react';
-import {shallow} from 'enzyme';
 
-import {Constants} from 'utils/constants.jsx';
+import {shallowWithIntl} from 'tests/helpers/intl-test-helper';
+
+import {Constants} from 'utils/constants';
 
 import MainMenu from './main_menu.jsx';
 
@@ -13,46 +14,52 @@ describe('components/Menu', () => {
         mobile: false,
         teamId: 'team-id',
         teamType: Constants.OPEN_TEAM,
-        teamName: 'team name',
+        teamName: 'team_name',
         currentUser: {id: 'test-user-id'},
         appDownloadLink: null,
         enableCommands: false,
         enableCustomEmoji: false,
-        canCreateOrDeleteCustomEmoji: false,
         enableIncomingWebhooks: false,
         enableOAuthServiceProvider: false,
         enableOutgoingWebhooks: false,
+        canManageSystemBots: false,
+        canCreateOrDeleteCustomEmoji: false,
+        canManageIntegrations: true,
         enableUserCreation: false,
         enableEmailInvitations: false,
+        enablePluginMarketplace: false,
         experimentalPrimaryTeam: null,
         helpLink: null,
         reportAProblemLink: null,
         moreTeamsToJoin: false,
         pluginMenuItems: [],
         isMentionSearch: false,
+        showGettingStarted: false,
         actions: {
             openModal: jest.fn(),
             showMentions: jest.fn(),
             showFlaggedPosts: jest.fn(),
             closeRightHandSide: jest.fn(),
             closeRhsMenu: jest.fn(),
+            unhideNextSteps: jest.fn(),
         },
+        teamIsGroupConstrained: false,
     };
 
     test('should match snapshot with id', () => {
         const props = {...defaultProps, id: 'test-id'};
-        const wrapper = shallow(<MainMenu {...props}/>);
+        const wrapper = shallowWithIntl(<MainMenu {...props}/>);
         expect(wrapper).toMatchSnapshot();
     });
 
     test('should match snapshot with most of the thing disabled', () => {
-        const wrapper = shallow(<MainMenu {...defaultProps}/>);
+        const wrapper = shallowWithIntl(<MainMenu {...defaultProps}/>);
         expect(wrapper).toMatchSnapshot();
     });
 
     test('should match snapshot with most of the thing disabled in mobile', () => {
         const props = {...defaultProps, mobile: true};
-        const wrapper = shallow(<MainMenu {...props}/>);
+        const wrapper = shallowWithIntl(<MainMenu {...props}/>);
         expect(wrapper).toMatchSnapshot();
     });
 
@@ -68,12 +75,13 @@ describe('components/Menu', () => {
             enableOutgoingWebhooks: true,
             enableUserCreation: true,
             enableEmailInvitations: true,
+            enablePluginMarketplace: true,
             experimentalPrimaryTeam: 'test',
             helpLink: 'test-link-help',
             reportAProblemLink: 'test-report-link',
             moreTeamsToJoin: true,
         };
-        const wrapper = shallow(<MainMenu {...props}/>);
+        const wrapper = shallowWithIntl(<MainMenu {...props}/>);
         expect(wrapper).toMatchSnapshot();
     });
 
@@ -90,12 +98,13 @@ describe('components/Menu', () => {
             enableOutgoingWebhooks: true,
             enableUserCreation: true,
             enableEmailInvitations: true,
+            enablePluginMarketplace: true,
             experimentalPrimaryTeam: 'test',
             helpLink: 'test-link-help',
             reportAProblemLink: 'test-report-link',
             moreTeamsToJoin: true,
         };
-        const wrapper = shallow(<MainMenu {...props}/>);
+        const wrapper = shallowWithIntl(<MainMenu {...props}/>);
         expect(wrapper).toMatchSnapshot();
     });
 
@@ -107,7 +116,7 @@ describe('components/Menu', () => {
                 {id: 'plugin-2', action: jest.fn(), text: 'plugin-2-text', mobileIcon: 'plugin-2-mobile-icon'},
             ],
         };
-        const wrapper = shallow(<MainMenu {...props}/>);
+        const wrapper = shallowWithIntl(<MainMenu {...props}/>);
         expect(wrapper).toMatchSnapshot();
     });
 
@@ -120,7 +129,77 @@ describe('components/Menu', () => {
                 {id: 'plugin-2', action: jest.fn(), text: 'plugin-2-text', mobileIcon: 'plugin-2-mobile-icon'},
             ],
         };
-        const wrapper = shallow(<MainMenu {...props}/>);
+        const wrapper = shallowWithIntl(<MainMenu {...props}/>);
         expect(wrapper).toMatchSnapshot();
+    });
+
+    test('should show leave team option when primary team is set', () => {
+        const props = {...defaultProps, teamIsGroupConstrained: false, experimentalPrimaryTeam: null};
+        const wrapper = shallowWithIntl(<MainMenu {...props}/>);
+
+        // show leave team option when experimentalPrimaryTeam is not set
+        expect(wrapper.find('#leaveTeam')).toHaveLength(1);
+        expect(wrapper.find('#leaveTeam').props().show).toEqual(true);
+
+        // hide leave team option when experimentalPrimaryTeam is same as current team
+        wrapper.setProps({experimentalPrimaryTeam: defaultProps.teamName});
+        expect(wrapper.find('#leaveTeam')).toHaveLength(1);
+        expect(wrapper.find('#leaveTeam').props().show).toEqual(false);
+
+        // show leave team option when experimentalPrimaryTeam is set to other team
+        wrapper.setProps({experimentalPrimaryTeam: 'other_name'});
+        expect(wrapper.find('#leaveTeam')).toHaveLength(1);
+        expect(wrapper.find('#leaveTeam').props().show).toEqual(true);
+    });
+
+    describe('should show integrations', () => {
+        it('when incoming webhooks enabled', () => {
+            const props = {...defaultProps, enableIncomingWebhooks: true};
+            const wrapper = shallowWithIntl(<MainMenu {...props}/>);
+
+            expect(wrapper.find('#integrations').prop('show')).toBe(true);
+        });
+
+        it('when outgoing webhooks enabled', () => {
+            const props = {...defaultProps, enableOutgoingWebhooks: true};
+            const wrapper = shallowWithIntl(<MainMenu {...props}/>);
+
+            expect(wrapper.find('#integrations').prop('show')).toBe(true);
+        });
+
+        it('when slash commands enabled', () => {
+            const props = {...defaultProps, enableCommands: true};
+            const wrapper = shallowWithIntl(<MainMenu {...props}/>);
+
+            expect(wrapper.find('#integrations').prop('show')).toBe(true);
+        });
+
+        it('when oauth providers enabled', () => {
+            const props = {...defaultProps, enableOAuthServiceProvider: true};
+            const wrapper = shallowWithIntl(<MainMenu {...props}/>);
+
+            expect(wrapper.find('#integrations').prop('show')).toBe(true);
+        });
+
+        it('when can manage system bots', () => {
+            const props = {...defaultProps, canManageSystemBots: true};
+            const wrapper = shallowWithIntl(<MainMenu {...props}/>);
+
+            expect(wrapper.find('#integrations').prop('show')).toBe(true);
+        });
+
+        it('unless mobile', () => {
+            const props = {...defaultProps, mobile: true, canManageSystemBots: true};
+            const wrapper = shallowWithIntl(<MainMenu {...props}/>);
+
+            expect(wrapper.find('#integrations').prop('show')).toBe(false);
+        });
+
+        it('unless cannot manage integrations', () => {
+            const props = {...defaultProps, canManageIntegrations: false, enableCommands: true};
+            const wrapper = shallowWithIntl(<MainMenu {...props}/>);
+
+            expect(wrapper.find('#integrations').prop('show')).toBe(false);
+        });
     });
 });

@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {NavLink} from 'react-router-dom';
 
-export default class BackstageSection extends React.Component {
+export default class BackstageSection extends React.PureComponent {
     static get propTypes() {
         return {
             name: PropTypes.string.isRequired,
@@ -13,6 +13,7 @@ export default class BackstageSection extends React.Component {
             parentLink: PropTypes.string,
             subsection: PropTypes.bool,
             children: PropTypes.arrayOf(PropTypes.element),
+            id: PropTypes.string,
         };
     }
 
@@ -21,12 +22,6 @@ export default class BackstageSection extends React.Component {
             parentLink: '',
             subsection: false,
             children: [],
-        };
-    }
-
-    static get contextTypes() {
-        return {
-            router: PropTypes.object.isRequired,
         };
     }
 
@@ -61,7 +56,10 @@ export default class BackstageSection extends React.Component {
         }
 
         return (
-            <li className={className}>
+            <li
+                className={className}
+                id={this.props.id}
+            >
                 <NavLink
                     className={`${className}-title`}
                     activeClassName={`${className}-title--active`}

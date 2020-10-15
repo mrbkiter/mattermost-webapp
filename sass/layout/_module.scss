@@ -1,14 +1,14 @@
 // Only for combining all the files in this folder
 @import 'content';
 @import 'footer';
-@import 'forms';
 @import 'headers';
+@import 'legacy-sidebar-left';
 @import 'markdown';
 @import 'navigation';
-@import 'post';
-@import 'post-right';
 @import 'sidebar-left';
 @import 'sidebar-menu';
 @import 'sidebar-right';
+@import 'team-button';
 @import 'team-sidebar';
 @import 'webhooks';
+@import 'channel-icon';

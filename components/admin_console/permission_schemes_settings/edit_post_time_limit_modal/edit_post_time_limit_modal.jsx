@@ -3,16 +3,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {FormattedMessage, FormattedHTMLMessage} from 'react-intl';
+import {FormattedMessage} from 'react-intl';
 import {Modal} from 'react-bootstrap';
 
+import FormattedMarkdownMessage from 'components/formatted_markdown_message';
 import {Constants} from 'utils/constants';
 import {localizeMessage} from 'utils/utils.jsx';
 import {t} from 'utils/i18n';
 
 const INT32_MAX = 2147483647;
 
-export default class EditPostTimeLimitModal extends React.Component {
+export default class EditPostTimeLimitModal extends React.PureComponent {
     static propTypes = {
         config: PropTypes.object.isRequired,
         show: PropTypes.bool,
@@ -32,7 +33,7 @@ export default class EditPostTimeLimitModal extends React.Component {
         };
     }
 
-    UNSAFE_componentWillMount() { // eslint-disable-line camelcase
+    componentDidMount() {
         this.props.actions.getConfig();
     }
 
@@ -78,26 +79,31 @@ export default class EditPostTimeLimitModal extends React.Component {
     render = () => {
         return (
             <Modal
-                dialogClassName='admin-modal edit-post-time-limit-modal'
+                dialogClassName='a11y__modal admin-modal edit-post-time-limit-modal'
                 show={this.props.show}
+                role='dialog'
+                aria-labelledby='editPostTimeModalLabel'
             >
                 <Modal.Header
                     closeButton={true}
                 >
-                    <h4 className='modal-title'>
+                    <Modal.Title
+                        componentClass='h1'
+                        id='editPostTimeModalLabel'
+                    >
                         <FormattedMessage
                             id='edit_post.time_limit_modal.title'
                             defaultMessage='Configure Global Edit Post Time Limit'
                         />
-                    </h4>
+                    </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <FormattedHTMLMessage
+                    <FormattedMarkdownMessage
                         id='edit_post.time_limit_modal.description'
-                        defaultMessage='Setting a time limit <strong>applies to all users</strong> who have the "Edit Post" permissions in any permission scheme.'
+                        defaultMessage='Setting a time limit **applies to all users** who have the "Edit Post" permissions in any permission scheme.'
                     />
-                    <div className='padding-left x2 padding-top padding-bottom'>
-                        <div className='padding-top x2'>
+                    <div className='pl-3 pb-3 pt-3'>
+                        <div className='pt-3'>
                             <input
                                 id='anytime'
                                 type='radio'
@@ -113,7 +119,7 @@ export default class EditPostTimeLimitModal extends React.Component {
                                 />
                             </label>
                         </div>
-                        <div className='padding-top'>
+                        <div className='pt-2'>
                             <input
                                 id='timelimit'
                                 type='radio'
@@ -146,7 +152,7 @@ export default class EditPostTimeLimitModal extends React.Component {
                                 />
                             </label>
                         </div>
-                        <div className='padding-top x2 light'>
+                        <div className='pt-3 light'>
                             <FormattedMessage
                                 id='edit_post.time_limit_modal.subscript'
                                 defaultMessage='Set the length of time users have to edit their messages after posting.'

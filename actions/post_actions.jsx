@@ -1,9 +1,7 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {batchActions} from 'redux-batched-actions';
-
-import {PostTypes, SearchTypes} from 'mattermost-redux/action_types';
+import {SearchTypes} from 'mattermost-redux/action_types';
 import {getMyChannelMember} from 'mattermost-redux/actions/channels';
 import {getChannel, getMyChannelMember as getMyChannelMemberSelector} from 'mattermost-redux/selectors/entities/channels';
 import * as PostActions from 'mattermost-redux/actions/posts';
@@ -16,37 +14,41 @@ import * as StorageActions from 'actions/storage';
 import {loadNewDMIfNeeded, loadNewGMIfNeeded} from 'actions/user_actions.jsx';
 import * as RhsActions from 'actions/views/rhs';
 import {isEmbedVisible} from 'selectors/posts';
-import {getSelectedPostId, getRhsState} from 'selectors/rhs';
+import {getSelectedPostId, getSelectedPostCardId, getRhsState} from 'selectors/rhs';
 import {
     ActionTypes,
     Constants,
     RHSStates,
     StoragePrefixes,
 } from 'utils/constants';
-import {EMOJI_PATTERN} from 'utils/emoticons.jsx';
+import {matchEmoticons} from 'utils/emoticons';
 import * as UserAgent from 'utils/user_agent';
 
-import {completePostReceive} from './post_utils';
+import {completePostReceive} from './new_post';
 
 export function handleNewPost(post, msg) {
     return async (dispatch, getState) => {
         let websocketMessageProps = {};
+        const state = getState();
         if (msg) {
             websocketMessageProps = msg.data;
         }
 
-        const myChannelMember = getMyChannelMemberSelector(getState(), post.channel_id);
-        if (myChannelMember && Object.keys(myChannelMember).length === 0 && myChannelMember.constructor === 'Object') {
+        const myChannelMember = getMyChannelMemberSelector(state, post.channel_id);
+        const myChannelMemberDoesntExist = !myChannelMember || (Object.keys(myChannelMember).length === 0 && myChannelMember.constructor === 'Object');
+
+        if (myChannelMemberDoesntExist) {
             await dispatch(getMyChannelMember(post.channel_id));
         }
 
-        dispatch(completePostReceive(post, websocketMessageProps));
+        dispatch(completePostReceive(post, websocketMessageProps, myChannelMemberDoesntExist));
 
         if (msg && msg.data) {
+            const currentUserId = getCurrentUserId(state);
             if (msg.data.channel_type === Constants.DM_CHANNEL) {
-                loadNewDMIfNeeded(post.channel_id);
+                dispatch(loadNewDMIfNeeded(post.channel_id, currentUserId));
             } else if (msg.data.channel_type === Constants.GM_CHANNEL) {
-                loadNewGMIfNeeded(post.channel_id);
+                dispatch(loadNewGMIfNeeded(post.channel_id));
             }
         }
     };
@@ -85,7 +87,7 @@ export function unflagPost(postId) {
 export function createPost(post, files) {
     return async (dispatch) => {
         // parse message and emit emoji event
-        const emojis = post.message.match(EMOJI_PATTERN);
+        const emojis = matchEmoticons(post.message);
         if (emojis) {
             for (const emoji of emojis) {
                 const trimmed = emoji.substring(1, emoji.length - 1);
@@ -126,60 +128,6 @@ export function addReaction(postId, emojiName) {
     return (dispatch) => {
         dispatch(PostActions.addReaction(postId, emojiName));
         dispatch(addRecentEmoji(emojiName));
-    };
-}
-
-const POST_INCREASE_AMOUNT = Constants.POST_CHUNK_SIZE / 2;
-
-// Returns true if there are more posts to load
-export function increasePostVisibility(channelId, focusedPostId) {
-    return async (dispatch, getState) => {
-        const state = getState();
-        if (state.views.channel.loadingPosts[channelId]) {
-            return true;
-        }
-
-        const currentPostVisibility = state.views.channel.postVisibility[channelId];
-
-        if (currentPostVisibility >= Constants.MAX_POST_VISIBILITY) {
-            return true;
-        }
-
-        dispatch({
-            type: ActionTypes.LOADING_POSTS,
-            data: true,
-            channelId,
-        });
-
-        const page = Math.floor(currentPostVisibility / POST_INCREASE_AMOUNT);
-
-        let result;
-        if (focusedPostId) {
-            result = await dispatch(PostActions.getPostsBefore(channelId, focusedPostId, page, POST_INCREASE_AMOUNT));
-        } else {
-            result = await dispatch(PostActions.getPosts(channelId, page, POST_INCREASE_AMOUNT));
-        }
-        const posts = result.data;
-
-        const actions = [{
-            type: ActionTypes.LOADING_POSTS,
-            data: false,
-            channelId,
-        }];
-
-        if (posts) {
-            actions.push({
-                type: ActionTypes.INCREASE_POST_VISIBILITY,
-                data: channelId,
-                amount: posts.order.length,
-            });
-        }
-
-        dispatch(batchActions(actions));
-        return {
-            moreToLoad: posts ? posts.order.length >= POST_INCREASE_AMOUNT : false,
-            error: result.error,
-        };
     };
 }
 
@@ -281,6 +229,14 @@ export function setEditingPost(postId = '', commentCount = 0, refocusId = '', ti
     };
 }
 
+export function markPostAsUnread(post) {
+    return async (dispatch, getState) => {
+        const state = getState();
+        const userId = getCurrentUserId(state);
+        await dispatch(PostActions.setUnreadPost(userId, post.id));
+    };
+}
+
 export function hideEditPostModal() {
     return {
         type: ActionTypes.HIDE_EDIT_POST_MODAL,
@@ -289,14 +245,7 @@ export function hideEditPostModal() {
 
 export function deleteAndRemovePost(post) {
     return async (dispatch, getState) => {
-        const {currentUserId} = getState().entities.users;
-
-        let hardDelete = false;
-        if (post.user_id === currentUserId) {
-            hardDelete = true;
-        }
-
-        const {error} = await dispatch(PostActions.deletePost(post, hardDelete));
+        const {error} = await dispatch(PostActions.deletePost(post));
         if (error) {
             return {error};
         }
@@ -306,13 +255,19 @@ export function deleteAndRemovePost(post) {
                 type: ActionTypes.SELECT_POST,
                 postId: '',
                 channelId: '',
+                timestamp: 0,
             });
         }
 
-        dispatch({
-            type: PostTypes.REMOVE_POST,
-            data: post,
-        });
+        if (post.id === getSelectedPostCardId(getState())) {
+            dispatch({
+                type: ActionTypes.SELECT_POST_CARD,
+                postId: '',
+                channelId: '',
+            });
+        }
+
+        dispatch(PostActions.removePost(post));
 
         return {data: true};
     };
@@ -320,12 +275,27 @@ export function deleteAndRemovePost(post) {
 
 export function toggleEmbedVisibility(postId) {
     return (dispatch, getState) => {
-        const visible = isEmbedVisible(getState(), postId);
+        const state = getState();
+        const currentUserId = getCurrentUserId(state);
+        const visible = isEmbedVisible(state, postId);
 
-        dispatch(StorageActions.setGlobalItem(StoragePrefixes.EMBED_VISIBLE + postId, !visible));
+        dispatch(StorageActions.setGlobalItem(StoragePrefixes.EMBED_VISIBLE + currentUserId + '_' + postId, !visible));
     };
 }
 
 export function resetEmbedVisibility() {
     return StorageActions.actionOnGlobalItemsWithPrefix(StoragePrefixes.EMBED_VISIBLE, () => null);
+}
+
+/**
+ * It is called from either center or rhs text input when shortcut for react to last message is pressed
+ *
+ * @param {string} emittedFrom - It can be either "CENTER", "RHS_ROOT" or "NO_WHERE"
+ */
+
+export function emitShortcutReactToLastPostFrom(emittedFrom) {
+    return {
+        type: ActionTypes.EMITTED_SHORTCUT_REACT_TO_LAST_POST,
+        payload: emittedFrom,
+    };
 }

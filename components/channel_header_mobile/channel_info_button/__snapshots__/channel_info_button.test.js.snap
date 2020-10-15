@@ -13,33 +13,7 @@ exports[`components/ChannelHeaderMobile/ChannelInfoButton should match snapshot,
       "id": "channel_id",
     }
   }
-  intl={
-    Object {
-      "defaultFormats": Object {},
-      "defaultLocale": "en",
-      "formatDate": [Function],
-      "formatHTMLMessage": [Function],
-      "formatMessage": [Function],
-      "formatNumber": [Function],
-      "formatPlural": [Function],
-      "formatRelative": [Function],
-      "formatTime": [Function],
-      "formats": Object {},
-      "formatters": Object {
-        "getDateTimeFormat": [Function],
-        "getMessageFormat": [Function],
-        "getNumberFormat": [Function],
-        "getPluralFormat": [Function],
-        "getRelativeFormat": [Function],
-      },
-      "locale": "en",
-      "messages": Object {},
-      "now": [Function],
-      "onError": [Function],
-      "textComponent": "span",
-      "timeZone": "Etc/UTC",
-    }
-  }
+  isRHSOpen={false}
   isReadOnly={false}
 >
   <OverlayTrigger
@@ -47,20 +21,24 @@ exports[`components/ChannelHeaderMobile/ChannelInfoButton should match snapshot,
     defaultOverlayShown={false}
     overlay={
       <Popover
-        bsClass="popover"
-        bsStyle="info"
         className="navbar__popover"
         id="header-popover"
         placement="bottom"
+        popoverSize="sm"
+        popoverStyle="info"
       >
-        <Connect(Markdown)
-          message="channel header"
-          options={
-            Object {
-              "mentionHighlight": false,
+        <span
+          onClick={[Function]}
+        >
+          <Memo(Connect(Markdown))
+            message="channel header"
+            options={
+              Object {
+                "mentionHighlight": false,
+              }
             }
-          }
-        />
+          />
+        </span>
         <div
           className="close visible-xs-block"
           onClick={[Function]}
@@ -73,27 +51,91 @@ exports[`components/ChannelHeaderMobile/ChannelInfoButton should match snapshot,
     rootClose={true}
     trigger="click"
   >
-    <button
-      className="navbar-toggle navbar-right__icon navbar-info-button pull-right"
-      onClick={[Function]}
+    <OverlayTrigger
+      className="description"
+      defaultOverlayShown={false}
+      overlay={
+        <OverlayWrapper
+          className="navbar__popover"
+          id="header-popover"
+          intl={
+            Object {
+              "defaultFormats": Object {},
+              "defaultLocale": "en",
+              "formatDate": [Function],
+              "formatDateToParts": [Function],
+              "formatDisplayName": [Function],
+              "formatList": [Function],
+              "formatMessage": [Function],
+              "formatNumber": [Function],
+              "formatNumberToParts": [Function],
+              "formatPlural": [Function],
+              "formatRelativeTime": [Function],
+              "formatTime": [Function],
+              "formatTimeToParts": [Function],
+              "formats": Object {},
+              "formatters": Object {
+                "getDateTimeFormat": [Function],
+                "getDisplayNames": [Function],
+                "getListFormat": [Function],
+                "getMessageFormat": [Function],
+                "getNumberFormat": [Function],
+                "getPluralRules": [Function],
+                "getRelativeTimeFormat": [Function],
+              },
+              "locale": "en",
+              "messages": Object {},
+              "onError": [Function],
+              "textComponent": "span",
+              "timeZone": "Etc/UTC",
+              "wrapRichTextChunksInFragment": undefined,
+            }
+          }
+          placement="bottom"
+          popoverSize="sm"
+          popoverStyle="info"
+        >
+          <span
+            onClick={[Function]}
+          >
+            <Memo(Connect(Markdown))
+              message="channel header"
+              options={
+                Object {
+                  "mentionHighlight": false,
+                }
+              }
+            />
+          </span>
+          <div
+            className="close visible-xs-block"
+            onClick={[Function]}
+          >
+            ×
+          </div>
+        </OverlayWrapper>
+      }
+      placement="bottom"
+      rootClose={true}
+      trigger="click"
     >
-      <InfoIcon
-        aria-hidden="true"
-        className="icon icon__info"
+      <button
+        aria-label="Info"
+        className="navbar-toggle navbar-right__icon navbar-info-button pull-right"
+        onClick={[Function]}
       >
-        <span
+        <InfoIcon
           aria-hidden="true"
           className="icon icon__info"
         >
-          <FormattedMessage
-            defaultMessage="Info Icon"
-            id="generic_icons.info"
-            values={Object {}}
+          <span
+            aria-hidden="true"
+            className="icon icon__info"
           >
             <svg
               aria-label="Info Icon"
               height="18px"
-              role="icon"
+              role="img"
               viewBox="0 0 22 22"
               width="18px"
             >
@@ -123,10 +165,10 @@ exports[`components/ChannelHeaderMobile/ChannelInfoButton should match snapshot,
                 </g>
               </g>
             </svg>
-          </FormattedMessage>
-        </span>
-      </InfoIcon>
-    </button>
+          </span>
+        </InfoIcon>
+      </button>
+    </OverlayTrigger>
   </OverlayTrigger>
 </NavbarInfoButton>
 `;
@@ -143,33 +185,7 @@ exports[`components/ChannelHeaderMobile/ChannelInfoButton should match snapshot,
       "id": "channel_id",
     }
   }
-  intl={
-    Object {
-      "defaultFormats": Object {},
-      "defaultLocale": "en",
-      "formatDate": [Function],
-      "formatHTMLMessage": [Function],
-      "formatMessage": [Function],
-      "formatNumber": [Function],
-      "formatPlural": [Function],
-      "formatRelative": [Function],
-      "formatTime": [Function],
-      "formats": Object {},
-      "formatters": Object {
-        "getDateTimeFormat": [Function],
-        "getMessageFormat": [Function],
-        "getNumberFormat": [Function],
-        "getPluralFormat": [Function],
-        "getRelativeFormat": [Function],
-      },
-      "locale": "en",
-      "messages": Object {},
-      "now": [Function],
-      "onError": [Function],
-      "textComponent": "span",
-      "timeZone": "Etc/UTC",
-    }
-  }
+  isRHSOpen={false}
   isReadOnly={false}
 >
   <OverlayTrigger
@@ -177,40 +193,42 @@ exports[`components/ChannelHeaderMobile/ChannelInfoButton should match snapshot,
     defaultOverlayShown={false}
     overlay={
       <Popover
-        bsClass="popover"
-        bsStyle="info"
         className="navbar__popover"
         id="header-popover"
         placement="bottom"
+        popoverSize="sm"
+        popoverStyle="info"
       >
-        <div>
-          <FormattedMessage
-            defaultMessage="No channel header yet."
-            id="navbar.noHeader"
-            values={Object {}}
-          />
-          <React.Fragment>
-            <br />
+        <span
+          onClick={[Function]}
+        >
+          <div>
             <FormattedMessage
-              defaultMessage="{clickHere} to add one."
-              id="navbar.clickToAddHeader"
-              values={
-                Object {
-                  "clickHere": <a
-                    href="#"
-                    onClick={[Function]}
-                  >
-                    <FormattedMessage
-                      defaultMessage="Click here"
-                      id="navbar.click"
-                      values={Object {}}
-                    />
-                  </a>,
-                }
-              }
+              defaultMessage="No channel header yet."
+              id="navbar.noHeader"
             />
-          </React.Fragment>
-        </div>
+            <React.Fragment>
+              <br />
+              <FormattedMessage
+                defaultMessage="{clickHere} to add one."
+                id="navbar.clickToAddHeader"
+                values={
+                  Object {
+                    "clickHere": <a
+                      href="#"
+                      onClick={[Function]}
+                    >
+                      <FormattedMessage
+                        defaultMessage="Click here"
+                        id="navbar.click"
+                      />
+                    </a>,
+                  }
+                }
+              />
+            </React.Fragment>
+          </div>
+        </span>
         <div
           className="close visible-xs-block"
           onClick={[Function]}
@@ -223,27 +241,109 @@ exports[`components/ChannelHeaderMobile/ChannelInfoButton should match snapshot,
     rootClose={true}
     trigger="click"
   >
-    <button
-      className="navbar-toggle navbar-right__icon navbar-info-button pull-right"
-      onClick={[Function]}
+    <OverlayTrigger
+      className="description"
+      defaultOverlayShown={false}
+      overlay={
+        <OverlayWrapper
+          className="navbar__popover"
+          id="header-popover"
+          intl={
+            Object {
+              "defaultFormats": Object {},
+              "defaultLocale": "en",
+              "formatDate": [Function],
+              "formatDateToParts": [Function],
+              "formatDisplayName": [Function],
+              "formatList": [Function],
+              "formatMessage": [Function],
+              "formatNumber": [Function],
+              "formatNumberToParts": [Function],
+              "formatPlural": [Function],
+              "formatRelativeTime": [Function],
+              "formatTime": [Function],
+              "formatTimeToParts": [Function],
+              "formats": Object {},
+              "formatters": Object {
+                "getDateTimeFormat": [Function],
+                "getDisplayNames": [Function],
+                "getListFormat": [Function],
+                "getMessageFormat": [Function],
+                "getNumberFormat": [Function],
+                "getPluralRules": [Function],
+                "getRelativeTimeFormat": [Function],
+              },
+              "locale": "en",
+              "messages": Object {},
+              "onError": [Function],
+              "textComponent": "span",
+              "timeZone": "Etc/UTC",
+              "wrapRichTextChunksInFragment": undefined,
+            }
+          }
+          placement="bottom"
+          popoverSize="sm"
+          popoverStyle="info"
+        >
+          <span
+            onClick={[Function]}
+          >
+            <div>
+              <FormattedMessage
+                defaultMessage="No channel header yet."
+                id="navbar.noHeader"
+              />
+              <React.Fragment>
+                <br />
+                <FormattedMessage
+                  defaultMessage="{clickHere} to add one."
+                  id="navbar.clickToAddHeader"
+                  values={
+                    Object {
+                      "clickHere": <a
+                        href="#"
+                        onClick={[Function]}
+                      >
+                        <FormattedMessage
+                          defaultMessage="Click here"
+                          id="navbar.click"
+                        />
+                      </a>,
+                    }
+                  }
+                />
+              </React.Fragment>
+            </div>
+          </span>
+          <div
+            className="close visible-xs-block"
+            onClick={[Function]}
+          >
+            ×
+          </div>
+        </OverlayWrapper>
+      }
+      placement="bottom"
+      rootClose={true}
+      trigger="click"
     >
-      <InfoIcon
-        aria-hidden="true"
-        className="icon icon__info"
+      <button
+        aria-label="Info"
+        className="navbar-toggle navbar-right__icon navbar-info-button pull-right"
+        onClick={[Function]}
       >
-        <span
+        <InfoIcon
           aria-hidden="true"
           className="icon icon__info"
         >
-          <FormattedMessage
-            defaultMessage="Info Icon"
-            id="generic_icons.info"
-            values={Object {}}
+          <span
+            aria-hidden="true"
+            className="icon icon__info"
           >
             <svg
               aria-label="Info Icon"
               height="18px"
-              role="icon"
+              role="img"
               viewBox="0 0 22 22"
               width="18px"
             >
@@ -273,10 +373,10 @@ exports[`components/ChannelHeaderMobile/ChannelInfoButton should match snapshot,
                 </g>
               </g>
             </svg>
-          </FormattedMessage>
-        </span>
-      </InfoIcon>
-    </button>
+          </span>
+        </InfoIcon>
+      </button>
+    </OverlayTrigger>
   </OverlayTrigger>
 </NavbarInfoButton>
 `;

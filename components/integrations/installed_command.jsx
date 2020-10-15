@@ -7,9 +7,19 @@ import {FormattedMessage} from 'react-intl';
 import {Link} from 'react-router-dom';
 
 import {t} from 'utils/i18n';
-import CopyText from '../copy_text.jsx';
+import CopyText from '../copy_text';
 
 import DeleteIntegration from './delete_integration.jsx';
+
+export function matchesFilter(command, filter) {
+    if (!filter) {
+        return true;
+    }
+
+    return command.display_name.toLowerCase().indexOf(filter) !== -1 ||
+        command.description.toLowerCase().indexOf(filter) !== -1 ||
+        command.trigger.toLowerCase().indexOf(filter) !== -1;
+}
 
 export default class InstalledCommand extends React.PureComponent {
     static propTypes = {
@@ -60,21 +70,11 @@ export default class InstalledCommand extends React.PureComponent {
         this.props.onDelete(this.props.command);
     }
 
-    matchesFilter(command, filter) {
-        if (!filter) {
-            return true;
-        }
-
-        return command.display_name.toLowerCase().indexOf(filter) !== -1 ||
-            command.description.toLowerCase().indexOf(filter) !== -1 ||
-            command.trigger.toLowerCase().indexOf(filter) !== -1;
-    }
-
     render() {
         const command = this.props.command;
         const filter = this.props.filter ? this.props.filter.toLowerCase() : '';
 
-        if (!this.matchesFilter(command, filter)) {
+        if (!matchesFilter(command, filter)) {
             return null;
         }
 
@@ -141,13 +141,16 @@ export default class InstalledCommand extends React.PureComponent {
         return (
             <div className='backstage-list__item'>
                 <div className='item-details'>
-                    <div className='item-details__row'>
-                        <span className='item-details__name'>
-                            {name}
-                        </span>
-                        <span className='item-details__trigger'>
-                            {trigger}
-                        </span>
+                    <div className='item-details__row d-flex flex-column flex-md-row justify-content-between'>
+                        <div>
+                            <strong className='item-details__name'>
+                                {name}
+                            </strong>
+                            <span className='item-details__trigger'>
+                                {trigger}
+                            </span>
+                        </div>
+                        {actions}
                     </div>
                     {description}
                     <div className='item-details__row'>
@@ -177,7 +180,6 @@ export default class InstalledCommand extends React.PureComponent {
                         </span>
                     </div>
                 </div>
-                {actions}
             </div>
         );
     }

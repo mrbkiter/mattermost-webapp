@@ -8,13 +8,21 @@ import {Link} from 'react-router-dom';
 
 import * as Utils from 'utils/utils.jsx';
 import {t} from 'utils/i18n';
-import FormError from 'components/form_error.jsx';
+import FormError from 'components/form_error';
 import FormattedMarkdownMessage from 'components/formatted_markdown_message.jsx';
-import CopyText from 'components/copy_text.jsx';
+import CopyText from 'components/copy_text';
 
 import DeleteIntegration from '../delete_integration.jsx';
 
 const FAKE_SECRET = '***************';
+
+export function matchesFilter(oauthApp, filter) {
+    if (!filter) {
+        return true;
+    }
+
+    return oauthApp.name.toLowerCase().indexOf(filter) !== -1;
+}
 
 export default class InstalledOAuthApp extends React.PureComponent {
     static propTypes = {
@@ -30,11 +38,6 @@ export default class InstalledOAuthApp extends React.PureComponent {
         oauthApp: PropTypes.object.isRequired,
 
         creatorName: PropTypes.string.isRequired,
-
-        /**
-        * The request state for regenOAuthAppSecret action. Contains status and error
-        */
-        regenOAuthAppSecretRequest: PropTypes.object.isRequired,
 
         /**
         * The function to call when Regenerate Secret link is clicked
@@ -75,28 +78,19 @@ export default class InstalledOAuthApp extends React.PureComponent {
     handleRegenerate = (e) => {
         e.preventDefault();
         this.props.onRegenerateSecret(this.props.oauthApp.id).then(
-            () => {
-                const {error} = this.props.regenOAuthAppSecretRequest;
+            ({error}) => {
                 if (error) {
                     this.setState({error: error.message});
                 } else {
                     this.setState({error: null});
                     this.handleShowClientSecret();
                 }
-            }
+            },
         );
     }
 
     handleDelete = () => {
         this.props.onDelete(this.props.oauthApp);
-    }
-
-    matchesFilter = (oauthApp, filter) => {
-        if (!filter) {
-            return true;
-        }
-
-        return oauthApp.name.toLowerCase().indexOf(filter) !== -1;
     }
 
     render() {
@@ -111,7 +105,7 @@ export default class InstalledOAuthApp extends React.PureComponent {
             );
         }
 
-        if (!this.matchesFilter(oauthApp, this.props.filter)) {
+        if (!matchesFilter(oauthApp, this.props.filter)) {
             return null;
         }
 
@@ -140,7 +134,7 @@ export default class InstalledOAuthApp extends React.PureComponent {
 
         const urls = (
             <div className='item-details__row'>
-                <span className='item-details__url'>
+                <span className='item-details__url word-break--all'>
                     <FormattedMessage
                         id='installed_integrations.callback_urls'
                         defaultMessage='Callback URLs: {urls}'
@@ -233,7 +227,10 @@ export default class InstalledOAuthApp extends React.PureComponent {
         if (oauthApp.icon_url) {
             icon = (
                 <div className='integration__icon integration-list__icon'>
-                    <img src={oauthApp.icon_url}/>
+                    <img
+                        alt={'get app screenshot'}
+                        src={oauthApp.icon_url}
+                    />
                 </div>
             );
         }
@@ -242,15 +239,32 @@ export default class InstalledOAuthApp extends React.PureComponent {
             <div className='backstage-list__item'>
                 {icon}
                 <div className='item-details'>
-                    <div className='item-details__row'>
-                        <span className='item-details__name'>
+                    <div className='item-details__row d-flex flex-column flex-md-row justify-content-between'>
+                        <strong className='item-details__name'>
                             {name}
-                        </span>
+                        </strong>
+                        <div className='item-actions'>
+                            {showHide}
+                            {' - '}
+                            {regen}
+                            {' - '}
+                            <Link to={`/${this.props.team.name}/integrations/oauth2-apps/edit?id=${oauthApp.id}`}>
+                                <FormattedMessage
+                                    id='installed_integrations.edit'
+                                    defaultMessage='Edit'
+                                />
+                            </Link>
+                            {' - '}
+                            <DeleteIntegration
+                                messageId={t('installed_oauth_apps.delete.confirm')}
+                                onDelete={this.handleDelete}
+                            />
+                        </div>
                     </div>
                     {error}
                     {description}
                     <div className='item-details__row'>
-                        <span className='item-details__url'>
+                        <span className='item-details__url word-break--all'>
                             <FormattedMarkdownMessage
                                 id='installed_oauth_apps.is_trusted'
                                 defaultMessage='Is Trusted: **{isTrusted}**'
@@ -292,23 +306,6 @@ export default class InstalledOAuthApp extends React.PureComponent {
                             />
                         </span>
                     </div>
-                </div>
-                <div className='item-actions'>
-                    {showHide}
-                    {' - '}
-                    {regen}
-                    {' - '}
-                    <Link to={`/${this.props.team.name}/integrations/oauth2-apps/edit?id=${oauthApp.id}`}>
-                        <FormattedMessage
-                            id='installed_integrations.edit'
-                            defaultMessage='Edit'
-                        />
-                    </Link>
-                    {' - '}
-                    <DeleteIntegration
-                        messageId={t('installed_oauth_apps.delete.confirm')}
-                        onDelete={this.handleDelete}
-                    />
                 </div>
             </div>
         );

@@ -3,10 +3,11 @@
 exports[`components/AddUserToChannelModal should match snapshot 1`] = `
 <Modal
   animation={true}
+  aria-labelledby="addChannelModalLabel"
   autoFocus={true}
   backdrop={true}
   bsClass="modal"
-  dialogClassName="modal--overflow"
+  dialogClassName="a11y__modal modal--overflow"
   dialogComponentClass={[Function]}
   enforceFocus={true}
   keyboard={true}
@@ -26,6 +27,7 @@ exports[`components/AddUserToChannelModal should match snapshot 1`] = `
   onHide={[Function]}
   renderBackdrop={[Function]}
   restoreFocus={true}
+  role="dialog"
   show={true}
 >
   <ModalHeader
@@ -35,10 +37,11 @@ exports[`components/AddUserToChannelModal should match snapshot 1`] = `
   >
     <ModalTitle
       bsClass="modal-title"
-      componentClass="h4"
+      componentClass="h1"
+      id="addChannelModalLabel"
     >
       <FormattedMessage
-        defaultMessage="Add {name} to a channel"
+        defaultMessage="Add {name} to a Channel"
         id="add_user_to_channel_modal.title"
         values={
           Object {
@@ -62,39 +65,44 @@ exports[`components/AddUserToChannelModal should match snapshot 1`] = `
         <FormattedMessage
           defaultMessage="Type to find a channel. Use ↑↓ to browse, ↵ to select, ESC to dismiss."
           id="add_user_to_channel_modal.help"
-          values={Object {}}
         />
       </div>
-      <SuggestionBox
-        className="form-control focused"
-        completeOnTab={false}
-        containerClass=""
-        delayInputUpdate={true}
-        isRHS={false}
-        listComponent={[Function]}
-        listStyle="bottom"
-        listenForMentionKeyClick={false}
-        maxLength="64"
-        onChange={[Function]}
-        onItemSelected={[Function]}
-        openOnFocus={false}
-        openWhenEmpty={true}
-        providers={
-          Array [
-            SearchChannelWithPermissionsProvider {
-              "disableDispatches": false,
-              "latestComplete": true,
-              "latestPrefix": "",
-              "requestStarted": false,
-            },
-          ]
-        }
-        renderDividers={false}
-        renderNoResults={false}
-        replaceAllInputOnSelect={false}
-        requiredCharacters={1}
-        value=""
-      />
+      <div
+        className="pos-relative"
+      >
+        <SuggestionBox
+          className="form-control focused"
+          completeOnTab={false}
+          containerClass=""
+          delayInputUpdate={true}
+          forceSuggestionsWhenBlur={false}
+          isRHS={false}
+          listComponent={[Function]}
+          listStyle="bottom"
+          listenForMentionKeyClick={false}
+          maxLength="64"
+          onChange={[Function]}
+          onItemSelected={[Function]}
+          openOnFocus={false}
+          openWhenEmpty={false}
+          providers={
+            Array [
+              SearchChannelWithPermissionsProvider {
+                "autocompleteChannelsForSearch": [MockFunction],
+                "disableDispatches": false,
+                "latestComplete": true,
+                "latestPrefix": "",
+                "requestStarted": false,
+              },
+            ]
+          }
+          renderDividers={false}
+          renderNoResults={false}
+          replaceAllInputOnSelect={false}
+          requiredCharacters={1}
+          value=""
+        />
+      </div>
       <div>
         <br />
       </div>
@@ -111,7 +119,6 @@ exports[`components/AddUserToChannelModal should match snapshot 1`] = `
         <FormattedMessage
           defaultMessage="Cancel"
           id="add_user_to_channel_modal.cancel"
-          values={Object {}}
         />
       </button>
       <button
@@ -124,7 +131,6 @@ exports[`components/AddUserToChannelModal should match snapshot 1`] = `
         <FormattedMessage
           defaultMessage="Add"
           id="add_user_to_channel_modal.add"
-          values={Object {}}
         />
       </button>
     </ModalFooter>

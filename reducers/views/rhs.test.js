@@ -1,19 +1,22 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {TeamTypes} from 'mattermost-redux/action_types';
+import {SearchTypes} from 'mattermost-redux/action_types';
 
 import rhsReducer from 'reducers/views/rhs';
-import {ActionTypes, RHSStates} from 'utils/constants.jsx';
+import {ActionTypes, RHSStates} from 'utils/constants';
 
 describe('Reducers.RHS', () => {
     const initialState = {
         selectedPostId: '',
+        selectedPostFocussedAt: 0,
+        selectedPostCardId: '',
         selectedChannelId: '',
         previousRhsState: null,
         rhsState: null,
         searchTerms: '',
         searchResultsTerms: '',
+        pluggableId: '',
         isSearchingFlaggedPost: false,
         isSearchingPinnedPost: false,
         isMenuOpen: false,
@@ -24,7 +27,7 @@ describe('Reducers.RHS', () => {
     test('Initial state', () => {
         const nextState = rhsReducer(
             {},
-            {}
+            {},
         );
 
         expect(nextState).toEqual(initialState);
@@ -37,13 +40,31 @@ describe('Reducers.RHS', () => {
                 type: ActionTypes.UPDATE_RHS_STATE,
                 state: RHSStates.PIN,
                 channelId: '123',
-            }
+            },
         );
 
         expect(nextState).toEqual({
             ...initialState,
             selectedChannelId: '123',
             rhsState: RHSStates.PIN,
+            isSidebarOpen: true,
+        });
+    });
+
+    test('should match RHS state to plugin id', () => {
+        const nextState = rhsReducer(
+            {},
+            {
+                type: ActionTypes.UPDATE_RHS_STATE,
+                state: RHSStates.PLUGIN,
+                pluggableId: '123',
+            },
+        );
+
+        expect(nextState).toEqual({
+            ...initialState,
+            pluggableId: '123',
+            rhsState: RHSStates.PLUGIN,
             isSidebarOpen: true,
         });
     });
@@ -56,7 +77,7 @@ describe('Reducers.RHS', () => {
             {
                 type: ActionTypes.UPDATE_RHS_STATE,
                 state: RHSStates.SEARCH,
-            }
+            },
         );
 
         expect(nextState).toEqual({
@@ -67,12 +88,75 @@ describe('Reducers.RHS', () => {
         });
     });
 
+    test(`should wipe selectedPostCardId on ${ActionTypes.UPDATE_RHS_STATE}`, () => {
+        const nextState = rhsReducer(
+            {
+                selectedPostCardId: '123',
+            },
+            {
+                type: ActionTypes.UPDATE_RHS_STATE,
+                state: RHSStates.SEARCH,
+            },
+        );
+
+        expect(nextState).toEqual({
+            ...initialState,
+            selectedPostCardId: '',
+            rhsState: RHSStates.SEARCH,
+            isSidebarOpen: true,
+        });
+    });
+
+    test(`should wipe pluggableId on ${ActionTypes.SELECT_POST}`, () => {
+        const nextState = rhsReducer(
+            {
+                pluggableId: 'pluggableId',
+            },
+            {
+                type: ActionTypes.SELECT_POST,
+                postId: '123',
+                channelId: '321',
+                timestamp: 1234,
+            },
+        );
+
+        expect(nextState).toEqual({
+            ...initialState,
+            pluggableId: '',
+            selectedPostId: '123',
+            selectedPostFocussedAt: 1234,
+            selectedChannelId: '321',
+            isSidebarOpen: true,
+        });
+    });
+
+    test(`should wipe pluggableId on ${ActionTypes.SELECT_POST_CARD}`, () => {
+        const nextState = rhsReducer(
+            {
+                pluggableId: 'pluggableId',
+            },
+            {
+                type: ActionTypes.SELECT_POST_CARD,
+                postId: '123',
+                channelId: '321',
+            },
+        );
+
+        expect(nextState).toEqual({
+            ...initialState,
+            pluggableId: '',
+            selectedPostCardId: '123',
+            selectedChannelId: '321',
+            isSidebarOpen: true,
+        });
+    });
+
     test('should match isSearchingFlaggedPost state to true', () => {
         const nextState = rhsReducer(
             {},
             {
-                type: ActionTypes.SEARCH_FLAGGED_POSTS_REQUEST,
-            }
+                type: SearchTypes.SEARCH_FLAGGED_POSTS_REQUEST,
+            },
         );
 
         expect(nextState).toEqual({
@@ -85,8 +169,8 @@ describe('Reducers.RHS', () => {
         const nextState = rhsReducer(
             {},
             {
-                type: ActionTypes.SEARCH_FLAGGED_POSTS_SUCCESS,
-            }
+                type: SearchTypes.SEARCH_FLAGGED_POSTS_SUCCESS,
+            },
         );
 
         expect(nextState).toEqual({
@@ -101,7 +185,7 @@ describe('Reducers.RHS', () => {
             {
                 type: ActionTypes.UPDATE_RHS_SEARCH_TERMS,
                 terms: 'testing',
-            }
+            },
         );
 
         expect(nextState).toEqual({
@@ -117,12 +201,14 @@ describe('Reducers.RHS', () => {
                 type: ActionTypes.SELECT_POST,
                 postId: '123',
                 channelId: '321',
-            }
+                timestamp: 1234,
+            },
         );
 
         expect(nextState1).toEqual({
             ...initialState,
             selectedPostId: '123',
+            selectedPostFocussedAt: 1234,
             selectedChannelId: '321',
             isSidebarOpen: true,
         });
@@ -135,12 +221,14 @@ describe('Reducers.RHS', () => {
                 postId: '123',
                 channelId: '321',
                 previousRhsState: RHSStates.SEARCH,
-            }
+                timestamp: 4567,
+            },
         );
 
         expect(nextState2).toEqual({
             ...initialState,
             selectedPostId: '123',
+            selectedPostFocussedAt: 4567,
             selectedChannelId: '321',
             previousRhsState: RHSStates.SEARCH,
             isSidebarOpen: true,
@@ -155,12 +243,71 @@ describe('Reducers.RHS', () => {
                 postId: '123',
                 channelId: '321',
                 previousRhsState: RHSStates.FLAG,
-            }
+                timestamp: 0,
+            },
         );
 
         expect(nextState3).toEqual({
             ...initialState,
             selectedPostId: '123',
+            selectedPostFocussedAt: 0,
+            selectedChannelId: '321',
+            previousRhsState: RHSStates.FLAG,
+            isSidebarOpen: true,
+        });
+    });
+
+    test('should match select_post_card state', () => {
+        const nextState1 = rhsReducer(
+            {},
+            {
+                type: ActionTypes.SELECT_POST_CARD,
+                postId: '123',
+                channelId: '321',
+            },
+        );
+
+        expect(nextState1).toEqual({
+            ...initialState,
+            selectedPostCardId: '123',
+            selectedChannelId: '321',
+            isSidebarOpen: true,
+        });
+
+        const nextState2 = rhsReducer(
+            {
+            },
+            {
+                type: ActionTypes.SELECT_POST_CARD,
+                postId: '123',
+                channelId: '321',
+                previousRhsState: RHSStates.SEARCH,
+            },
+        );
+
+        expect(nextState2).toEqual({
+            ...initialState,
+            selectedPostCardId: '123',
+            selectedChannelId: '321',
+            previousRhsState: RHSStates.SEARCH,
+            isSidebarOpen: true,
+        });
+
+        const nextState3 = rhsReducer(
+            {
+                previousRhsState: RHSStates.SEARCH,
+            },
+            {
+                type: ActionTypes.SELECT_POST_CARD,
+                postId: '123',
+                channelId: '321',
+                previousRhsState: RHSStates.FLAG,
+            },
+        );
+
+        expect(nextState3).toEqual({
+            ...initialState,
+            selectedPostCardId: '123',
             selectedChannelId: '321',
             previousRhsState: RHSStates.FLAG,
             isSidebarOpen: true,
@@ -177,13 +324,36 @@ describe('Reducers.RHS', () => {
                 postId: '123',
                 channelId: '321',
                 previousRhsState: RHSStates.PIN,
-            }
+            },
         );
 
         expect(nextState).toEqual({
             ...initialState,
             rhsState: null,
             selectedPostId: '123',
+            selectedChannelId: '321',
+            previousRhsState: RHSStates.PIN,
+            isSidebarOpen: true,
+        });
+    });
+
+    test(`should wipe rhsState on ${ActionTypes.SELECT_POST_CARD}`, () => {
+        const nextState = rhsReducer(
+            {
+                rhsState: RHSStates.PIN,
+            },
+            {
+                type: ActionTypes.SELECT_POST_CARD,
+                postId: '123',
+                channelId: '321',
+                previousRhsState: RHSStates.PIN,
+            },
+        );
+
+        expect(nextState).toEqual({
+            ...initialState,
+            rhsState: null,
+            selectedPostCardId: '123',
             selectedChannelId: '321',
             previousRhsState: RHSStates.PIN,
             isSidebarOpen: true,
@@ -198,7 +368,7 @@ describe('Reducers.RHS', () => {
             },
             {
                 type: ActionTypes.TOGGLE_RHS_MENU,
-            }
+            },
         );
 
         expect(nextState).toEqual({
@@ -216,7 +386,7 @@ describe('Reducers.RHS', () => {
             },
             {
                 type: ActionTypes.TOGGLE_RHS_MENU,
-            }
+            },
         );
 
         expect(nextState).toEqual({
@@ -234,7 +404,7 @@ describe('Reducers.RHS', () => {
             },
             {
                 type: ActionTypes.OPEN_RHS_MENU,
-            }
+            },
         );
 
         expect(nextState).toEqual({
@@ -252,7 +422,7 @@ describe('Reducers.RHS', () => {
             },
             {
                 type: ActionTypes.CLOSE_RHS_MENU,
-            }
+            },
         );
 
         expect(nextState).toEqual({
@@ -266,7 +436,6 @@ describe('Reducers.RHS', () => {
         [
             ActionTypes.TOGGLE_LHS,
             ActionTypes.OPEN_LHS,
-            TeamTypes.SELECT_TEAM,
         ].forEach((action) => {
             it(`on ${action}`, () => {
                 const nextState = rhsReducer(
@@ -276,7 +445,7 @@ describe('Reducers.RHS', () => {
                     },
                     {
                         type: action,
-                    }
+                    },
                 );
 
                 expect(nextState).toEqual({

@@ -5,14 +5,14 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {Client4} from 'mattermost-redux/client';
 
-import {FormattedMessage} from 'react-intl';
-
 import * as Utils from 'utils/utils.jsx';
-import ProfilePicture from 'components/profile_picture.jsx';
+import ProfilePicture from 'components/profile_picture';
+import UserProfile from 'components/user_profile';
 
-import FormattedMarkdownMessage from 'components/formatted_markdown_message.jsx';
+import FormattedMarkdownMessage from 'components/formatted_markdown_message';
+import Nbsp from 'components/html_entities/nbsp';
 
-export default class UserListRow extends React.Component {
+export default class UserListRow extends React.PureComponent {
     static propTypes = {
         user: PropTypes.object.isRequired,
         status: PropTypes.string,
@@ -20,6 +20,8 @@ export default class UserListRow extends React.Component {
         actions: PropTypes.arrayOf(PropTypes.func),
         actionProps: PropTypes.object,
         actionUserProps: PropTypes.object,
+        index: PropTypes.number,
+        totalUsers: PropTypes.number,
         userCount: PropTypes.number,
     };
 
@@ -38,6 +40,8 @@ export default class UserListRow extends React.Component {
                     <Action
                         key={index.toString()}
                         user={this.props.user}
+                        index={this.props.index}
+                        totalUsers={this.props.totalUsers}
                         {...this.props.actionProps}
                         {...this.props.actionUserProps}
                     />
@@ -66,17 +70,9 @@ export default class UserListRow extends React.Component {
             status = this.props.status;
         }
 
-        let tag = null;
         if (this.props.user.is_bot) {
             status = null;
-            tag = (
-                <div className='bot-indicator bot-indicator__popoverlist'>
-                    <FormattedMessage
-                        id='post_info.bot'
-                        defaultMessage='BOT'
-                    />
-                </div>
-            );
+            email = null;
         }
 
         let userCountID = null;
@@ -94,18 +90,31 @@ export default class UserListRow extends React.Component {
                 <ProfilePicture
                     src={Client4.getProfilePictureUrl(this.props.user.id, this.props.user.last_picture_update)}
                     status={status}
-                    width='32'
-                    height='32'
+                    size='md'
+                    userId={this.props.user.id}
+                    hasMention={true}
+                    username={this.props.user.username}
                 />
                 <div
                     className='more-modal__details'
+                    data-testid='userListItemDetails'
                 >
                     <div
                         id={userCountID}
                         className='more-modal__name'
                     >
-                        {Utils.displayEntireNameForUser(this.props.user)}
-                        {tag}
+                        <UserProfile
+                            userId={this.props.user.id}
+                            hasMention={true}
+                            displayUsername={true}
+                        />
+                        <Nbsp/>
+                        {
+                            this.props.user.first_name || this.props.user.last_name || this.props.user.nickname ?
+                                '-' : null
+                        }
+                        <Nbsp/>
+                        {Utils.displayFullAndNicknameForUser(this.props.user)}
                     </div>
                     <div
                         id={userCountEmail}
@@ -116,6 +125,7 @@ export default class UserListRow extends React.Component {
                     {this.props.extraInfo}
                 </div>
                 <div
+                    data-testid='userListItemActions'
                     className='more-modal__actions'
                 >
                     {buttons}

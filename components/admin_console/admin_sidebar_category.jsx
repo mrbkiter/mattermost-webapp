@@ -5,7 +5,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {NavLink, Route} from 'react-router-dom';
 
-export default class AdminSidebarCategory extends React.Component {
+export default class AdminSidebarCategory extends React.PureComponent {
     static get propTypes() {
         return {
             name: PropTypes.string,
@@ -15,18 +15,13 @@ export default class AdminSidebarCategory extends React.Component {
             parentLink: PropTypes.string,
             children: PropTypes.node,
             action: PropTypes.node,
+            definitionKey: PropTypes.string,
         };
     }
 
     static get defaultProps() {
         return {
             parentLink: '',
-        };
-    }
-
-    static get contextTypes() {
-        return {
-            router: PropTypes.object.isRequired,
         };
     }
 
@@ -80,7 +75,10 @@ export default class AdminSidebarCategory extends React.Component {
         }
 
         return (
-            <li className='sidebar-category'>
+            <li
+                className='sidebar-category'
+                data-testid={this.props.definitionKey}
+            >
                 {title}
                 {clonedChildren}
             </li>

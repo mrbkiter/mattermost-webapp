@@ -4,8 +4,9 @@
 import thunk from 'redux-thunk';
 import configureStore from 'redux-mock-store';
 
-import {Posts} from 'mattermost-redux/constants';
 import {SearchTypes} from 'mattermost-redux/action_types';
+import * as PostActions from 'mattermost-redux/actions/posts';
+import {Posts} from 'mattermost-redux/constants';
 
 import * as Actions from 'actions/post_actions';
 import {Constants, ActionTypes, RHSStates} from 'utils/constants';
@@ -16,12 +17,11 @@ jest.mock('mattermost-redux/actions/posts', () => ({
     addReaction: (...args) => ({type: 'MOCK_ADD_REACTION', args}),
     createPost: (...args) => ({type: 'MOCK_CREATE_POST', args}),
     createPostImmediately: (...args) => ({type: 'MOCK_CREATE_POST_IMMEDIATELY', args}),
-    getPosts: (...args) => ({type: 'MOCK_GET_POSTS', args}),
-    getPostsBefore: (...args) => ({type: 'MOCK_GET_POSTS_BEFORE', args}),
     flagPost: (...args) => ({type: 'MOCK_FLAG_POST', args}),
     unflagPost: (...args) => ({type: 'MOCK_UNFLAG_POST', args}),
     pinPost: (...args) => ({type: 'MOCK_PIN_POST', args}),
     unpinPost: (...args) => ({type: 'MOCK_UNPIN_POST', args}),
+    receivedNewPost: (...args) => ({type: 'MOCK_RECEIVED_NEW_POST', args}),
 }));
 
 jest.mock('actions/emoji_actions', () => ({
@@ -29,7 +29,7 @@ jest.mock('actions/emoji_actions', () => ({
 }));
 
 jest.mock('actions/storage', () => {
-    const original = require.requireActual('actions/storage');
+    const original = jest.requireActual('actions/storage');
     return {
         ...original,
         setGlobalItem: (...args) => ({type: 'MOCK_SET_GLOBAL_ITEM', args}),
@@ -44,16 +44,9 @@ const POST_CREATED_TIME = Date.now();
 
 // This mocks the Date.now() function so it returns a constant value
 global.Date.now = jest.fn(() => POST_CREATED_TIME);
+
 const INCREASED_POST_VISIBILITY = {amount: 1, data: 'current_channel_id', type: 'INCREASE_POST_VISIBILITY'};
 const STOP_TYPING = {type: 'stop_typing', data: {id: 'current_channel_idundefined', now: POST_CREATED_TIME, userId: 'some_user_id'}};
-
-function getReceivedPosts(post) {
-    return {
-        type: 'RECEIVED_NEW_POST',
-        data: {...post},
-        channelId: post.channel_id,
-    };
-}
 
 describe('Actions.Posts', () => {
     const latestPost = {
@@ -70,7 +63,9 @@ describe('Actions.Posts', () => {
                     [latestPost.id]: latestPost,
                 },
                 postsInChannel: {
-                    current_channel_id: [latestPost.id],
+                    current_channel_id: [
+                        {order: [latestPost.id], recent: true},
+                    ],
                 },
                 postsInThread: {},
                 messagesHistory: {
@@ -88,9 +83,14 @@ describe('Actions.Posts', () => {
                         user_id: 'current_user_id',
                         roles: 'channel_role',
                     },
+                    other_channel_id: {
+                        channel_id: 'other_channel_id',
+                        user_id: 'current_user_id',
+                        roles: 'channel_role',
+                    },
                 },
                 channels: {
-                    current_channel_id: {team_id: 'team_id'},
+                    current_channel_id: {team_a: 'team_a'},
                 },
             },
             preferences: {
@@ -104,16 +104,22 @@ describe('Actions.Posts', () => {
                 },
             },
             teams: {
-                currentTeamId: 'team-1',
+                currentTeamId: 'team-a',
                 teams: {
-                    team_id: {
-                        id: 'team_id',
-                        name: 'team-1',
-                        displayName: 'Team 1',
+                    team_a: {
+                        id: 'team_a',
+                        name: 'team-a',
+                        displayName: 'Team A',
+                    },
+                    team_b: {
+                        id: 'team_b',
+                        name: 'team-a',
+                        displayName: 'Team B',
                     },
                 },
                 myMembers: {
-                    'team-1': {roles: 'team_role'},
+                    'team-a': {roles: 'team_role'},
+                    'team-b': {roles: 'team_role'},
                 },
             },
             users: {
@@ -154,10 +160,6 @@ describe('Actions.Posts', () => {
             posts: {
                 editingPost: {},
             },
-            channel: {
-                loadingPosts: {},
-                postVisibility: {current_channel_id: 60},
-            },
             rhs: {searchTerms: ''},
         },
     };
@@ -165,14 +167,38 @@ describe('Actions.Posts', () => {
     test('handleNewPost', async () => {
         const testStore = await mockStore(initialState);
         const newPost = {id: 'new_post_id', channel_id: 'current_channel_id', message: 'new message', type: Constants.PostTypes.ADD_TO_CHANNEL, user_id: 'some_user_id', create_at: POST_CREATED_TIME};
-        const msg = {data: {team_id: 'team_id', mentions: ['current_user_id']}};
+        const msg = {data: {team_a: 'team_a', mentions: ['current_user_id']}};
 
         await testStore.dispatch(Actions.handleNewPost(newPost, msg));
         expect(testStore.getActions()).toEqual([
             INCREASED_POST_VISIBILITY,
             {
                 meta: {batch: true},
-                payload: [getReceivedPosts(newPost), STOP_TYPING],
+                payload: [PostActions.receivedNewPost(newPost), STOP_TYPING],
+                type: 'BATCHING_REDUCER.BATCH',
+            },
+        ]);
+    });
+
+    test('handleNewPostOtherChannel', async () => {
+        const testStore = await mockStore(initialState);
+        const newPost = {id: 'other_channel_post_id', channel_id: 'other_channel_id', message: 'new message in other channel', type: '', user_id: 'other_user_id', create_at: POST_CREATED_TIME};
+        const msg = {data: {team_b: 'team_b', mentions: ['current_user_id']}};
+
+        await testStore.dispatch(Actions.handleNewPost(newPost, msg));
+        expect(testStore.getActions()).toEqual([
+            {
+                meta: {batch: true},
+                payload: [
+                    PostActions.receivedNewPost(newPost),
+                    {
+                        type: 'stop_typing',
+                        data: {
+                            id: 'other_channel_idundefined',
+                            now: POST_CREATED_TIME,
+                            userId: newPost.user_id},
+                    },
+                ],
                 type: 'BATCHING_REDUCER.BATCH',
             },
         ]);
@@ -185,7 +211,7 @@ describe('Actions.Posts', () => {
         expect(data).toEqual(true);
 
         expect(testStore.getActions()).toEqual(
-            [{data: {commentCount: 0, isRHS: false, postId: 'latest_post_id', refocusId: 'test', title: 'title'}, type: ActionTypes.SHOW_EDIT_POST_MODAL}]
+            [{data: {commentCount: 0, isRHS: false, postId: 'latest_post_id', refocusId: 'test', title: 'title'}, type: ActionTypes.SHOW_EDIT_POST_MODAL}],
         );
 
         const general = {
@@ -201,7 +227,7 @@ describe('Actions.Posts', () => {
         const {data: withLicenseData} = await testStore.dispatch(Actions.setEditingPost('latest_post_id', 0, 'test', 'title'));
         expect(withLicenseData).toEqual(true);
         expect(testStore.getActions()).toEqual(
-            [{data: {commentCount: 0, isRHS: false, postId: 'latest_post_id', refocusId: 'test', title: 'title'}, type: ActionTypes.SHOW_EDIT_POST_MODAL}]
+            [{data: {commentCount: 0, isRHS: false, postId: 'latest_post_id', refocusId: 'test', title: 'title'}, type: ActionTypes.SHOW_EDIT_POST_MODAL}],
         );
 
         // should not allow edit for pending post
@@ -223,48 +249,6 @@ describe('Actions.Posts', () => {
         expect(testStore.getActions()).toEqual([{type: ActionTypes.HIDE_EDIT_POST_MODAL}]);
     });
 
-    test('increasePostVisibility', async () => {
-        const testStore = await mockStore(initialState);
-
-        await testStore.dispatch(Actions.increasePostVisibility('current_channel_id'));
-        expect(testStore.getActions()).toEqual([
-            {channelId: 'current_channel_id', data: true, type: 'LOADING_POSTS'},
-            {args: ['current_channel_id', 2, 30], type: 'MOCK_GET_POSTS'},
-            {
-                meta: {batch: true},
-                payload: [
-                    {channelId: 'current_channel_id', data: false, type: 'LOADING_POSTS'},
-                ],
-                type: 'BATCHING_REDUCER.BATCH',
-            },
-        ]);
-
-        await testStore.dispatch(Actions.increasePostVisibility('current_channel_id', 'latest_post_id'));
-        expect(testStore.getActions()).toEqual([
-            {channelId: 'current_channel_id', data: true, type: 'LOADING_POSTS'},
-            {args: ['current_channel_id', 2, 30], type: 'MOCK_GET_POSTS'},
-            {
-                meta: {batch: true},
-                payload: [
-                    {channelId: 'current_channel_id', data: false, type: 'LOADING_POSTS'},
-                ],
-                type: 'BATCHING_REDUCER.BATCH',
-            },
-            {channelId: 'current_channel_id', data: true, type: 'LOADING_POSTS'},
-            {
-                args: ['current_channel_id', 'latest_post_id', 2, 30],
-                type: 'MOCK_GET_POSTS_BEFORE',
-            },
-            {
-                meta: {batch: true},
-                payload: [
-                    {channelId: 'current_channel_id', data: false, type: 'LOADING_POSTS'},
-                ],
-                type: 'BATCHING_REDUCER.BATCH',
-            },
-        ]);
-    });
-
     test('searchForTerm', async () => {
         const testStore = await mockStore(initialState);
 
@@ -277,36 +261,101 @@ describe('Actions.Posts', () => {
         ]);
     });
 
-    test('createPost', async () => {
-        const testStore = await mockStore(initialState);
-        const newPost = {id: 'new_post_id', channel_id: 'current_channel_id', message: 'new message'};
-        const newReply = {id: 'reply_post_id', channel_id: 'current_channel_id', message: 'new message', root_id: 'new_post_id'};
-        const files = [];
+    describe('createPost', () => {
+        test('no emojis', async () => {
+            const testStore = await mockStore(initialState);
+            const newPost = {id: 'new_post_id', channel_id: 'current_channel_id', message: 'new message'};
+            const newReply = {id: 'reply_post_id', channel_id: 'current_channel_id', message: 'new message', root_id: 'new_post_id'};
+            const files = [];
 
-        const immediateExpectedState = [{
-            args: [newPost, files],
-            type: 'MOCK_CREATE_POST_IMMEDIATELY',
-        }, {
-            args: ['draft_current_channel_id', null],
-            type: 'MOCK_SET_GLOBAL_ITEM',
-        }];
+            const immediateExpectedState = [{
+                args: [newPost, files],
+                type: 'MOCK_CREATE_POST_IMMEDIATELY',
+            }, {
+                args: ['draft_current_channel_id', null],
+                type: 'MOCK_SET_GLOBAL_ITEM',
+            }];
 
-        await testStore.dispatch(Actions.createPost(newPost, files));
-        expect(testStore.getActions()).toEqual(immediateExpectedState);
+            await testStore.dispatch(Actions.createPost(newPost, files));
+            expect(testStore.getActions()).toEqual(immediateExpectedState);
 
-        const finalExpectedState = [
-            ...immediateExpectedState,
-            {
-                args: [newReply, files],
+            const finalExpectedState = [
+                ...immediateExpectedState,
+                {
+                    args: [newReply, files],
+                    type: 'MOCK_CREATE_POST',
+                }, {
+                    args: ['comment_draft_new_post_id', null],
+                    type: 'MOCK_SET_GLOBAL_ITEM',
+                },
+            ];
+
+            await testStore.dispatch(Actions.createPost(newReply, files));
+            expect(testStore.getActions()).toEqual(finalExpectedState);
+        });
+
+        test('with single shorthand emoji', async () => {
+            const testStore = await mockStore(initialState);
+            const newPost = {id: 'new_post_id', channel_id: 'current_channel_id', message: 'new message :+1:'};
+            const files = [];
+
+            const immediateExpectedState = [{
+                args: ['+1'],
+                type: 'MOCK_ADD_RECENT_EMOJI',
+            }, {
+                args: [newPost, files],
                 type: 'MOCK_CREATE_POST',
             }, {
-                args: ['comment_draft_new_post_id', null],
+                args: ['draft_current_channel_id', null],
                 type: 'MOCK_SET_GLOBAL_ITEM',
-            },
-        ];
+            }];
 
-        await testStore.dispatch(Actions.createPost(newReply, files));
-        expect(testStore.getActions()).toEqual(finalExpectedState);
+            await testStore.dispatch(Actions.createPost(newPost, files));
+            expect(testStore.getActions()).toEqual(immediateExpectedState);
+        });
+
+        test('with single named emoji', async () => {
+            const testStore = await mockStore(initialState);
+            const newPost = {id: 'new_post_id', channel_id: 'current_channel_id', message: 'new message :cake:'};
+            const files = [];
+
+            const immediateExpectedState = [{
+                args: ['cake'],
+                type: 'MOCK_ADD_RECENT_EMOJI',
+            }, {
+                args: [newPost, files],
+                type: 'MOCK_CREATE_POST',
+            }, {
+                args: ['draft_current_channel_id', null],
+                type: 'MOCK_SET_GLOBAL_ITEM',
+            }];
+
+            await testStore.dispatch(Actions.createPost(newPost, files));
+            expect(testStore.getActions()).toEqual(immediateExpectedState);
+        });
+
+        test('with multiple emoji', async () => {
+            const testStore = await mockStore(initialState);
+            const newPost = {id: 'new_post_id', channel_id: 'current_channel_id', message: 'new message :cake: :+1:'};
+            const files = [];
+
+            const immediateExpectedState = [{
+                args: ['cake'],
+                type: 'MOCK_ADD_RECENT_EMOJI',
+            }, {
+                args: ['+1'],
+                type: 'MOCK_ADD_RECENT_EMOJI',
+            }, {
+                args: [newPost, files],
+                type: 'MOCK_CREATE_POST',
+            }, {
+                args: ['draft_current_channel_id', null],
+                type: 'MOCK_SET_GLOBAL_ITEM',
+            }];
+
+            await testStore.dispatch(Actions.createPost(newPost, files));
+            expect(testStore.getActions()).toEqual(immediateExpectedState);
+        });
     });
 
     test('addReaction', async () => {

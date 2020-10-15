@@ -4,10 +4,10 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import {Modal} from 'react-bootstrap';
-import {FormattedHTMLMessage, FormattedMessage} from 'react-intl';
+import {FormattedMessage} from 'react-intl';
 
-import {trackEvent} from 'actions/diagnostics_actions.jsx';
-import Constants from 'utils/constants.jsx';
+import {trackEvent} from 'actions/telemetry_actions.jsx';
+import Constants from 'utils/constants';
 
 import FormattedMarkdownMessage from 'components/formatted_markdown_message.jsx';
 
@@ -59,20 +59,26 @@ export default class ConvertChannelModal extends React.PureComponent {
 
         return (
             <Modal
+                dialogClassName='a11y__modal'
                 show={this.state.show}
                 onHide={this.onHide}
                 onExited={onHide}
+                role='dialog'
+                aria-labelledby='convertChannelModalLabel'
             >
                 <Modal.Header closeButton={true}>
-                    <h4 className='modal-title'>
+                    <Modal.Title
+                        componentClass='h1'
+                        id='convertChannelModalLabel'
+                    >
                         <FormattedMessage
                             id='convert_channel.title'
-                            defaultMessage='Convert {display_name} to a private channel?'
+                            defaultMessage='Convert {display_name} to a Private Channel?'
                             values={{
                                 display_name: channelDisplayName,
                             }}
                         />
-                    </h4>
+                    </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <p>
@@ -85,7 +91,7 @@ export default class ConvertChannelModal extends React.PureComponent {
                         />
                     </p>
                     <p>
-                        <FormattedHTMLMessage
+                        <FormattedMessage
                             id='convert_channel.question2'
                             defaultMessage='The change is permanent and cannot be undone.'
                         />
@@ -105,7 +111,6 @@ export default class ConvertChannelModal extends React.PureComponent {
                         type='button'
                         className='btn btn-link'
                         onClick={this.onHide}
-                        tabIndex='2'
                     >
                         <FormattedMessage
                             id='convert_channel.cancel'
@@ -118,7 +123,7 @@ export default class ConvertChannelModal extends React.PureComponent {
                         data-dismiss='modal'
                         onClick={this.handleConvert}
                         autoFocus={true}
-                        tabIndex='1'
+                        data-testid='convertChannelConfirm'
                     >
                         <FormattedMessage
                             id='convert_channel.confirm'

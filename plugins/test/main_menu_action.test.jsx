@@ -2,9 +2,10 @@
 // See LICENSE.txt for license information.
 
 import React from 'react';
-import {shallow} from 'enzyme';
 
 import MainMenu from 'components/main_menu/main_menu.jsx';
+
+import {shallowWithIntl} from 'tests/helpers/intl-test-helper';
 
 describe('plugins/MainMenuActions', () => {
     test('should match snapshot and click plugin item for main menu', () => {
@@ -21,24 +22,32 @@ describe('plugins/MainMenuActions', () => {
             enableIncomingWebhooks: true,
             enableOutgoingWebhooks: true,
             enableOAuthServiceProvider: true,
+            canManageSystemBots: true,
             enableUserCreation: true,
             enableEmailInvitations: false,
+            enablePluginMarketplace: true,
             showDropdown: true,
             onToggleDropdown: () => {}, //eslint-disable-line no-empty-function
             pluginMenuItems: [{id: 'someplugin', text: 'some plugin text', action: pluginAction}],
             canCreateOrDeleteCustomEmoji: true,
+            canManageIntegrations: true,
             moreTeamsToJoin: true,
+            teamIsGroupConstrained: true,
+            showGettingStarted: true,
             actions: {
                 openModal: jest.fn(),
                 showMentions: jest.fn(),
                 showFlaggedPosts: jest.fn(),
                 closeRightHandSide: jest.fn(),
                 closeRhsMenu: jest.fn(),
+                unhideNextSteps: jest.fn(),
             },
         };
 
-        const wrapper = shallow(
-            <MainMenu {...requiredProps}/>
+        const wrapper = shallowWithIntl(
+            <MainMenu
+                {...requiredProps}
+            />,
         );
 
         expect(wrapper).toMatchSnapshot();

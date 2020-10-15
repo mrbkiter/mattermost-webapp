@@ -2,6 +2,7 @@
 // See LICENSE.txt for license information.
 
 import React from 'react';
+
 import {shallow} from 'enzyme';
 
 import TestHelper from 'tests/helpers/client-test-helper';
@@ -12,7 +13,7 @@ import Bots from './bots.jsx';
 describe('components/integrations/bots/Bots', () => {
     const team = TestHelper.fakeTeam();
     const actions = {
-        loadBots: jest.fn().mockReturnValue(Promise.resolve()),
+        loadBots: jest.fn().mockReturnValue(Promise.resolve({})),
         getUserAccessTokensForUser: jest.fn(),
         createUserAccessToken: jest.fn(),
         revokeUserAccessToken: jest.fn(),
@@ -32,46 +33,56 @@ describe('components/integrations/bots/Bots', () => {
             [bot2.user_id]: bot2,
             [bot3.user_id]: bot3,
         };
-
-        const wrapper = shallow(
+        const users = {
+            [bot1.user_id]: {id: bot1.user_id},
+            [bot2.user_id]: {id: bot2.user_id},
+            [bot3.user_id]: {id: bot3.user_id},
+        };
+        const wrapperFull = shallow(
             <Bots
                 bots={bots}
                 team={team}
                 accessTokens={{}}
                 owners={{}}
+                users={users}
                 actions={actions}
-            />
+            />,
         );
+        wrapperFull.instance().setState({loading: false});
+        const wrapper = shallow(<div>{wrapperFull.instance().bots()[0]}</div>);
 
         expect(wrapper.find('EnabledSection').shallow().contains(
             <Bot
                 key={bot1.user_id}
                 bot={bot1}
                 owner={undefined}
+                user={users[bot1.user_id]}
                 accessTokens={{}}
                 team={team}
                 actions={actions}
-            />
+            />,
         )).toEqual(true);
         expect(wrapper.find('EnabledSection').shallow().contains(
             <Bot
                 key={bot2.user_id}
                 bot={bot2}
                 owner={undefined}
+                user={users[bot2.user_id]}
                 accessTokens={{}}
                 team={team}
                 actions={actions}
-            />
+            />,
         )).toEqual(true);
         expect(wrapper.find('EnabledSection').shallow().contains(
             <Bot
                 key={bot3.user_id}
                 bot={bot3}
                 owner={undefined}
+                user={users[bot3.user_id]}
                 accessTokens={{}}
                 team={team}
                 actions={actions}
-            />
+            />,
         )).toEqual(true);
     });
 
@@ -85,6 +96,10 @@ describe('components/integrations/bots/Bots', () => {
             user_id: 'owner',
         };
 
+        const user = {
+            id: bot1.user_id,
+        };
+
         const passedTokens = {
             id: 'token',
         };
@@ -93,29 +108,37 @@ describe('components/integrations/bots/Bots', () => {
             [bot1.user_id]: owner,
         };
 
+        const users = {
+            [bot1.user_id]: user,
+        };
+
         const tokens = {
             [bot1.user_id]: passedTokens,
         };
 
-        const wrapper = shallow(
+        const wrapperFull = shallow(
             <Bots
                 bots={bots}
                 team={team}
                 accessTokens={tokens}
                 owners={owners}
+                users={users}
                 actions={actions}
-            />
+            />,
         );
+        wrapperFull.instance().setState({loading: false});
+        const wrapper = shallow(<div>{wrapperFull.instance().bots()[0]}</div>);
 
         expect(wrapper.find('EnabledSection').shallow().contains(
             <Bot
                 key={bot1.user_id}
                 bot={bot1}
                 owner={owner}
+                user={user}
                 accessTokens={passedTokens}
                 team={team}
                 actions={actions}
-            />
+            />,
         )).toEqual(true);
     });
 });

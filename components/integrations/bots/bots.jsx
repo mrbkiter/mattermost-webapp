@@ -5,11 +5,14 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {FormattedMessage} from 'react-intl';
 
+import {getSiteURL} from 'utils/url';
+
 import * as Utils from 'utils/utils.jsx';
 import BackstageList from 'components/backstage/components/backstage_list.jsx';
-import Constants from 'utils/constants.jsx';
+import Constants from 'utils/constants';
+import FormattedMarkdownMessage from 'components/formatted_markdown_message';
 
-import Bot from './bot.jsx';
+import Bot, {matchesFilter} from './bot.jsx';
 
 export default class Bots extends React.PureComponent {
     static propTypes = {
@@ -28,6 +31,13 @@ export default class Bots extends React.PureComponent {
         *  Map from botUserId to owner.
         */
         owners: PropTypes.object.isRequired,
+
+        /**
+        *  Map from botUserId to user.
+        */
+        users: PropTypes.object.isRequired,
+
+        createBots: PropTypes.bool,
 
         actions: PropTypes.shape({
 
@@ -82,7 +92,7 @@ export default class Bots extends React.PureComponent {
     componentDidMount() {
         this.props.actions.loadBots(
             Constants.Integrations.START_PAGE_NUM,
-            Constants.Integrations.PAGE_SIZE
+            Constants.Integrations.PAGE_SIZE,
         ).then(
             (result) => {
                 if (result.data) {
@@ -101,7 +111,7 @@ export default class Bots extends React.PureComponent {
                         this.setState({loading: false});
                     });
                 }
-            }
+            },
         );
     }
 
@@ -138,23 +148,41 @@ export default class Bots extends React.PureComponent {
         );
     }
 
-    render() {
-        const bots = Object.values(this.props.bots).sort((a, b) => a.username.localeCompare(b.username));
-        const botToJSX = (bot) => {
-            return (
-                <Bot
-                    key={bot.user_id}
-                    bot={bot}
-                    owner={this.props.owners[bot.user_id]}
-                    accessTokens={this.props.accessTokens[bot.user_id] || {}}
-                    actions={this.props.actions}
-                    team={this.props.team}
-                />
-            );
-        };
-        const enabledBots = bots.filter((bot) => bot.delete_at === 0).map(botToJSX);
-        const disabledBots = bots.filter((bot) => bot.delete_at > 0).map(botToJSX);
+    botToJSX = (bot) => {
+        return (
+            <Bot
+                key={bot.user_id}
+                bot={bot}
+                owner={this.props.owners[bot.user_id]}
+                user={this.props.users[bot.user_id]}
+                accessTokens={this.props.accessTokens[bot.user_id] || {}}
+                actions={this.props.actions}
+                team={this.props.team}
+            />
+        );
+    };
 
+    bots = (filter) => {
+        const bots = Object.values(this.props.bots).sort((a, b) => a.username.localeCompare(b.username));
+        const match = (bot) => matchesFilter(bot, filter, this.props.owners[bot.user_id]);
+        const enabledBots = bots.filter((bot) => bot.delete_at === 0).filter(match).map(this.botToJSX);
+        const disabledBots = bots.filter((bot) => bot.delete_at > 0).filter(match).map(this.botToJSX);
+        const sections = (
+            <div key='sections'>
+                <this.EnabledSection
+                    enabledBots={enabledBots}
+                />
+                <this.DisabledSection
+                    hasDisabled={disabledBots.length > 0}
+                    disabledBots={disabledBots}
+                />
+            </div>
+        );
+
+        return [sections, enabledBots.length > 0 || disabledBots.length > 0];
+    }
+
+    render() {
         return (
             <BackstageList
                 header={
@@ -163,49 +191,59 @@ export default class Bots extends React.PureComponent {
                         defaultMessage='Bot Accounts'
                     />
                 }
-                addText={
+                addText={this.props.createBots &&
                     <FormattedMessage
                         id='bots.manage.add'
                         defaultMessage='Add Bot Account'
                     />
                 }
                 addLink={'/' + this.props.team.name + '/integrations/bots/add'}
+                addButtonId='addBotAccount'
                 emptyText={
                     <FormattedMessage
                         id='bots.manage.empty'
                         defaultMessage='No bot accounts found'
                     />
                 }
-                helpText={
-                    <FormattedMessage
-                        id='bots.manage.help'
-                        defaultMessage='Use {botAccounts} to integrate with Mattermost through plugins or the API. Bot accounts are available to everyone on your server.'
-                        values={{
-                            botAccounts: (
-                                <a
-                                    target='_blank'
-                                    rel='noopener noreferrer'
-                                    href='https://mattermost.com/pl/default-bot-accounts'
-                                >
-                                    <FormattedMessage
-                                        id='bots.manage.bot_accounts'
-                                        defaultMessage='Bot Accounts'
-                                    />
-                                </a>
-                            ),
-                        }}
+                emptyTextSearch={
+                    <FormattedMarkdownMessage
+                        id='bots.manage.emptySearch'
+                        defaultMessage='No bot accounts match **{searchTerm}**'
                     />
+                }
+                helpText={
+                    <React.Fragment>
+                        <FormattedMessage
+                            id='bots.manage.help1'
+                            defaultMessage='Use {botAccounts} to integrate with Mattermost through plugins or the API. Bot accounts are available to everyone on your server. '
+                            values={{
+                                botAccounts: (
+                                    <a
+                                        target='_blank'
+                                        rel='noopener noreferrer'
+                                        href='https://mattermost.com/pl/default-bot-accounts'
+                                    >
+                                        <FormattedMessage
+                                            id='bots.manage.bot_accounts'
+                                            defaultMessage='Bot Accounts'
+                                        />
+                                    </a>
+                                ),
+                            }}
+                        />
+                        <FormattedMarkdownMessage
+                            id='bots.manage.help2'
+                            defaultMessage={'Enable bot account creation in the [System Console]({siteURL}/admin_console/integrations/bot_accounts).'}
+                            values={{
+                                siteURL: getSiteURL(),
+                            }}
+                        />
+                    </React.Fragment>
                 }
                 searchPlaceholder={Utils.localizeMessage('bots.manage.search', 'Search Bot Accounts')}
                 loading={this.state.loading}
             >
-                <this.EnabledSection
-                    enabledBots={enabledBots}
-                />
-                <this.DisabledSection
-                    hasDisabled={disabledBots.length > 0}
-                    disabledBots={disabledBots}
-                />
+                {this.bots}
             </BackstageList>
         );
     }

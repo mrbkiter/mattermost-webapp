@@ -7,11 +7,13 @@ import {FormattedMessage} from 'react-intl';
 import {Link} from 'react-router-dom';
 
 import BackstageHeader from 'components/backstage/components/backstage_header.jsx';
-import Constants from 'utils/constants.jsx';
+import Constants from 'utils/constants';
 import * as Utils from 'utils/utils.jsx';
-import FormError from 'components/form_error.jsx';
-import SpinnerButton from 'components/spinner_button.jsx';
+import FormError from 'components/form_error';
+import SpinnerButton from 'components/spinner_button';
 import LocalizedInput from 'components/localized_input/localized_input';
+
+import {t} from 'utils/i18n.jsx';
 
 const REQUEST_POST = 'P';
 const REQUEST_GET = 'G';
@@ -278,12 +280,12 @@ export default class AbstractCommand extends React.PureComponent {
                             className='form-control'
                             value={this.state.autocompleteHint}
                             onChange={this.updateAutocompleteHint}
-                            placeholder={{id: 'add_command.autocompleteHint.placeholder', defaultMessage: 'Example: [Patient Name]'}}
+                            placeholder={{id: t('add_command.autocompleteHint.placeholder'), defaultMessage: 'Example: [Patient Name]'}}
                         />
                         <div className='form__help'>
                             <FormattedMessage
                                 id='add_command.autocompleteHint.help'
-                                defaultMessage='(Optional) Arguments associated with your slash command, displayed as help in the autocomplete list.'
+                                defaultMessage='(Optional) Specify the arguments associated with your slash command. These are displayed as help on the autocomplete list.'
                             />
                         </div>
                     </div>
@@ -309,12 +311,12 @@ export default class AbstractCommand extends React.PureComponent {
                             className='form-control'
                             value={this.state.autocompleteDescription}
                             onChange={this.updateAutocompleteDescription}
-                            placeholder={{id: 'add_command.autocompleteDescription.placeholder', defaultMessage: 'Example: "Returns search results for patient records"'}}
+                            placeholder={{id: t('add_command.autocompleteDescription.placeholder'), defaultMessage: 'Example: "Returns search results for patient records"'}}
                         />
                         <div className='form__help'>
                             <FormattedMessage
                                 id='add_command.autocompleteDescription.help'
-                                defaultMessage='(Optional) Short description of slash command for the autocomplete list.'
+                                defaultMessage='(Optional) Describe your slash command for the autocomplete list.'
                             />
                         </div>
                     </div>
@@ -363,7 +365,7 @@ export default class AbstractCommand extends React.PureComponent {
                                 <div className='form__help'>
                                     <FormattedMessage
                                         id='add_command.displayName.help'
-                                        defaultMessage='Choose a title to be displayed on the slash command settings page. Maximum 64 characters.'
+                                        defaultMessage='Specify a title, of up to 64 characters, for the slash command settings page.'
                                     />
                                 </div>
                             </div>
@@ -390,7 +392,7 @@ export default class AbstractCommand extends React.PureComponent {
                                 <div className='form__help'>
                                     <FormattedMessage
                                         id='add_command.description.help'
-                                        defaultMessage='Description for your incoming webhook.'
+                                        defaultMessage='Describe your incoming webhook.'
                                     />
                                 </div>
                             </div>
@@ -413,12 +415,12 @@ export default class AbstractCommand extends React.PureComponent {
                                     className='form-control'
                                     value={this.state.trigger}
                                     onChange={this.updateTrigger}
-                                    placeholder={{id: 'add_command.trigger.placeholder', defaultMessage: 'Command trigger e.g. "hello" not including the slash'}}
+                                    placeholder={{id: t('add_command.trigger.placeholder'), defaultMessage: 'Command trigger e.g. "hello" not including the slash'}}
                                 />
                                 <div className='form__help'>
                                     <FormattedMessage
                                         id='add_command.trigger.help'
-                                        defaultMessage='Trigger word must be unique, and cannot begin with a slash or contain any spaces.'
+                                        defaultMessage='Specify a trigger word that is not a built-in command, does not contain spaces, and does not begin with the slash character.'
                                     />
                                 </div>
                                 <div className='form__help'>
@@ -440,7 +442,7 @@ export default class AbstractCommand extends React.PureComponent {
                                                 >
                                                     <FormattedMessage
                                                         id='add_command.trigger.helpReservedLinkText'
-                                                        defaultMessage='see list of built-in slash commands'
+                                                        defaultMessage='See built-in slash commands'
                                                     />
                                                 </a>
                                             ),
@@ -467,12 +469,12 @@ export default class AbstractCommand extends React.PureComponent {
                                     className='form-control'
                                     value={this.state.url}
                                     onChange={this.updateUrl}
-                                    placeholder={{id: 'add_command.url.placeholder', defaultMessage: 'Must start with http:// or https://'}}
+                                    placeholder={{id: t('add_command.url.placeholder'), defaultMessage: 'Must start with http:// or https://'}}
                                 />
                                 <div className='form__help'>
                                     <FormattedMessage
                                         id='add_command.url.help'
-                                        defaultMessage='The callback URL to receive the HTTP POST or GET event request when the slash command is run.'
+                                        defaultMessage='Specify the callback URL to receive the HTTP POST or GET event request when the slash command is run.'
                                     />
                                 </div>
                             </div>
@@ -504,7 +506,7 @@ export default class AbstractCommand extends React.PureComponent {
                                 <div className='form__help'>
                                     <FormattedMessage
                                         id='add_command.method.help'
-                                        defaultMessage='The type of command request issued to the Request URL.'
+                                        defaultMessage='Specify the type of request, either POST or GET, sent to the endpoint that Mattermost hits to reach your application.'
                                     />
                                 </div>
                             </div>
@@ -527,12 +529,12 @@ export default class AbstractCommand extends React.PureComponent {
                                     className='form-control'
                                     value={this.state.username}
                                     onChange={this.updateUsername}
-                                    placeholder={{id: 'add_command.username.placeholder', defaultMessage: 'Username'}}
+                                    placeholder={{id: t('add_command.username.placeholder'), defaultMessage: 'Username'}}
                                 />
                                 <div className='form__help'>
                                     <FormattedMessage
                                         id='add_command.username.help'
-                                        defaultMessage='(Optional) Choose a username override for responses for this slash command. Usernames can consist of up to 22 characters consisting of lowercase letters, numbers and they symbols "-", "_", and "." .'
+                                        defaultMessage='(Optional) Specify the name to use when posting responses for this slash command. Usernames can be up to 22 characters, and contain lowercase letters, numbers, and the symbols \"-\", \"_\", and \".\". If left blank, your Mattermost username is used.'
                                     />
                                 </div>
                             </div>
@@ -555,12 +557,12 @@ export default class AbstractCommand extends React.PureComponent {
                                     className='form-control'
                                     value={this.state.iconUrl}
                                     onChange={this.updateIconUrl}
-                                    placeholder={{id: 'add_command.iconUrl.placeholder', defaultMessage: 'https://www.example.com/myicon.png'}}
+                                    placeholder={{id: t('add_command.iconUrl.placeholder'), defaultMessage: 'https://www.example.com/myicon.png'}}
                                 />
                                 <div className='form__help'>
                                     <FormattedMessage
                                         id='add_command.iconUrl.help'
-                                        defaultMessage='(Optional) Choose a profile picture override for the post responses to this slash command. Enter the URL of a .png or .jpg file at least 128 pixels by 128 pixels.'
+                                        defaultMessage='(Optional) Enter the URL of a .png or .jpg file to use as the icon when posting responses to this slash command. The file must be at least 128 pixels by 128 pixels. If left blank, your profile picture is used.'
                                     />
                                 </div>
                             </div>
@@ -585,7 +587,7 @@ export default class AbstractCommand extends React.PureComponent {
                                 <div className='form__help'>
                                     <FormattedMessage
                                         id='add_command.autocomplete.help'
-                                        defaultMessage='(Optional) Show slash command in autocomplete list.'
+                                        defaultMessage='(Optional) Show your slash command on the autocomplete list when someone types "/" in the input box.'
                                     />
                                 </div>
                             </div>
@@ -612,6 +614,7 @@ export default class AbstractCommand extends React.PureComponent {
                                 spinning={this.state.saving}
                                 spinningText={Utils.localizeMessage(this.props.loading.id, this.props.loading.defaultMessage)}
                                 onClick={this.handleSubmit}
+                                id='saveCommand'
                             >
                                 <FormattedMessage
                                     id={this.props.footer.id}

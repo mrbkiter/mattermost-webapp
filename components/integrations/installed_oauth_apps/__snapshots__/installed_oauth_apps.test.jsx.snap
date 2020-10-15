@@ -2,20 +2,25 @@
 
 exports[`components/integrations/InstalledOAuthApps should match snapshot 1`] = `
 <BackstageList
+  addButtonId="addOauthApp"
   addLink="/test/integrations/oauth2-apps/add"
   addText="Add OAuth 2.0 Application"
   emptyText={
     <FormattedMessage
       defaultMessage="No OAuth 2.0 Applications found"
       id="installed_oauth_apps.empty"
-      values={Object {}}
+    />
+  }
+  emptyTextSearch={
+    <injectIntl(FormattedMarkdownMessage)
+      defaultMessage="No OAuth 2.0 Applications match {searchTerm}"
+      id="installed_oauth_apps.emptySearch"
     />
   }
   header={
     <FormattedMessage
       defaultMessage="OAuth 2.0 Applications"
       id="installed_oauth_apps.header"
-      values={Object {}}
     />
   }
   helpText={
@@ -32,7 +37,6 @@ exports[`components/integrations/InstalledOAuthApps should match snapshot 1`] = 
             <FormattedMessage
               defaultMessage="App Directory"
               id="installed_oauth_apps.help.appDirectory"
-              values={Object {}}
             />
           </a>,
           "oauthApplications": <a
@@ -43,7 +47,6 @@ exports[`components/integrations/InstalledOAuthApps should match snapshot 1`] = 
             <FormattedMessage
               defaultMessage="OAuth 2.0 applications"
               id="installed_oauth_apps.help.oauthApplications"
-              values={Object {}}
             />
           </a>,
         }
@@ -53,6 +56,12 @@ exports[`components/integrations/InstalledOAuthApps should match snapshot 1`] = 
   loading={true}
   searchPlaceholder="Search OAuth 2.0 Applications"
 >
+  <Component />
+</BackstageList>
+`;
+
+exports[`components/integrations/InstalledOAuthApps should match snapshot 2`] = `
+<div>
   <Connect(InstalledOAuthApp)
     key="facxd9wpzpbpfp8pad78xj75pr"
     oauthApp={
@@ -74,51 +83,13 @@ exports[`components/integrations/InstalledOAuthApps should match snapshot 1`] = 
     }
     onDelete={[Function]}
     onRegenerateSecret={[MockFunction]}
-    regenOAuthAppSecretRequest={
-      Object {
-        "error": null,
-        "status": "not_started",
-      }
-    }
     team={
       Object {
         "name": "test",
       }
     }
   />
-  <Connect(InstalledOAuthApp)
-    key="fzcxd9wpzpbpfp8pad78xj75pr"
-    oauthApp={
-      Object {
-        "callback_urls": Array [
-          "https://test2.com/callback",
-          "https://test2.com/callback2",
-        ],
-        "client_secret": "decxd9wpzpbpfp8pad78xj75pr",
-        "create_at": 1501365459984,
-        "creator_id": "88oybd2dwfdoxpkpw1h5kpbyco",
-        "description": "testing2",
-        "homepage": "https://test2.com",
-        "icon_url": "https://test2.com/icon",
-        "id": "fzcxd9wpzpbpfp8pad78xj75pr",
-        "is_trusted": true,
-        "name": "secondApp",
-        "update_at": 1501365479988,
-      }
-    }
-    onDelete={[Function]}
-    onRegenerateSecret={[MockFunction]}
-    regenOAuthAppSecretRequest={
-      Object {
-        "error": null,
-        "status": "not_started",
-      }
-    }
-    team={
-      Object {
-        "name": "test",
-      }
-    }
-  />
-</BackstageList>
+</div>
 `;
+
+exports[`components/integrations/InstalledOAuthApps should match snapshot 3`] = `<div />`;

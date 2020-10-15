@@ -10,13 +10,15 @@ import {
     getCurrentRelativeTeamUrl,
     getTeamMember,
 } from 'mattermost-redux/selectors/entities/teams';
-import {getCurrentChannel, getChannelMembersInChannels} from 'mattermost-redux/selectors/entities/channels';
-import {loadBot} from 'mattermost-redux/actions/bots';
-import {getBotAccounts} from 'mattermost-redux/selectors/entities/bots';
+import {
+    getCurrentChannel,
+    getChannelMembersInChannels,
+    canManageAnyChannelMembersInCurrentTeam,
+} from 'mattermost-redux/selectors/entities/channels';
 
 import {openDirectChannelToUserId} from 'actions/channel_actions.jsx';
 import {getMembershipForCurrentEntities} from 'actions/views/profile_popover';
-import {openModal} from 'actions/views/modals';
+import {closeModal, openModal} from 'actions/views/modals';
 
 import {areTimezonesEnabledAndSupported} from 'selectors/general';
 import {getSelectedPost, getRhsState} from 'selectors/rhs';
@@ -56,20 +58,22 @@ function mapStateToProps(state, ownProps) {
         enableTimezone: areTimezonesEnabledAndSupported(state),
         isTeamAdmin,
         isChannelAdmin,
+        isInCurrentTeam: Boolean(teamMember) && teamMember.delete_at === 0,
+        canManageAnyChannelMembersInCurrentTeam: canManageAnyChannelMembersInCurrentTeam(state),
         status: getStatusForUserId(state, userId),
         teamUrl: getCurrentRelativeTeamUrl(state),
         user: getUser(state, userId),
-        bot: getBotAccounts(state)[userId],
+        modals: state.views.modals.modalState,
     };
 }
 
 function mapDispatchToProps(dispatch) {
     return {
         actions: bindActionCreators({
+            closeModal,
             openDirectChannelToUserId,
             openModal,
             getMembershipForCurrentEntities,
-            loadBot,
         }, dispatch),
     };
 }

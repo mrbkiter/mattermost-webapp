@@ -6,30 +6,25 @@ import React from 'react';
 import {Modal} from 'react-bootstrap';
 import {FormattedMessage} from 'react-intl';
 
-import Constants from 'utils/constants.jsx';
+import Constants from 'utils/constants';
 import {localizeMessage, compareChannels} from 'utils/utils.jsx';
 
-import MultiSelect from 'components/multiselect/multiselect.jsx';
+import MultiSelect from 'components/multiselect/multiselect';
 
 import FormattedMarkdownMessage from 'components/formatted_markdown_message.jsx';
 
-import GlobeIcon from 'components/svg/globe_icon';
-import LockIcon from 'components/svg/lock_icon';
-
 const CHANNELS_PER_PAGE = 50;
 
-export default class ChannelSelectorModal extends React.Component {
+export default class ChannelSelectorModal extends React.PureComponent {
     static propTypes = {
-        alreadySelected: PropTypes.array,
         searchTerm: PropTypes.string.isRequired,
-        channels: PropTypes.array.isRequired,
         onModalDismissed: PropTypes.func,
         onChannelsSelected: PropTypes.func,
-        excludeNames: PropTypes.arrayOf(PropTypes.string),
+        groupID: PropTypes.string.isRequired,
         actions: PropTypes.shape({
             loadChannels: PropTypes.func.isRequired,
             setModalSearchTerm: PropTypes.func.isRequired,
-            searchChannels: PropTypes.func.isRequired,
+            searchAllChannels: PropTypes.func.isRequired,
         }).isRequired,
     }
 
@@ -43,12 +38,15 @@ export default class ChannelSelectorModal extends React.Component {
             show: true,
             search: false,
             loadingChannels: true,
-            excludeNames: [],
+            channels: [],
         };
+
+        this.selectedItemRef = React.createRef();
     }
 
     componentDidMount() {
-        this.props.actions.loadChannels(0, CHANNELS_PER_PAGE * 2).then(() => {
+        this.props.actions.loadChannels(0, CHANNELS_PER_PAGE + 1, this.props.groupID, false).then((response) => {
+            this.setState({channels: response.data.sort(compareChannels)});
             this.setChannelsLoadingState(false);
         });
     }
@@ -59,17 +57,21 @@ export default class ChannelSelectorModal extends React.Component {
 
             const searchTerm = this.props.searchTerm;
             if (searchTerm === '') {
-                return;
-            }
-
-            this.searchTimeoutId = setTimeout(
-                async () => {
-                    this.setChannelsLoadingState(true);
-                    await this.props.actions.searchChannels(searchTerm);
+                this.props.actions.loadChannels(0, CHANNELS_PER_PAGE + 1, this.props.groupID, false).then((response) => {
+                    this.setState({channels: response.data.sort(compareChannels)});
                     this.setChannelsLoadingState(false);
-                },
-                Constants.SEARCH_TIMEOUT_MILLISECONDS
-            );
+                });
+            } else {
+                this.searchTimeoutId = setTimeout(
+                    async () => {
+                        this.setChannelsLoadingState(true);
+                        const response = await this.props.actions.searchAllChannels(searchTerm, {not_associated_to_group: this.props.groupID});
+                        this.setState({channels: response.data});
+                        this.setChannelsLoadingState(false);
+                    },
+                    Constants.SEARCH_TIMEOUT_MILLISECONDS,
+                );
+            }
         }
     }
 
@@ -115,7 +117,15 @@ export default class ChannelSelectorModal extends React.Component {
     handlePageChange = (page, prevPage) => {
         if (page > prevPage) {
             this.setChannelsLoadingState(true);
-            this.props.actions.loadChannels(page + 1, CHANNELS_PER_PAGE).then(() => {
+            this.props.actions.loadChannels(page, CHANNELS_PER_PAGE + 1, this.props.groupID, false).then((response) => {
+                const newState = [...this.state.channels];
+                const stateChannelIDs = this.state.channels.map((stateChannel) => stateChannel.id);
+                response.data.forEach((serverChannel) => {
+                    if (!stateChannelIDs.includes(serverChannel.id)) {
+                        newState.push(serverChannel);
+                    }
+                });
+                this.setState({channels: newState.sort(compareChannels)});
                 this.setChannelsLoadingState(false);
             });
         }
@@ -125,11 +135,14 @@ export default class ChannelSelectorModal extends React.Component {
         this.setState({values});
     }
 
-    search = (term) => {
+    search = (term, multiselectComponent) => {
+        if (multiselectComponent.state.page !== 0) {
+            multiselectComponent.setState({page: 0});
+        }
         this.props.actions.setModalSearchTerm(term);
     }
 
-    renderOption(option, isSelected, onAdd) {
+    renderOption = (option, isSelected, onAdd, onMouseMove) => {
         let rowSelected = '';
         if (isSelected) {
             rowSelected = 'more-modal__row--selected';
@@ -138,17 +151,18 @@ export default class ChannelSelectorModal extends React.Component {
         return (
             <div
                 key={option.id}
-                ref={isSelected ? 'selected' : option.id}
+                ref={isSelected ? this.selectedItemRef : option.id}
                 className={'more-modal__row clickable ' + rowSelected}
                 onClick={() => onAdd(option)}
+                onMouseMove={() => onMouseMove(option)}
             >
                 <div
                     className='more-modal__details'
                 >
-                    {option.type === 'P' &&
-                        <LockIcon className='icon icon__lock'/>}
-                    {option.type === 'O' &&
-                        <GlobeIcon className='icon icon__globe'/>}
+                    {option.type === Constants.PRIVATE_CHANNEL &&
+                        <i className='icon icon-lock-outline'/>}
+                    {option.type === Constants.OPEN_CHANNEL &&
+                        <i className='icon icon-globe'/>}
                     <span className='channel-name'>{option.display_name}</span>
                     <span className='team-name'>{'(' + option.team_display_name + ')'}</span>
                 </div>
@@ -175,39 +189,32 @@ export default class ChannelSelectorModal extends React.Component {
 
         const buttonSubmitText = localizeMessage('multiselect.add', 'Add');
 
-        let channels = [];
-        if (this.props.channels) {
-            channels = this.props.channels.filter((channel) => {
-                return (
-                    (channel.delete_at === 0) &&
-                    (channel.scheme_id !== this.currentSchemeId) &&
-                    (this.props.alreadySelected.indexOf(channel.id) === -1) &&
-                    (this.props.excludeNames.indexOf(channel.name) === -1)
-                );
-            });
-            channels.sort(compareChannels);
-        }
-
         return (
             <Modal
-                dialogClassName={'more-modal more-direct-channels channel-selector-modal'}
+                dialogClassName={'a11y__modal more-modal more-direct-channels channel-selector-modal'}
                 show={this.state.show}
                 onHide={this.handleHide}
                 onExited={this.handleExit}
+                role='dialog'
+                aria-labelledby='channelSelectorModalLabel'
             >
                 <Modal.Header closeButton={true}>
-                    <Modal.Title>
+                    <Modal.Title
+                        componentClass='h1'
+                        id='channelSelectorModalLabel'
+                    >
                         <FormattedMarkdownMessage
                             id='add_channels_to_scheme.title'
-                            defaultMessage='Add Channels To **Channel Selection** List'
+                            defaultMessage='Add Channels to **Channel Selection** List'
                         />
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <MultiSelect
                         key='addChannelsToSchemeKey'
-                        options={channels}
+                        options={this.state.channels}
                         optionRenderer={this.renderOption}
+                        selectedItemRef={this.selectedItemRef}
                         values={this.state.values}
                         valueRenderer={this.renderValue}
                         perPage={CHANNELS_PER_PAGE}
@@ -220,6 +227,7 @@ export default class ChannelSelectorModal extends React.Component {
                         buttonSubmitText={buttonSubmitText}
                         saving={false}
                         loading={this.state.loadingChannels}
+                        placeholderText={localizeMessage('multiselect.addChannelsPlaceholder', 'Search and add channels')}
                     />
                 </Modal.Body>
             </Modal>

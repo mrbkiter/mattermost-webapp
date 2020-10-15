@@ -3,11 +3,12 @@
 exports[`components/ActivityLogModal should match snapshot 1`] = `
 <Modal
   animation={true}
+  aria-labelledby="activityLogModalLabel"
   autoFocus={true}
   backdrop={true}
   bsClass="modal"
   bsSize="large"
-  dialogClassName="modal--scroll"
+  dialogClassName="a11y__modal modal--scroll"
   dialogComponentClass={[Function]}
   enforceFocus={true}
   keyboard={true}
@@ -27,6 +28,7 @@ exports[`components/ActivityLogModal should match snapshot 1`] = `
   onHide={[Function]}
   renderBackdrop={[Function]}
   restoreFocus={true}
+  role="dialog"
   show={true}
 >
   <ModalHeader
@@ -36,12 +38,12 @@ exports[`components/ActivityLogModal should match snapshot 1`] = `
   >
     <ModalTitle
       bsClass="modal-title"
-      componentClass="h4"
+      componentClass="h1"
+      id="activityLogModalLabel"
     >
       <FormattedMessage
         defaultMessage="Active Sessions"
         id="activity_log.activeSessions"
-        values={Object {}}
       />
     </ModalTitle>
   </ModalHeader>
@@ -53,26 +55,42 @@ exports[`components/ActivityLogModal should match snapshot 1`] = `
       className="session-help-text"
     >
       <FormattedMessage
-        defaultMessage="Sessions are created when you log in to a new browser on a device. Sessions let you use Mattermost without having to log in again for a time period specified by the System Admin. If you want to log out sooner, use the 'Logout' button below to end a session."
+        defaultMessage="Sessions are created when you log in through a new browser on a device. Sessions let you use Mattermost without having to log in again for a time period specified by the system administrator. To end the session sooner, use the 'Log Out' button."
         id="activity_log.sessionsDescription"
-        values={Object {}}
       />
     </p>
     <form
       role="form"
     />
   </ModalBody>
+  <ModalFooter
+    bsClass="modal-footer"
+    className="modal-footer--invisible"
+    componentClass="div"
+  >
+    <button
+      className="btn btn-link"
+      id="closeModalButton"
+      type="button"
+    >
+      <FormattedMessage
+        defaultMessage="Close"
+        id="general_button.close"
+      />
+    </button>
+  </ModalFooter>
 </Modal>
 `;
 
 exports[`components/ActivityLogModal should match snapshot 2`] = `
 <Modal
   animation={true}
+  aria-labelledby="activityLogModalLabel"
   autoFocus={true}
   backdrop={true}
   bsClass="modal"
   bsSize="large"
-  dialogClassName="modal--scroll"
+  dialogClassName="a11y__modal modal--scroll"
   dialogComponentClass={[Function]}
   enforceFocus={true}
   keyboard={true}
@@ -92,6 +110,7 @@ exports[`components/ActivityLogModal should match snapshot 2`] = `
   onHide={[Function]}
   renderBackdrop={[Function]}
   restoreFocus={true}
+  role="dialog"
   show={true}
 >
   <ModalHeader
@@ -101,12 +120,12 @@ exports[`components/ActivityLogModal should match snapshot 2`] = `
   >
     <ModalTitle
       bsClass="modal-title"
-      componentClass="h4"
+      componentClass="h1"
+      id="activityLogModalLabel"
     >
       <FormattedMessage
         defaultMessage="Active Sessions"
         id="activity_log.activeSessions"
-        values={Object {}}
       />
     </ModalTitle>
   </ModalHeader>
@@ -118,9 +137,8 @@ exports[`components/ActivityLogModal should match snapshot 2`] = `
       className="session-help-text"
     >
       <FormattedMessage
-        defaultMessage="Sessions are created when you log in to a new browser on a device. Sessions let you use Mattermost without having to log in again for a time period specified by the System Admin. If you want to log out sooner, use the 'Logout' button below to end a session."
+        defaultMessage="Sessions are created when you log in through a new browser on a device. Sessions let you use Mattermost without having to log in again for a time period specified by the system administrator. To end the session sooner, use the 'Log Out' button."
         id="activity_log.sessionsDescription"
-        values={Object {}}
       />
     </p>
     <LoadingScreen
@@ -128,17 +146,34 @@ exports[`components/ActivityLogModal should match snapshot 2`] = `
       style={Object {}}
     />
   </ModalBody>
+  <ModalFooter
+    bsClass="modal-footer"
+    className="modal-footer--invisible"
+    componentClass="div"
+  >
+    <button
+      className="btn btn-link"
+      id="closeModalButton"
+      type="button"
+    >
+      <FormattedMessage
+        defaultMessage="Close"
+        id="general_button.close"
+      />
+    </button>
+  </ModalFooter>
 </Modal>
 `;
 
 exports[`components/ActivityLogModal should match snapshot when submitRevoke is called 1`] = `
 <Modal
   animation={true}
+  aria-labelledby="activityLogModalLabel"
   autoFocus={true}
   backdrop={true}
   bsClass="modal"
   bsSize="large"
-  dialogClassName="modal--scroll"
+  dialogClassName="a11y__modal modal--scroll"
   dialogComponentClass={[Function]}
   enforceFocus={true}
   keyboard={true}
@@ -158,6 +193,7 @@ exports[`components/ActivityLogModal should match snapshot when submitRevoke is 
   onHide={[Function]}
   renderBackdrop={[Function]}
   restoreFocus={true}
+  role="dialog"
   show={true}
 >
   <ModalHeader
@@ -167,12 +203,12 @@ exports[`components/ActivityLogModal should match snapshot when submitRevoke is 
   >
     <ModalTitle
       bsClass="modal-title"
-      componentClass="h4"
+      componentClass="h1"
+      id="activityLogModalLabel"
     >
       <FormattedMessage
         defaultMessage="Active Sessions"
         id="activity_log.activeSessions"
-        values={Object {}}
       />
     </ModalTitle>
   </ModalHeader>
@@ -184,14 +220,29 @@ exports[`components/ActivityLogModal should match snapshot when submitRevoke is 
       className="session-help-text"
     >
       <FormattedMessage
-        defaultMessage="Sessions are created when you log in to a new browser on a device. Sessions let you use Mattermost without having to log in again for a time period specified by the System Admin. If you want to log out sooner, use the 'Logout' button below to end a session."
+        defaultMessage="Sessions are created when you log in through a new browser on a device. Sessions let you use Mattermost without having to log in again for a time period specified by the system administrator. To end the session sooner, use the 'Log Out' button."
         id="activity_log.sessionsDescription"
-        values={Object {}}
       />
     </p>
     <form
       role="form"
     />
   </ModalBody>
+  <ModalFooter
+    bsClass="modal-footer"
+    className="modal-footer--invisible"
+    componentClass="div"
+  >
+    <button
+      className="btn btn-link"
+      id="closeModalButton"
+      type="button"
+    >
+      <FormattedMessage
+        defaultMessage="Close"
+        id="general_button.close"
+      />
+    </button>
+  </ModalFooter>
 </Modal>
 `;

@@ -4,10 +4,10 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 
+import {localizeMessage} from 'utils/utils.jsx';
 import LoadingImagePreview from 'components/loading_image_preview';
-import {loadImage} from 'utils/image_utils';
 
-const WAIT_FOR_HEIGHT_TIMEOUT = 100;
+const MIN_IMAGE_SIZE = 48;
 
 // SizeAwareImage is a component used for rendering images where the dimensions of the image are important for
 // ensuring that the page is laid out correctly.
@@ -23,6 +23,7 @@ export default class SizeAwareImage extends React.PureComponent {
          * dimensions object to create empty space required to prevent scroll pop
          */
         dimensions: PropTypes.object,
+        fileInfo: PropTypes.object,
 
         /*
          * Boolean value to pass for showing a loader when image is being loaded
@@ -40,16 +41,29 @@ export default class SizeAwareImage extends React.PureComponent {
         onImageLoadFail: PropTypes.func,
 
         /*
+         * Fetch the onClick function
+         */
+        onClick: PropTypes.func,
+
+        /*
          * css classes that can added to the img as well as parent div on svg for placeholder
          */
         className: PropTypes.string,
+
+        /*
+         * Enables the logic of surrounding small images with a bigger container div for better click/tap targeting
+         */
+        handleSmallImageContainer: PropTypes.bool,
     }
 
     constructor(props) {
         super(props);
+        const {dimensions} = props;
 
         this.state = {
             loaded: false,
+            isSmallImage: this.dimensionsAvailable(dimensions) ? this.isSmallImage(
+                dimensions.width, dimensions.height) : false,
         };
 
         this.heightTimeout = 0;
@@ -57,71 +71,51 @@ export default class SizeAwareImage extends React.PureComponent {
 
     componentDidMount() {
         this.mounted = true;
-        this.loadImage();
-    }
-
-    componentDidUpdate(prevProps) {
-        if (this.props.src !== prevProps.src) {
-            this.loadImage();
-        }
     }
 
     componentWillUnmount() {
         this.mounted = false;
-        this.stopWaitingForHeight();
     }
 
-    loadImage = () => {
-        const image = loadImage(this.props.src, this.handleLoad);
-
-        image.onerror = this.handleError;
-
-        if (!this.props.dimensions) {
-            this.waitForHeight(image);
-        }
+    dimensionsAvailable = (dimensions) => {
+        return dimensions && dimensions.width && dimensions.height;
     }
 
-    waitForHeight = (image) => {
-        if (image && image.height) {
-            if (this.props.onImageLoaded) {
-                this.props.onImageLoaded({height: image.height, width: image.width});
-            }
-            this.heightTimeout = 0;
-        } else {
-            this.heightTimeout = setTimeout(() => this.waitForHeight(image), WAIT_FOR_HEIGHT_TIMEOUT);
-        }
+    isSmallImage = (width, height) => {
+        return width < MIN_IMAGE_SIZE || height < MIN_IMAGE_SIZE;
     }
 
-    stopWaitingForHeight = () => {
-        if (this.heightTimeout !== 0) {
-            clearTimeout(this.heightTimeout);
-            this.heightTimeout = 0;
-            return true;
-        }
-        return false;
-    }
-
-    handleLoad = (image) => {
+    handleLoad = (event) => {
         if (this.mounted) {
-            if (this.props.onImageLoaded && image.height) {
-                this.props.onImageLoaded({height: image.height, width: image.width});
-            }
+            const image = event.target;
+            const isSmallImage = this.isSmallImage(image.naturalWidth, image.naturalHeight);
             this.setState({
                 loaded: true,
                 error: false,
+                isSmallImage,
+                imageWidth: image.naturalWidth,
+            }, () => { // Call onImageLoaded prop only after state has already been set
+                if (this.props.onImageLoaded && image.naturalHeight) {
+                    this.props.onImageLoaded({height: image.naturalHeight, width: image.naturalWidth});
+                }
             });
         }
     };
 
     handleError = () => {
         if (this.mounted) {
-            this.stopWaitingForHeight();
             if (this.props.onImageLoadFail) {
                 this.props.onImageLoadFail();
             }
             this.setState({error: true});
         }
     };
+
+    onEnterKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            this.props.onClick(e);
+        }
+    }
 
     renderImageLoaderIfNeeded = () => {
         if (!this.state.loaded && this.props.showLoader && !this.state.error) {
@@ -136,42 +130,103 @@ export default class SizeAwareImage extends React.PureComponent {
         return null;
     }
 
-    renderImageOrPlaceholder = () => {
+    renderImageWithContainerIfNeeded = () => {
         const {
-            dimensions,
+            fileInfo,
             src,
             ...props
         } = this.props;
 
-        if (dimensions && dimensions.width && !this.state.loaded) {
+        Reflect.deleteProperty(props, 'showLoader');
+        Reflect.deleteProperty(props, 'onImageLoaded');
+        Reflect.deleteProperty(props, 'onImageLoadFail');
+        Reflect.deleteProperty(props, 'dimensions');
+        Reflect.deleteProperty(props, 'handleSmallImageContainer');
+
+        let ariaLabelImage = localizeMessage('file_attachment.thumbnail', 'file thumbnail');
+        if (fileInfo) {
+            ariaLabelImage += ` ${fileInfo.name}`.toLowerCase();
+        }
+
+        const image = (
+            <img
+                {...props}
+                aria-label={ariaLabelImage}
+                tabIndex='0'
+                onKeyDown={this.onEnterKeyDown}
+                className={
+                    this.props.className +
+                    (this.props.handleSmallImageContainer &&
+                        this.state.isSmallImage ? ' small-image--inside-container' : '')}
+                src={src}
+                onError={this.handleError}
+                onLoad={this.handleLoad}
+            />
+        );
+
+        if (this.props.handleSmallImageContainer && this.state.isSmallImage) {
+            let className = 'small-image__container cursor--pointer a11y--active';
+            if (this.state.imageWidth < MIN_IMAGE_SIZE) {
+                className += ' small-image__container--min-width';
+            }
+
             return (
-                <div className={`image-loading__container ${this.props.className}`}>
+                <div
+                    onClick={this.props.onClick}
+                    className={className}
+                    style={this.state.imageWidth > MIN_IMAGE_SIZE ? {
+                        width: this.state.imageWidth + 2, // 2px to account for the border
+                    } : {}}
+                >
+                    {image}
+                </div>
+            );
+        }
+
+        return image;
+    }
+
+    renderImageOrPlaceholder = () => {
+        const {
+            dimensions,
+        } = this.props;
+
+        let placeHolder;
+
+        if (this.dimensionsAvailable(dimensions) && !this.state.loaded) {
+            placeHolder = (
+                <div
+                    className={`image-loading__container ${this.props.className}`}
+                    style={{maxWidth: dimensions.width}}
+                >
+                    {this.renderImageLoaderIfNeeded()}
                     <svg
                         xmlns='http://www.w3.org/2000/svg'
                         viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
-                        style={{verticalAlign: 'middle', maxHeight: `${dimensions.height}`, maxWidth: `${dimensions.width}`}}
+                        style={{maxHeight: dimensions.height, maxWidth: dimensions.width, verticalAlign: 'middle'}}
                     />
                 </div>
             );
         }
-        Reflect.deleteProperty(props, 'showLoader');
-        Reflect.deleteProperty(props, 'onImageLoaded');
-        Reflect.deleteProperty(props, 'onImageLoadFail');
+
+        const shouldShowImg = !this.dimensionsAvailable(dimensions) || this.state.loaded;
 
         return (
-            <img
-                {...props}
-                src={src}
-            />
+            <React.Fragment>
+                {placeHolder}
+                <div
+                    className='file-preview__button'
+                    style={{display: shouldShowImg ? 'initial' : 'none'}}
+                >
+                    {this.renderImageWithContainerIfNeeded()}
+                </div>
+            </React.Fragment>
         );
     }
 
     render() {
         return (
-            <React.Fragment>
-                {this.renderImageLoaderIfNeeded()}
-                {this.renderImageOrPlaceholder()}
-            </React.Fragment>
+            this.renderImageOrPlaceholder()
         );
     }
 }

@@ -6,7 +6,7 @@ import {shallow} from 'enzyme';
 import {Link} from 'react-router-dom';
 
 import DeleteIntegration from 'components/integrations/delete_integration.jsx';
-import InstalledOutgoingWebhook from 'components/integrations/installed_outgoing_webhook.jsx';
+import InstalledOutgoingWebhook, {matchesFilter} from 'components/integrations/installed_outgoing_webhook.jsx';
 
 describe('components/integrations/InstalledOutgoingWebhook', () => {
     const team = {
@@ -49,7 +49,7 @@ describe('components/integrations/InstalledOutgoingWebhook', () => {
 
     test('should match snapshot', () => {
         const wrapper = shallow(
-            <InstalledOutgoingWebhook {...baseProps}/>
+            <InstalledOutgoingWebhook {...baseProps}/>,
         );
         expect(wrapper).toMatchSnapshot();
     });
@@ -58,14 +58,14 @@ describe('components/integrations/InstalledOutgoingWebhook', () => {
         const newCanChange = false;
         const props = {...baseProps, canChange: newCanChange};
         const wrapper = shallow(
-            <InstalledOutgoingWebhook {...props}/>
+            <InstalledOutgoingWebhook {...props}/>,
         );
         expect(wrapper.find('.item-actions').length).toBe(0);
     });
 
     test('should have edit and delete actions if user can change webhook', () => {
         const wrapper = shallow(
-            <InstalledOutgoingWebhook {...baseProps}/>
+            <InstalledOutgoingWebhook {...baseProps}/>,
         );
         expect(wrapper.find('.item-actions').find(Link).exists()).toBe(true);
         expect(wrapper.find('.item-actions').find(DeleteIntegration).exists()).toBe(true);
@@ -75,7 +75,7 @@ describe('components/integrations/InstalledOutgoingWebhook', () => {
         const newCanChange = false;
         const props = {...baseProps, canChange: newCanChange};
         const wrapper = shallow(
-            <InstalledOutgoingWebhook {...props}/>
+            <InstalledOutgoingWebhook {...props}/>,
         );
 
         expect(wrapper.find('.item-details__description').text()).toBe('build status');
@@ -86,7 +86,7 @@ describe('components/integrations/InstalledOutgoingWebhook', () => {
         const newOutgoingWebhook = {...outgoingWebhook, description: null};
         const props = {...baseProps, outgoingWebhook: newOutgoingWebhook};
         const wrapper = shallow(
-            <InstalledOutgoingWebhook {...props}/>
+            <InstalledOutgoingWebhook {...props}/>,
         );
 
         expect(wrapper.find('.item-details__description').length).toBe(0);
@@ -96,7 +96,7 @@ describe('components/integrations/InstalledOutgoingWebhook', () => {
         const newFilter = 'someLongText';
         const props = {...baseProps, filter: newFilter};
         const wrapper = shallow(
-            <InstalledOutgoingWebhook {...props}/>
+            <InstalledOutgoingWebhook {...props}/>,
         );
 
         expect(wrapper.getElement()).toBe(null);
@@ -106,7 +106,7 @@ describe('components/integrations/InstalledOutgoingWebhook', () => {
         const newFilter = 'buil';
         const props = {...baseProps, filter: newFilter};
         const wrapper = shallow(
-            <InstalledOutgoingWebhook {...props}/>
+            <InstalledOutgoingWebhook {...props}/>,
         );
 
         expect(wrapper.find('.item-details').exists()).toBe(true);
@@ -118,7 +118,7 @@ describe('components/integrations/InstalledOutgoingWebhook', () => {
         const props = {...baseProps, filter: newFilter, onRegenToken: newOnRegenToken};
 
         const wrapper = shallow(
-            <InstalledOutgoingWebhook {...props}/>
+            <InstalledOutgoingWebhook {...props}/>,
         );
 
         wrapper.find('.item-actions button').first().simulate('click', {preventDefault() {
@@ -133,7 +133,7 @@ describe('components/integrations/InstalledOutgoingWebhook', () => {
         const props = {...baseProps, filter: newFilter, onDelete: newOnDelete};
 
         const wrapper = shallow(
-            <InstalledOutgoingWebhook {...props}/>
+            <InstalledOutgoingWebhook {...props}/>,
         );
 
         wrapper.find(DeleteIntegration).first().prop('onDelete')();
@@ -142,7 +142,7 @@ describe('components/integrations/InstalledOutgoingWebhook', () => {
 
     test('Should match snapshot of makeDisplayName', () => {
         const wrapper = shallow(
-            <InstalledOutgoingWebhook {...baseProps}/>
+            <InstalledOutgoingWebhook {...baseProps}/>,
         );
 
         // displays webhook's display name
@@ -156,25 +156,21 @@ describe('components/integrations/InstalledOutgoingWebhook', () => {
     });
 
     test('Should match result when matchesFilter is called', () => {
-        const wrapper = shallow(
-            <InstalledOutgoingWebhook {...baseProps}/>
-        );
+        expect(matchesFilter({}, {}, 'word')).toEqual(false);
+        expect(matchesFilter({display_name: null}, {}, 'word')).toEqual(false);
+        expect(matchesFilter({description: null}, {}, 'word')).toEqual(false);
+        expect(matchesFilter({trigger_words: null}, {}, 'word')).toEqual(false);
+        expect(matchesFilter({}, {name: null}, 'channel')).toEqual(false);
 
-        expect(wrapper.instance().matchesFilter({}, {}, 'word')).toEqual(false);
-        expect(wrapper.instance().matchesFilter({display_name: null}, {}, 'word')).toEqual(false);
-        expect(wrapper.instance().matchesFilter({description: null}, {}, 'word')).toEqual(false);
-        expect(wrapper.instance().matchesFilter({trigger_words: null}, {}, 'word')).toEqual(false);
-        expect(wrapper.instance().matchesFilter({}, {name: null}, 'channel')).toEqual(false);
+        expect(matchesFilter({}, {}, '')).toEqual(true);
 
-        expect(wrapper.instance().matchesFilter({}, {}, '')).toEqual(true);
+        expect(matchesFilter({display_name: 'Word'}, {}, 'word')).toEqual(true);
+        expect(matchesFilter({display_name: 'word'}, {}, 'word')).toEqual(true);
+        expect(matchesFilter({description: 'Trigger description'}, {}, 'description')).toEqual(true);
 
-        expect(wrapper.instance().matchesFilter({display_name: 'Word'}, {}, 'word')).toEqual(true);
-        expect(wrapper.instance().matchesFilter({display_name: 'word'}, {}, 'word')).toEqual(true);
-        expect(wrapper.instance().matchesFilter({description: 'Trigger description'}, {}, 'description')).toEqual(true);
+        expect(matchesFilter({trigger_words: ['Trigger']}, {}, 'trigger')).toEqual(true);
+        expect(matchesFilter({trigger_words: ['word', 'Trigger']}, {}, 'trigger')).toEqual(true);
 
-        expect(wrapper.instance().matchesFilter({trigger_words: ['Trigger']}, {}, 'trigger')).toEqual(true);
-        expect(wrapper.instance().matchesFilter({trigger_words: ['word', 'Trigger']}, {}, 'trigger')).toEqual(true);
-
-        expect(wrapper.instance().matchesFilter({}, {name: 'channel_name'}, 'channel')).toEqual(true);
+        expect(matchesFilter({}, {name: 'channel_name'}, 'channel')).toEqual(true);
     });
 });

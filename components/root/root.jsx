@@ -2,8 +2,8 @@
 // See LICENSE.txt for license information.
 
 import $ from 'jquery';
-require('perfect-scrollbar/jquery')($);
 
+import {rudderAnalytics, Client4} from 'mattermost-redux/client';
 import PropTypes from 'prop-types';
 import React from 'react';
 import FastClick from 'fastclick';
@@ -11,63 +11,66 @@ import {Route, Switch, Redirect} from 'react-router-dom';
 import {setUrl} from 'mattermost-redux/actions/general';
 import {setSystemEmojis} from 'mattermost-redux/actions/emojis';
 import {getConfig} from 'mattermost-redux/selectors/entities/general';
+import {getCurrentUser} from 'mattermost-redux/selectors/entities/users';
 
-import * as UserAgent from 'utils/user_agent.jsx';
+import * as UserAgent from 'utils/user_agent';
 import {EmojiIndicesByAlias} from 'utils/emoji.jsx';
-import {trackLoadTime} from 'actions/diagnostics_actions.jsx';
+import {trackLoadTime} from 'actions/telemetry_actions.jsx';
 import * as GlobalActions from 'actions/global_actions.jsx';
 import BrowserStore from 'stores/browser_store.jsx';
 import {loadRecentlyUsedCustomEmojis} from 'actions/emoji_actions.jsx';
-import * as I18n from 'i18n/i18n.jsx';
 import {initializePlugins} from 'plugins';
 import 'plugins/export.js';
-import Constants, {StoragePrefixes} from 'utils/constants.jsx';
+import Pluggable from 'plugins/pluggable';
+import Constants, {StoragePrefixes} from 'utils/constants';
 import {HFTRoute, LoggedInHFTRoute} from 'components/header_footer_template_route';
 import IntlProvider from 'components/intl_provider';
 import NeedsTeam from 'components/needs_team';
 import {makeAsyncComponent} from 'components/async_load';
-import loadErrorPage from 'bundle-loader?lazy!components/error_page';
-import loadLoginController from 'bundle-loader?lazy!components/login/login_controller';
-import loadAdminConsole from 'bundle-loader?lazy!components/admin_console';
-import loadLoggedIn from 'bundle-loader?lazy!components/logged_in';
-import loadPasswordResetSendLink from 'bundle-loader?lazy!components/password_reset_send_link';
-import loadPasswordResetForm from 'bundle-loader?lazy!components/password_reset_form';
-import loadSignupController from 'bundle-loader?lazy!components/signup/signup_controller';
-import loadSignupEmail from 'bundle-loader?lazy!components/signup/signup_email';
-import loadTermsOfService from 'bundle-loader?lazy!components/terms_of_service';
-import loadShouldVerifyEmail from 'bundle-loader?lazy!components/should_verify_email';
-import loadDoVerifyEmail from 'bundle-loader?lazy!components/do_verify_email';
-import loadClaimController from 'bundle-loader?lazy!components/claim';
-import loadHelpController from 'bundle-loader?lazy!components/help/help_controller';
-import loadGetIosApp from 'bundle-loader?lazy!components/get_ios_app';
-import loadGetAndroidApp from 'bundle-loader?lazy!components/get_android_app';
-import loadSelectTeam from 'bundle-loader?lazy!components/select_team';
-import loadAuthorize from 'bundle-loader?lazy!components/authorize';
-import loadCreateTeam from 'bundle-loader?lazy!components/create_team';
-import loadMfa from 'bundle-loader?lazy!components/mfa/mfa_controller';
+
+const LazyErrorPage = React.lazy(() => import('components/error_page'));
+const LazyLoginController = React.lazy(() => import('components/login/login_controller'));
+const LazyAdminConsole = React.lazy(() => import('components/admin_console'));
+const LazyLoggedIn = React.lazy(() => import('components/logged_in'));
+const LazyPasswordResetSendLink = React.lazy(() => import('components/password_reset_send_link'));
+const LazyPasswordResetForm = React.lazy(() => import('components/password_reset_form'));
+const LazySignupController = React.lazy(() => import('components/signup/signup_controller'));
+const LazySignupEmail = React.lazy(() => import('components/signup/signup_email'));
+const LazyTermsOfService = React.lazy(() => import('components/terms_of_service'));
+const LazyShouldVerifyEmail = React.lazy(() => import('components/should_verify_email'));
+const LazyDoVerifyEmail = React.lazy(() => import('components/do_verify_email'));
+const LazyClaimController = React.lazy(() => import('components/claim'));
+const LazyHelpController = React.lazy(() => import('components/help/help_controller'));
+const LazyLinkingLandingPage = React.lazy(() => import('components/linking_landing_page'));
+const LazySelectTeam = React.lazy(() => import('components/select_team'));
+const LazyAuthorize = React.lazy(() => import('components/authorize'));
+const LazyCreateTeam = React.lazy(() => import('components/create_team'));
+const LazyMfa = React.lazy(() => import('components/mfa/mfa_controller'));
+
 import store from 'stores/redux_store.jsx';
-import {getSiteURL} from 'utils/url.jsx';
+import {getSiteURL} from 'utils/url';
 import {enableDevModeFeatures, isDevMode} from 'utils/utils';
 
-const CreateTeam = makeAsyncComponent(loadCreateTeam);
-const ErrorPage = makeAsyncComponent(loadErrorPage);
-const TermsOfService = makeAsyncComponent(loadTermsOfService);
-const LoginController = makeAsyncComponent(loadLoginController);
-const AdminConsole = makeAsyncComponent(loadAdminConsole);
-const LoggedIn = makeAsyncComponent(loadLoggedIn);
-const PasswordResetSendLink = makeAsyncComponent(loadPasswordResetSendLink);
-const PasswordResetForm = makeAsyncComponent(loadPasswordResetForm);
-const SignupController = makeAsyncComponent(loadSignupController);
-const SignupEmail = makeAsyncComponent(loadSignupEmail);
-const ShouldVerifyEmail = makeAsyncComponent(loadShouldVerifyEmail);
-const DoVerifyEmail = makeAsyncComponent(loadDoVerifyEmail);
-const ClaimController = makeAsyncComponent(loadClaimController);
-const HelpController = makeAsyncComponent(loadHelpController);
-const GetIosApp = makeAsyncComponent(loadGetIosApp);
-const GetAndroidApp = makeAsyncComponent(loadGetAndroidApp);
-const SelectTeam = makeAsyncComponent(loadSelectTeam);
-const Authorize = makeAsyncComponent(loadAuthorize);
-const Mfa = makeAsyncComponent(loadMfa);
+import A11yController from 'utils/a11y_controller';
+
+const CreateTeam = makeAsyncComponent(LazyCreateTeam);
+const ErrorPage = makeAsyncComponent(LazyErrorPage);
+const TermsOfService = makeAsyncComponent(LazyTermsOfService);
+const LoginController = makeAsyncComponent(LazyLoginController);
+const AdminConsole = makeAsyncComponent(LazyAdminConsole);
+const LoggedIn = makeAsyncComponent(LazyLoggedIn);
+const PasswordResetSendLink = makeAsyncComponent(LazyPasswordResetSendLink);
+const PasswordResetForm = makeAsyncComponent(LazyPasswordResetForm);
+const SignupController = makeAsyncComponent(LazySignupController);
+const SignupEmail = makeAsyncComponent(LazySignupEmail);
+const ShouldVerifyEmail = makeAsyncComponent(LazyShouldVerifyEmail);
+const DoVerifyEmail = makeAsyncComponent(LazyDoVerifyEmail);
+const ClaimController = makeAsyncComponent(LazyClaimController);
+const HelpController = makeAsyncComponent(LazyHelpController);
+const LinkingLandingPage = makeAsyncComponent(LazyLinkingLandingPage);
+const SelectTeam = makeAsyncComponent(LazySelectTeam);
+const Authorize = makeAsyncComponent(LazyAuthorize);
+const Mfa = makeAsyncComponent(LazyMfa);
 
 const LoggedInRoute = ({component: Component, ...rest}) => (
     <Route
@@ -80,19 +83,24 @@ const LoggedInRoute = ({component: Component, ...rest}) => (
     />
 );
 
-export default class Root extends React.Component {
+export default class Root extends React.PureComponent {
     static propTypes = {
-        diagnosticsEnabled: PropTypes.bool,
-        diagnosticId: PropTypes.string,
+        telemetryEnabled: PropTypes.bool,
+        telemetryId: PropTypes.string,
         noAccounts: PropTypes.bool,
         showTermsOfService: PropTypes.bool,
+        permalinkRedirectTeamName: PropTypes.string,
         actions: PropTypes.shape({
             loadMeAndConfig: PropTypes.func.isRequired,
         }).isRequired,
+        plugins: PropTypes.array,
     }
 
     constructor(props) {
         super(props);
+        this.currentCategoryFocus = 0;
+        this.currentSidebarFocus = 0;
+        this.mounted = false;
 
         // Redux
         setUrl(getSiteURL());
@@ -100,26 +108,28 @@ export default class Root extends React.Component {
         setSystemEmojis(EmojiIndicesByAlias);
 
         // Force logout of all tabs if one tab is logged out
-        $(window).bind('storage', (e) => {
+        $(window).bind('storage', (e) => { // eslint-disable-line jquery/no-bind
             // when one tab on a browser logs out, it sets __logout__ in localStorage to trigger other tabs to log out
-            if (e.originalEvent.key === StoragePrefixes.LOGOUT && e.originalEvent.storageArea === localStorage && e.originalEvent.newValue) {
-                // make sure it isn't this tab that is sending the logout signal (only necessary for IE11)
-                if (BrowserStore.isSignallingLogout(e.originalEvent.newValue)) {
-                    return;
-                }
+            const isNewLocalStorageEvent = (event) => event.originalEvent.storageArea === localStorage && event.originalEvent.newValue;
 
+            if (e.originalEvent.key === StoragePrefixes.LOGOUT && isNewLocalStorageEvent(e)) {
                 console.log('detected logout from a different tab'); //eslint-disable-line no-console
                 GlobalActions.emitUserLoggedOutEvent('/', false, false);
             }
+            if (e.originalEvent.key === StoragePrefixes.LOGIN && isNewLocalStorageEvent(e)) {
+                const isLoggedIn = getCurrentUser(store.getState());
 
-            if (e.originalEvent.key === StoragePrefixes.LOGIN && e.originalEvent.storageArea === localStorage && e.originalEvent.newValue) {
-                // make sure it isn't this tab that is sending the logout signal (only necessary for IE11)
-                if (BrowserStore.isSignallingLogin(e.originalEvent.newValue)) {
+                // make sure this is not the same tab which sent login signal
+                // because another tabs will also send login signal after reloading
+                if (isLoggedIn) {
                     return;
                 }
 
-                console.log('detected login from a different tab'); //eslint-disable-line no-console
-                location.reload();
+                // detected login from a different tab
+                function onVisibilityChange() {
+                    location.reload();
+                }
+                document.addEventListener('visibilitychange', onVisibilityChange, false);
             }
         });
 
@@ -140,6 +150,11 @@ export default class Root extends React.Component {
         this.state = {
             configLoaded: false,
         };
+
+        // Keyboard navigation for accessibility
+        if (!UserAgent.isInternetExplorer()) {
+            this.a11yController = new A11yController();
+        }
     }
 
     onConfigLoaded = () => {
@@ -147,59 +162,60 @@ export default class Root extends React.Component {
             enableDevModeFeatures();
         }
 
-        const segmentKey = Constants.DIAGNOSTICS_SEGMENT_KEY;
-        const diagnosticId = this.props.diagnosticId;
+        const telemetryId = this.props.telemetryId;
 
-        /*eslint-disable */
-        if (segmentKey != null && segmentKey !== '' && !segmentKey.startsWith('placeholder') && this.props.diagnosticsEnabled) {
-            !function(){var analytics=global.window.analytics=global.window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","group","track","ready","alias","page","once","off","on"];analytics.factory=function(t){return function(...args){var e=Array.prototype.slice.call(args);e.unshift(t);analytics.push(e);return analytics}};for(var t=0;t<analytics.methods.length;t++){var e=analytics.methods[t];analytics[e]=analytics.factory(e)}analytics.load=function(t){var e=document.createElement("script");e.type="text/javascript";e.async=!0;e.src=("https:"===document.location.protocol ? "https://":"http://")+"cdn.segment.com/analytics.js/v1/"+t+"/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(e,n)};analytics.SNIPPET_VERSION="3.0.1";
-                analytics.load(segmentKey);
+        let rudderKey = Constants.TELEMETRY_RUDDER_KEY;
+        let rudderUrl = Constants.TELEMETRY_RUDDER_DATAPLANE_URL;
 
-                analytics.identify(diagnosticId, {}, {
-                    context: {
-                        ip: '0.0.0.0',
-                    },
-                    page: {
-                        path: '',
-                        referrer: '',
-                        search: '',
-                        title: '',
-                        url: '',
-                    },
-                    anonymousId: '00000000000000000000000000',
-                });
-
-                analytics.page('ApplicationLoaded', {
-                        path: '',
-                        referrer: '',
-                        search: '',
-                        title: '',
-                        url: '',
-                    },
-                    {
-                        context: {
-                            ip: '0.0.0.0'
-                        },
-                        anonymousId: '00000000000000000000000000'
-                    });
-            }}();
+        if (rudderKey.startsWith('placeholder') && rudderUrl.startsWith('placeholder')) {
+            rudderKey = process.env.RUDDER_KEY; //eslint-disable-line no-process-env
+            rudderUrl = process.env.RUDDER_DATAPLANE_URL; //eslint-disable-line no-process-env
         }
-        /*eslint-enable */
 
-        const afterIntl = () => {
-            initializePlugins();
+        if (rudderKey != null && rudderKey !== '' && this.props.telemetryEnabled) {
+            Client4.enableRudderEvents();
+            rudderAnalytics.load(rudderKey, rudderUrl);
 
-            if (this.props.location.pathname === '/' && this.props.noAccounts) {
-                this.props.history.push('/signup_user_complete');
+            rudderAnalytics.identify(telemetryId, {}, {
+                context: {
+                    ip: '0.0.0.0',
+                },
+                page: {
+                    path: '',
+                    referrer: '',
+                    search: '',
+                    title: '',
+                    url: '',
+                },
+                anonymousId: '00000000000000000000000000',
+            });
+
+            rudderAnalytics.page('ApplicationLoaded', {
+                path: '',
+                referrer: '',
+                search: '',
+                title: '',
+                url: '',
+            },
+            {
+                context: {
+                    ip: '0.0.0.0',
+                },
+                anonymousId: '00000000000000000000000000',
+            });
+        }
+
+        if (this.props.location.pathname === '/' && this.props.noAccounts) {
+            this.props.history.push('/signup_user_complete');
+        }
+
+        initializePlugins().then(() => {
+            if (this.mounted) {
+                // supports enzyme tests, set state if and only if
+                // the component is still mounted on screen
+                this.setState({configLoaded: true});
             }
-
-            this.setState({configLoaded: true});
-        };
-        if (global.Intl) {
-            afterIntl();
-        } else {
-            I18n.safariFix(afterIntl);
-        }
+        });
 
         loadRecentlyUsedCustomEmojis()(store.dispatch, store.getState);
 
@@ -209,30 +225,31 @@ export default class Root extends React.Component {
         const toResetPasswordScreen = this.props.location.pathname === '/reset_password_complete';
 
         // redirect to the mobile landing page if the user hasn't seen it before
-        if (iosDownloadLink && UserAgent.isIosWeb() && !BrowserStore.hasSeenLandingPage() && !toResetPasswordScreen) {
-            this.props.history.push('/get_ios_app?redirect_to=' + encodeURIComponent(this.props.location.pathname) + encodeURIComponent(this.props.location.search));
-            BrowserStore.setLandingPageSeen(true);
-        } else if (androidDownloadLink && UserAgent.isAndroidWeb() && !BrowserStore.hasSeenLandingPage() && !toResetPasswordScreen) {
-            this.props.history.push('/get_android_app?redirect_to=' + encodeURIComponent(this.props.location.pathname) + encodeURIComponent(this.props.location.search));
+        let mobileLanding;
+        if (UserAgent.isAndroidWeb()) {
+            mobileLanding = androidDownloadLink;
+        } else if (UserAgent.isIosWeb()) {
+            mobileLanding = iosDownloadLink;
+        }
+
+        if (mobileLanding && !BrowserStore.hasSeenLandingPage() && !toResetPasswordScreen && !this.props.location.pathname.includes('/landing')) {
+            this.props.history.push('/landing#' + this.props.location.pathname + this.props.location.search);
             BrowserStore.setLandingPageSeen(true);
         }
     }
 
-    redirectIfNecessary = (props) => {
-        if (props.location.pathname === '/') {
+    componentDidUpdate(prevProps) {
+        if (this.props.location.pathname === '/') {
             if (this.props.noAccounts) {
-                this.props.history.push('/signup_user_complete');
-            } else if (props.showTermsOfService) {
-                this.props.history.push('/terms_of_service');
+                prevProps.history.push('/signup_user_complete');
+            } else if (this.props.showTermsOfService) {
+                prevProps.history.push('/terms_of_service');
             }
         }
     }
 
-    UNSAFE_componentWillReceiveProps(newProps) { // eslint-disable-line camelcase
-        this.redirectIfNecessary(newProps);
-    }
-
     componentDidMount() {
+        this.mounted = true;
         this.props.actions.loadMeAndConfig().then((response) => {
             if (this.props.location.pathname === '/' && response[2] && response[2].data) {
                 GlobalActions.redirectUserToDefaultTeam();
@@ -243,6 +260,7 @@ export default class Root extends React.Component {
     }
 
     componentWillUnmount() {
+        this.mounted = false;
         $(window).unbind('storage');
     }
 
@@ -299,12 +317,8 @@ export default class Root extends React.Component {
                         component={TermsOfService}
                     />
                     <Route
-                        path={'/get_ios_app'}
-                        component={GetIosApp}
-                    />
-                    <Route
-                        path={'/get_android_app'}
-                        component={GetAndroidApp}
+                        path={'/landing'}
+                        component={LinkingLandingPage}
                     />
                     <LoggedInRoute
                         path={'/admin_console'}
@@ -326,6 +340,26 @@ export default class Root extends React.Component {
                         path={'/mfa'}
                         component={Mfa}
                     />
+                    <Redirect
+                        from={'/_redirect/integrations/:subpath*'}
+                        to={`/${this.props.permalinkRedirectTeamName}/integrations/:subpath*`}
+                    />
+                    <Redirect
+                        from={'/_redirect/pl/:postid'}
+                        to={`/${this.props.permalinkRedirectTeamName}/pl/:postid`}
+                    />
+                    {this.props.plugins?.map((plugin) => (
+                        <Route
+                            key={plugin.id}
+                            path={'/plug/' + plugin.route}
+                            render={() => (
+                                <Pluggable
+                                    pluggableName={'CustomRouteComponent'}
+                                    pluggableId={plugin.id}
+                                />
+                            )}
+                        />
+                    ))}
                     <LoggedInRoute
                         path={'/:team'}
                         component={NeedsTeam}

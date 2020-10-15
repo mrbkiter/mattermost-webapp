@@ -20,6 +20,7 @@ exports[`components/SignupController should match snapshot for addUserToTeamFrom
       className="signup-team__container"
     >
       <img
+        alt="signup team logo"
         className="signup-team-logo"
         src={null}
       />
@@ -32,18 +33,16 @@ exports[`components/SignupController should match snapshot for addUserToTeamFrom
         >
           <FormattedMessage
             id="web.root.signup_info"
-            values={Object {}}
           />
         </h4>
         <div
-          className="margin--extra"
+          className="mt-8"
         >
           <h5>
             <strong>
               <FormattedMessage
                 defaultMessage="Create an account with:"
                 id="signup.title"
-                values={Object {}}
               />
             </strong>
           </h5>
@@ -57,7 +56,6 @@ exports[`components/SignupController should match snapshot for addUserToTeamFrom
             <FormattedMessage
               defaultMessage="The invite link was invalid.  Please speak with your Administrator to receive an invitation."
               id="signup_user_completed.invalid_invite"
-              values={Object {}}
             />
           </label>
         </div>
@@ -68,17 +66,14 @@ exports[`components/SignupController should match snapshot for addUserToTeamFrom
         <FormattedMessage
           defaultMessage="Already have an account?"
           id="signup_user_completed.haveAccount"
-          values={Object {}}
         />
          
         <Link
-          replace={false}
           to="/login?id=ppni7a9t87fn3j4d56rwocdctc"
         >
           <FormattedMessage
             defaultMessage="Click here to sign in."
             id="signup_user_completed.signIn"
-            values={Object {}}
           />
         </Link>
       </span>
@@ -100,6 +95,7 @@ exports[`components/SignupController should match snapshot for all signup option
       className="signup-team__container"
     >
       <img
+        alt="signup team logo"
         className="signup-team-logo"
         src={null}
       />
@@ -112,18 +108,16 @@ exports[`components/SignupController should match snapshot for all signup option
         >
           <FormattedMessage
             id="web.root.signup_info"
-            values={Object {}}
           />
         </h4>
         <div
-          className="margin--extra"
+          className="mt-8"
         >
           <h5>
             <strong>
               <FormattedMessage
                 defaultMessage="Create an account with:"
                 id="signup.title"
-                values={Object {}}
               />
             </strong>
           </h5>
@@ -131,18 +125,22 @@ exports[`components/SignupController should match snapshot for all signup option
         <Link
           className="btn btn-custom-login btn--full email"
           key="email"
-          replace={false}
           to="/signup_email"
         >
           <span>
-            <span
+            <LocalizedIcon
               className="icon fa fa-envelope"
-              title="Email Icon"
+              component="span"
+              title={
+                Object {
+                  "defaultMessage": "Email Icon",
+                  "id": "signup.email.icon",
+                }
+              }
             />
             <FormattedMessage
               defaultMessage="Email and Password"
               id="signup.email"
-              values={Object {}}
             />
           </span>
         </Link>
@@ -159,7 +157,6 @@ exports[`components/SignupController should match snapshot for all signup option
               <FormattedMessage
                 defaultMessage="GitLab Single Sign-On"
                 id="signup.gitlab"
-                values={Object {}}
               />
             </span>
           </span>
@@ -171,17 +168,14 @@ exports[`components/SignupController should match snapshot for all signup option
         <FormattedMessage
           defaultMessage="Already have an account?"
           id="signup_user_completed.haveAccount"
-          values={Object {}}
         />
          
         <Link
-          replace={false}
           to="/login"
         >
           <FormattedMessage
             defaultMessage="Click here to sign in."
             id="signup_user_completed.signIn"
-            values={Object {}}
           />
         </Link>
       </span>
@@ -203,6 +197,7 @@ exports[`components/SignupController should match snapshot for all signup option
       className="signup-team__container"
     >
       <img
+        alt="signup team logo"
         className="signup-team-logo"
         src={null}
       />
@@ -215,18 +210,16 @@ exports[`components/SignupController should match snapshot for all signup option
         >
           <FormattedMessage
             id="web.root.signup_info"
-            values={Object {}}
           />
         </h4>
         <div
-          className="margin--extra"
+          className="mt-8"
         >
           <h5>
             <strong>
               <FormattedMessage
                 defaultMessage="Create an account with:"
                 id="signup.title"
-                values={Object {}}
               />
             </strong>
           </h5>
@@ -234,18 +227,22 @@ exports[`components/SignupController should match snapshot for all signup option
         <Link
           className="btn btn-custom-login btn--full email"
           key="email"
-          replace={false}
           to="/signup_email"
         >
           <span>
-            <span
+            <LocalizedIcon
               className="icon fa fa-envelope"
-              title="Email Icon"
+              component="span"
+              title={
+                Object {
+                  "defaultMessage": "Email Icon",
+                  "id": "signup.email.icon",
+                }
+              }
             />
             <FormattedMessage
               defaultMessage="Email and Password"
               id="signup.email"
-              values={Object {}}
             />
           </span>
         </Link>
@@ -262,7 +259,6 @@ exports[`components/SignupController should match snapshot for all signup option
               <FormattedMessage
                 defaultMessage="GitLab Single Sign-On"
                 id="signup.gitlab"
-                values={Object {}}
               />
             </span>
           </span>
@@ -280,7 +276,6 @@ exports[`components/SignupController should match snapshot for all signup option
               <FormattedMessage
                 defaultMessage="Google Account"
                 id="signup.google"
-                values={Object {}}
               />
             </span>
           </span>
@@ -298,7 +293,6 @@ exports[`components/SignupController should match snapshot for all signup option
               <FormattedMessage
                 defaultMessage="Office 365"
                 id="signup.office365"
-                values={Object {}}
               />
             </span>
           </span>
@@ -306,19 +300,23 @@ exports[`components/SignupController should match snapshot for all signup option
         <Link
           className="btn btn-custom-login btn--full ldap"
           key="ldap"
-          replace={false}
           to="/login?extra=create_ldap"
         >
           <span>
-            <span
+            <LocalizedIcon
               className="icon fa fa-folder-open fa--margin-top"
-              title="AD/LDAP Icon"
+              component="span"
+              title={
+                Object {
+                  "defaultMessage": "AD/LDAP Icon",
+                  "id": "signup.ldap.icon",
+                }
+              }
             />
             <span>
               <FormattedMessage
                 defaultMessage="AD/LDAP Credentials"
                 id="signup.ldap"
-                values={Object {}}
               />
             </span>
           </span>
@@ -326,13 +324,18 @@ exports[`components/SignupController should match snapshot for all signup option
         <Link
           className="btn btn-custom-login btn--full saml"
           key="saml"
-          replace={false}
           to="/login/sso/saml?action=signup"
         >
           <span>
-            <span
+            <LocalizedIcon
               className="icon fa fa-lock fa--margin-top"
-              title="SAML Icon"
+              component="span"
+              title={
+                Object {
+                  "defaultMessage": "SAML Icon",
+                  "id": "signup.saml.icon",
+                }
+              }
             />
             <span>
               SAML
@@ -346,17 +349,14 @@ exports[`components/SignupController should match snapshot for all signup option
         <FormattedMessage
           defaultMessage="Already have an account?"
           id="signup_user_completed.haveAccount"
-          values={Object {}}
         />
          
         <Link
-          replace={false}
           to="/login"
         >
           <FormattedMessage
             defaultMessage="Click here to sign in."
             id="signup_user_completed.signIn"
-            values={Object {}}
           />
         </Link>
       </span>

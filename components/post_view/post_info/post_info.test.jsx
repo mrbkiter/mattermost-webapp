@@ -5,8 +5,10 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import {Posts} from 'mattermost-redux/constants';
 
-import Constants from 'utils/constants.jsx';
-import PostInfo from 'components/post_view/post_info/post_info.jsx';
+import PostInfo from 'components/post_view/post_info/post_info';
+
+import Constants from 'utils/constants';
+import PostFlagIcon from 'components/post_view/post_flag_icon';
 
 describe('components/post_view/PostInfo', () => {
     const post = {
@@ -31,6 +33,7 @@ describe('components/post_view/PostInfo', () => {
     const requiredProps = {
         post,
         handleCommentClick: jest.fn(),
+        handleCardClick: jest.fn(),
         handleDropdownOpened: jest.fn(),
         compactDisplay: false,
         replyCount: 0,
@@ -39,9 +42,11 @@ describe('components/post_view/PostInfo', () => {
         hover: false,
         showTimeWithoutHover: false,
         enableEmojiPicker: false,
+        shortcutReactToLastPostEmittedFrom: '',
         actions: {
             removePost: jest.fn(),
         },
+        shouldShowDotMenu: true,
     };
 
     test('should match snapshot', () => {
@@ -86,6 +91,14 @@ describe('components/post_view/PostInfo', () => {
         expect(wrapper).toMatchSnapshot();
     });
 
+    test('should match snapshot, deleted post', () => {
+        const deletedPost = {...post, state: Posts.POST_DELETED};
+        const requiredPropsWithDeletedPost = {...requiredProps, post: deletedPost};
+
+        const wrapper = shallow(<PostInfo {...requiredPropsWithDeletedPost}/>);
+        expect(wrapper).toMatchSnapshot();
+    });
+
     test('should match snapshot, ephemeral deleted post', () => {
         const deletedEphemeralPost = {...post, type: Constants.PostTypes.EPHEMERAL, state: Posts.POST_DELETED};
         const requiredPropsWithDeletedEphemeralPost = {...requiredProps, post: deletedEphemeralPost};
@@ -99,7 +112,7 @@ describe('components/post_view/PostInfo', () => {
             <PostInfo
                 {...requiredProps}
                 enableEmojiPicker={true}
-            />
+            />,
         );
         expect(wrapper).toMatchSnapshot();
     });
@@ -140,5 +153,21 @@ describe('components/post_view/PostInfo', () => {
 
         const wrapper = shallow(<PostInfo {...props}/>);
         expect(wrapper).toMatchSnapshot();
+    });
+
+    test('should pass props correctly to PostFlagIcon', () => {
+        const props = {
+            ...requiredProps,
+            isFlagged: true,
+        };
+
+        const wrapper = shallow(
+            <PostInfo {...props}/>,
+        );
+
+        const flagIcon = wrapper.find(PostFlagIcon);
+        expect(flagIcon).toHaveLength(1);
+        expect(flagIcon.prop('postId')).toEqual(props.post.id);
+        expect(flagIcon.prop('isFlagged')).toEqual(props.isFlagged);
     });
 });

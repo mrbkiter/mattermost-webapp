@@ -1,5 +1,6 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
+/* eslint-disable react/no-string-refs */
 
 import $ from 'jquery';
 import PropTypes from 'prop-types';
@@ -7,19 +8,20 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {FormattedMessage} from 'react-intl';
 
-import {ActionTypes, Constants} from 'utils/constants.jsx';
+import {ActionTypes, Constants} from 'utils/constants';
 import * as Utils from 'utils/utils.jsx';
 import AppDispatcher from 'dispatcher/app_dispatcher.jsx';
 import SettingItemMax from 'components/setting_item_max.jsx';
-import SettingItemMin from 'components/setting_item_min.jsx';
+import SettingItemMin from 'components/setting_item_min';
 
 import CustomThemeChooser from './custom_theme_chooser.jsx';
 import PremadeThemeChooser from './premade_theme_chooser';
 
-export default class ThemeSetting extends React.Component {
+export default class ThemeSetting extends React.PureComponent {
     static propTypes = {
         actions: PropTypes.shape({
             saveTheme: PropTypes.func.isRequired,
+            deleteTeamSpecificThemes: PropTypes.func.isRequired,
         }).isRequired,
         currentTeamId: PropTypes.string.isRequired,
         theme: PropTypes.object,
@@ -28,8 +30,6 @@ export default class ThemeSetting extends React.Component {
         setRequireConfirm: PropTypes.func.isRequired,
         setEnforceFocus: PropTypes.func.isRequired,
         allowCustomThemes: PropTypes.bool,
-        showAllTeamsCheckbox: PropTypes.bool,
-        applyToAllTeams: PropTypes.bool,
         focused: PropTypes.bool.isRequired,
     };
 
@@ -46,20 +46,18 @@ export default class ThemeSetting extends React.Component {
 
     componentDidMount() {
         if (this.props.selected) {
-            $(ReactDOM.findDOMNode(this.refs[this.state.theme])).addClass('active-border');
+            $(ReactDOM.findDOMNode(this.refs[this.state.theme])).addClass('active-border'); // eslint-disable-line jquery/no-class
         }
     }
 
-    componentDidUpdate() {
-        if (this.props.selected) {
-            $('.color-btn').removeClass('active-border');
-            $(ReactDOM.findDOMNode(this.refs[this.state.theme])).addClass('active-border');
-        }
-    }
-
-    UNSAFE_componentWillReceiveProps(nextProps) { // eslint-disable-line camelcase
-        if (this.props.selected && !nextProps.selected) {
+    componentDidUpdate(prevProps) {
+        if (prevProps.selected && !this.props.selected) {
             this.resetFields();
+        }
+
+        if (this.props.selected) {
+            $('.color-btn').removeClass('active-border'); // eslint-disable-line jquery/no-class
+            $(ReactDOM.findDOMNode(this.refs[this.state.theme])).addClass('active-border'); // eslint-disable-line jquery/no-class
         }
     }
 
@@ -87,21 +85,22 @@ export default class ThemeSetting extends React.Component {
         $('.ps-container.modal-body').scrollTop(0);
     }
 
-    submitTheme = () => {
+    submitTheme = async () => {
         const teamId = this.state.applyToAllTeams ? '' : this.props.currentTeamId;
 
         this.setState({isSaving: true});
 
-        return this.props.actions.saveTheme(
-            teamId,
-            this.state.theme
-        ).then(() => {
-            this.props.setRequireConfirm(false);
-            this.originalTheme = Object.assign({}, this.state.theme);
-            this.scrollToTop();
-            this.props.updateSection('');
-            this.setState({isSaving: false});
-        });
+        await this.props.actions.saveTheme(teamId, this.state.theme);
+
+        if (this.state.applyToAllTeams) {
+            await this.props.actions.deleteTeamSpecificThemes();
+        }
+
+        this.props.setRequireConfirm(false);
+        this.originalTheme = Object.assign({}, this.state.theme);
+        this.scrollToTop();
+        this.props.updateSection('');
+        this.setState({isSaving: false});
     };
 
     updateTheme = (theme) => {
@@ -207,7 +206,7 @@ export default class ThemeSetting extends React.Component {
                             />
                         </label>
                         <br/>
-                    </div>
+                    </div>,
                 );
             }
 
@@ -232,7 +231,7 @@ export default class ThemeSetting extends React.Component {
                                 defaultMessage='Custom Theme'
                             />
                         </label>
-                    </div>
+                    </div>,
                 );
 
                 inputs.push(custom);
@@ -251,25 +250,25 @@ export default class ThemeSetting extends React.Component {
                                 defaultMessage='See other themes'
                             />
                         </a>
-                    </div>
+                    </div>,
                 );
 
                 inputs.push(
                     <div
                         key='importSlackThemeButton'
-                        className='padding-top'
+                        className='pt-2'
                     >
-                        <a
+                        <button
                             id='slackImportTheme'
-                            className='theme'
+                            className='theme style--none color--link'
                             onClick={this.handleImportModal}
                         >
                             <FormattedMessage
                                 id='user.settings.display.theme.import'
                                 defaultMessage='Import theme colors from Slack'
                             />
-                        </a>
-                    </div>
+                        </button>
+                    </div>,
                 );
             }
 
@@ -298,6 +297,7 @@ export default class ThemeSetting extends React.Component {
                     inputs={inputs}
                     submitExtra={allTeamsCheckbox}
                     submit={this.submitTheme}
+                    disableEnterSubmit={true}
                     saving={this.state.isSaving}
                     server_error={serverError}
                     width='full'
@@ -329,3 +329,4 @@ export default class ThemeSetting extends React.Component {
         return themeUI;
     }
 }
+/* eslint-enable react/no-string-refs */

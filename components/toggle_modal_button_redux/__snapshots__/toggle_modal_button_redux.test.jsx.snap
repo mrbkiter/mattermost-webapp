@@ -2,6 +2,7 @@
 
 exports[`components/ToggleModalButtonRedux component should match snapshot 1`] = `
 <ModalToggleButtonRedux
+  accessibilityLabel="Delete Channel"
   actions={
     Object {
       "openModal": [Function],
@@ -16,23 +17,28 @@ exports[`components/ToggleModalButtonRedux component should match snapshot 1`] =
       "defaultFormats": Object {},
       "defaultLocale": "en",
       "formatDate": [Function],
-      "formatHTMLMessage": [Function],
+      "formatDateToParts": [Function],
+      "formatDisplayName": [Function],
+      "formatList": [Function],
       "formatMessage": [Function],
       "formatNumber": [Function],
+      "formatNumberToParts": [Function],
       "formatPlural": [Function],
-      "formatRelative": [Function],
+      "formatRelativeTime": [Function],
       "formatTime": [Function],
+      "formatTimeToParts": [Function],
       "formats": Object {},
       "formatters": Object {
         "getDateTimeFormat": [Function],
+        "getDisplayNames": [Function],
+        "getListFormat": [Function],
         "getMessageFormat": [Function],
         "getNumberFormat": [Function],
-        "getPluralFormat": [Function],
-        "getRelativeFormat": [Function],
+        "getPluralRules": [Function],
+        "getRelativeTimeFormat": [Function],
       },
       "locale": "en",
       "messages": Object {},
-      "now": [Function],
       "onError": [Function],
       "textComponent": "span",
       "timeZone": "Etc/UTC",
@@ -42,47 +48,16 @@ exports[`components/ToggleModalButtonRedux component should match snapshot 1`] =
   role="menuitem"
 >
   <button
-    actions={
-      Object {
-        "openModal": [Function],
-      }
-    }
+    aria-label="Delete Channel dialog"
     className="style--none "
+    data-toggle="modal toggle"
     id="channelDelete"
-    intl={
-      Object {
-        "defaultFormats": Object {},
-        "defaultLocale": "en",
-        "formatDate": [Function],
-        "formatHTMLMessage": [Function],
-        "formatMessage": [Function],
-        "formatNumber": [Function],
-        "formatPlural": [Function],
-        "formatRelative": [Function],
-        "formatTime": [Function],
-        "formats": Object {},
-        "formatters": Object {
-          "getDateTimeFormat": [Function],
-          "getMessageFormat": [Function],
-          "getNumberFormat": [Function],
-          "getPluralFormat": [Function],
-          "getRelativeFormat": [Function],
-        },
-        "locale": "en",
-        "messages": Object {},
-        "now": [Function],
-        "onError": [Function],
-        "textComponent": "span",
-        "timeZone": "Etc/UTC",
-      }
-    }
     onClick={[Function]}
     role="menuitem"
   >
     <FormattedMessage
       defaultMessage="Delete Channel"
       id="channel_header.delete"
-      values={Object {}}
     >
       <span>
         Delete Channel

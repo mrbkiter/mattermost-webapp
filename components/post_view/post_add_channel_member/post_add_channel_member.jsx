@@ -6,11 +6,19 @@ import React from 'react';
 import {FormattedMessage} from 'react-intl';
 
 import {sendAddToChannelEphemeralPost} from 'actions/global_actions.jsx';
-import {Constants} from 'utils/constants.jsx';
+import {Constants} from 'utils/constants';
 import {t} from 'utils/i18n';
 import AtMention from 'components/at_mention';
 
 export default class PostAddChannelMember extends React.PureComponent {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            expanded: false,
+        };
+    }
+
     static propTypes = {
 
         /*
@@ -43,6 +51,8 @@ export default class PostAddChannelMember extends React.PureComponent {
         */
         usernames: PropTypes.array.isRequired,
 
+        noGroupsUsernames: PropTypes.array.isRequired,
+
         actions: PropTypes.shape({
 
             /*
@@ -72,6 +82,10 @@ export default class PostAddChannelMember extends React.PureComponent {
         }
     }
 
+    expand = () => {
+        this.setState({expanded: true});
+    }
+
     generateAtMentions(usernames = []) {
         if (usernames.length === 1) {
             return (
@@ -92,26 +106,57 @@ export default class PostAddChannelMember extends React.PureComponent {
                 return <span key={key}>{', '}</span>;
             }
 
+            if (this.state.expanded || usernames.length <= 3) {
+                return (
+                    <span>
+                        {
+                            usernames.map((username) => {
+                                return (
+                                    <AtMention
+                                        key={username}
+                                        mentionName={username}
+                                    />
+                                );
+                            }).reduce((acc, el, idx, arr) => {
+                                if (idx === 0) {
+                                    return [el];
+                                } else if (idx === arr.length - 1) {
+                                    return [...acc, andSeparator(idx), el];
+                                }
+
+                                return [...acc, commaSeparator(idx), el];
+                            }, [])
+                        }
+                    </span>
+                );
+            }
+            const otherUsers = [...usernames];
+            const firstUserName = otherUsers.shift();
+            const lastUserName = otherUsers.pop();
             return (
                 <span>
-                    {
-                        usernames.map((username) => {
-                            return (
-                                <AtMention
-                                    key={username}
-                                    mentionName={username}
-                                />
-                            );
-                        }).reduce((acc, el, idx, arr) => {
-                            if (idx === 0) {
-                                return [el];
-                            } else if (idx === arr.length - 1) {
-                                return [...acc, andSeparator(idx), el];
-                            }
-
-                            return [...acc, commaSeparator(idx), el];
-                        }, [])
-                    }
+                    <AtMention
+                        key={firstUserName}
+                        mentionName={firstUserName}
+                    />
+                    {commaSeparator(1)}
+                    <a
+                        className='PostBody_otherUsersLink'
+                        onClick={this.expand}
+                    >
+                        <FormattedMessage
+                            id={'post_body.check_for_out_of_channel_mentions.others'}
+                            defaultMessage={'{numOthers} others'}
+                            values={{
+                                numOthers: otherUsers.length,
+                            }}
+                        />
+                    </a>
+                    {andSeparator(1)}
+                    <AtMention
+                        key={lastUserName}
+                        mentionName={lastUserName}
+                    />
                 </span>
             );
         }
@@ -120,7 +165,7 @@ export default class PostAddChannelMember extends React.PureComponent {
     }
 
     render() {
-        const {channelType, postId, usernames} = this.props;
+        const {channelType, postId, usernames, noGroupsUsernames} = this.props;
         if (!postId || !channelType) {
             return null;
         }
@@ -135,40 +180,72 @@ export default class PostAddChannelMember extends React.PureComponent {
             linkText = 'add them to the channel';
         }
 
-        let messageId;
-        let messageText;
+        let outOfChannelMessageID;
+        let outOfChannelMessageText;
+        const outOfChannelAtMentions = this.generateAtMentions(usernames);
         if (usernames.length === 1) {
-            messageId = t('post_body.check_for_out_of_channel_mentions.message.one');
-            messageText = 'was mentioned but is not in the channel. Would you like to ';
+            outOfChannelMessageID = t('post_body.check_for_out_of_channel_mentions.message.one');
+            outOfChannelMessageText = 'did not get notified by this mention because they are not in the channel. Would you like to ';
         } else if (usernames.length > 1) {
-            messageId = t('post_body.check_for_out_of_channel_mentions.message.multiple');
-            messageText = 'were mentioned but they are not in the channel. Would you like to ';
+            outOfChannelMessageID = t('post_body.check_for_out_of_channel_mentions.message.multiple');
+            outOfChannelMessageText = 'did not get notified by this mention because they are not in the channel. Would you like to ';
         }
 
-        const atMentions = this.generateAtMentions(usernames);
+        let outOfGroupsMessageID;
+        let outOfGroupsMessageText;
+        const outOfGroupsAtMentions = this.generateAtMentions(noGroupsUsernames);
+        if (noGroupsUsernames.length) {
+            outOfGroupsMessageID = t('post_body.check_for_out_of_channel_groups_mentions.message');
+            outOfGroupsMessageText = 'did not get notified by this mention because they are not in the channel. They cannot be added to the channel because they are not a member of the linked groups. To add them to this channel, they must be added to the linked groups.';
+        }
+
+        var outOfChannelMessage = null;
+        var outOfGroupsMessage = null;
+
+        if (usernames.length) {
+            outOfChannelMessage = (
+                <p>
+                    {outOfChannelAtMentions}
+                    {' '}
+                    <FormattedMessage
+                        id={outOfChannelMessageID}
+                        defaultMessage={outOfChannelMessageText}
+                    />
+                    <a
+                        className='PostBody_addChannelMemberLink'
+                        onClick={this.handleAddChannelMember}
+                    >
+                        <FormattedMessage
+                            id={linkId}
+                            defaultMessage={linkText}
+                        />
+                    </a>
+                    <FormattedMessage
+                        id={'post_body.check_for_out_of_channel_mentions.message_last'}
+                        defaultMessage={'? They will have access to all message history.'}
+                    />
+                </p>
+            );
+        }
+
+        if (noGroupsUsernames.length) {
+            outOfGroupsMessage = (
+                <p>
+                    {outOfGroupsAtMentions}
+                    {' '}
+                    <FormattedMessage
+                        id={outOfGroupsMessageID}
+                        defaultMessage={outOfGroupsMessageText}
+                    />
+                </p>
+            );
+        }
 
         return (
-            <p>
-                {atMentions}
-                {' '}
-                <FormattedMessage
-                    id={messageId}
-                    defaultMessage={messageText}
-                />
-                <a
-                    id='add_channel_member_link'
-                    onClick={this.handleAddChannelMember}
-                >
-                    <FormattedMessage
-                        id={linkId}
-                        defaultMessage={linkText}
-                    />
-                </a>
-                <FormattedMessage
-                    id={'post_body.check_for_out_of_channel_mentions.message_last'}
-                    defaultMessage={'? They will have access to all message history.'}
-                />
-            </p>
+            <>
+                {outOfChannelMessage}
+                {outOfGroupsMessage}
+            </>
         );
     }
 }

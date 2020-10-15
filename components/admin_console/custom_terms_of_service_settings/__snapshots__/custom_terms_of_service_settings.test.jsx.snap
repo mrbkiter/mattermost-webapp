@@ -1,21 +1,20 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`components/admin_console/CustomTermsOfServiceSettings should match snapshot 1`] = `
-<div
-  className="wrapper--fixed"
+<form
+  className="form-horizontal"
+  onSubmit={[Function]}
+  role="form"
 >
-  <AdminHeader>
-    <FormattedMessage
-      defaultMessage="Custom Terms of Service (Beta)"
-      id="admin.support.termsOfServiceTitle"
-      values={Object {}}
-    />
-  </AdminHeader>
-  <form
-    className="form-horizontal"
-    onSubmit={[Function]}
-    role="form"
+  <div
+    className="wrapper--fixed"
   >
+    <AdminHeader>
+      <FormattedMessage
+        defaultMessage="Custom Terms of Service (Beta)"
+        id="admin.support.termsOfServiceTitle"
+      />
+    </AdminHeader>
     <LoadingScreen
       position="relative"
       style={Object {}}
@@ -25,6 +24,12 @@ exports[`components/admin_console/CustomTermsOfServiceSettings should match snap
     >
       <SaveButton
         btnClass="btn-primary"
+        defaultMessage={
+          <FormattedMessage
+            defaultMessage="Save"
+            id="save_button.save"
+          />
+        }
         disabled={true}
         extraClasses=""
         onClick={[Function]}
@@ -43,7 +48,6 @@ exports[`components/admin_console/CustomTermsOfServiceSettings should match snap
       </div>
       <Overlay
         animation={[Function]}
-        delayShow={400}
         placement="top"
         rootClose={false}
         show={false}
@@ -55,26 +59,25 @@ exports[`components/admin_console/CustomTermsOfServiceSettings should match snap
         />
       </Overlay>
     </div>
-  </form>
-</div>
+  </div>
+</form>
 `;
 
 exports[`components/admin_console/CustomTermsOfServiceSettings should match snapshot 2`] = `
-<div
-  className="wrapper--fixed"
+<form
+  className="form-horizontal"
+  onSubmit={[Function]}
+  role="form"
 >
-  <AdminHeader>
-    <FormattedMessage
-      defaultMessage="Custom Terms of Service (Beta)"
-      id="admin.support.termsOfServiceTitle"
-      values={Object {}}
-    />
-  </AdminHeader>
-  <form
-    className="form-horizontal"
-    onSubmit={[Function]}
-    role="form"
+  <div
+    className="wrapper--fixed"
   >
+    <AdminHeader>
+      <FormattedMessage
+        defaultMessage="Custom Terms of Service (Beta)"
+        id="admin.support.termsOfServiceTitle"
+      />
+    </AdminHeader>
     <LoadingScreen
       position="relative"
       style={Object {}}
@@ -84,6 +87,12 @@ exports[`components/admin_console/CustomTermsOfServiceSettings should match snap
     >
       <SaveButton
         btnClass="btn-primary"
+        defaultMessage={
+          <FormattedMessage
+            defaultMessage="Save"
+            id="save_button.save"
+          />
+        }
         disabled={true}
         extraClasses=""
         onClick={[Function]}
@@ -102,7 +111,6 @@ exports[`components/admin_console/CustomTermsOfServiceSettings should match snap
       </div>
       <Overlay
         animation={[Function]}
-        delayShow={400}
         placement="top"
         rootClose={false}
         show={false}
@@ -114,26 +122,25 @@ exports[`components/admin_console/CustomTermsOfServiceSettings should match snap
         />
       </Overlay>
     </div>
-  </form>
-</div>
+  </div>
+</form>
 `;
 
 exports[`components/admin_console/CustomTermsOfServiceSettings should match snapshot 3`] = `
-<div
-  className="wrapper--fixed"
+<form
+  className="form-horizontal"
+  onSubmit={[Function]}
+  role="form"
 >
-  <AdminHeader>
-    <FormattedMessage
-      defaultMessage="Custom Terms of Service (Beta)"
-      id="admin.support.termsOfServiceTitle"
-      values={Object {}}
-    />
-  </AdminHeader>
-  <form
-    className="form-horizontal"
-    onSubmit={[Function]}
-    role="form"
+  <div
+    className="wrapper--fixed"
   >
+    <AdminHeader>
+      <FormattedMessage
+        defaultMessage="Custom Terms of Service (Beta)"
+        id="admin.support.termsOfServiceTitle"
+      />
+    </AdminHeader>
     <LoadingScreen
       position="relative"
       style={Object {}}
@@ -143,6 +150,12 @@ exports[`components/admin_console/CustomTermsOfServiceSettings should match snap
     >
       <SaveButton
         btnClass="btn-primary"
+        defaultMessage={
+          <FormattedMessage
+            defaultMessage="Save"
+            id="save_button.save"
+          />
+        }
         disabled={true}
         extraClasses=""
         onClick={[Function]}
@@ -161,7 +174,6 @@ exports[`components/admin_console/CustomTermsOfServiceSettings should match snap
       </div>
       <Overlay
         animation={[Function]}
-        delayShow={400}
         placement="top"
         rootClose={false}
         show={false}
@@ -173,26 +185,25 @@ exports[`components/admin_console/CustomTermsOfServiceSettings should match snap
         />
       </Overlay>
     </div>
-  </form>
-</div>
+  </div>
+</form>
 `;
 
 exports[`components/admin_console/CustomTermsOfServiceSettings should match snapshot 4`] = `
-<div
-  className="wrapper--fixed"
+<form
+  className="form-horizontal"
+  onSubmit={[Function]}
+  role="form"
 >
-  <AdminHeader>
-    <FormattedMessage
-      defaultMessage="Custom Terms of Service (Beta)"
-      id="admin.support.termsOfServiceTitle"
-      values={Object {}}
-    />
-  </AdminHeader>
-  <form
-    className="form-horizontal"
-    onSubmit={[Function]}
-    role="form"
+  <div
+    className="wrapper--fixed"
   >
+    <AdminHeader>
+      <FormattedMessage
+        defaultMessage="Custom Terms of Service (Beta)"
+        id="admin.support.termsOfServiceTitle"
+      />
+    </AdminHeader>
     <LoadingScreen
       position="relative"
       style={Object {}}
@@ -202,6 +213,12 @@ exports[`components/admin_console/CustomTermsOfServiceSettings should match snap
     >
       <SaveButton
         btnClass="btn-primary"
+        defaultMessage={
+          <FormattedMessage
+            defaultMessage="Save"
+            id="save_button.save"
+          />
+        }
         disabled={true}
         extraClasses=""
         onClick={[Function]}
@@ -220,7 +237,6 @@ exports[`components/admin_console/CustomTermsOfServiceSettings should match snap
       </div>
       <Overlay
         animation={[Function]}
-        delayShow={400}
         placement="top"
         rootClose={false}
         show={false}
@@ -232,6 +248,6 @@ exports[`components/admin_console/CustomTermsOfServiceSettings should match snap
         />
       </Overlay>
     </div>
-  </form>
-</div>
+  </div>
+</form>
 `;

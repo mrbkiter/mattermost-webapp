@@ -85,7 +85,7 @@ export default class WebSocketClient {
                 () => {
                     this.initialize(connectionUrl, token);
                 },
-                retryTime
+                retryTime,
             );
         };
 
@@ -182,6 +182,14 @@ export default class WebSocketClient {
         data.parent_id = parentId;
 
         this.sendMessage('user_typing', data, callback);
+    }
+
+    userUpdateActiveStatus(userIsActive, manual, callback) {
+        const data = {
+            user_is_active: userIsActive,
+            manual,
+        };
+        this.sendMessage('user_update_active_status', data, callback);
     }
 
     getStatuses(callback) {
